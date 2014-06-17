@@ -79,9 +79,9 @@ grubUpdater conf = do
     -- detect vmlinuz files
     files <- getDirectoryContents bootDir
     let availableVers = sortBy (flip compare)
-                            . map (drop (length "vmlinuz-"))
-                            . filter ("vmlinuz" `isPrefixOf`)
-                            $ files
+                      . map (drop (length "vmlinuz-"))
+                      . filter ("vmlinuz" `isPrefixOf`)
+                      $ files
         makeListItem version = map (replace verStr version) templatePart
     -- print to stdout
     mapM_ putStrLn beforeTemplate
