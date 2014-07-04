@@ -1,4 +1,4 @@
-linux-misc
+misc
 ==========
 
-miscellaneous created when playing with linux
+miscellaneous toy programs
