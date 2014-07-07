@@ -22,28 +22,27 @@ parseRaw = mapMaybe makePair . lines
 balance :: [(Char,Char)] -> String -> String
 balance pairs = uncurry (++) . partition isRParens . go [] . filter isParens
     where
+        swap = uncurry (flip (,))
         isLParens = (`elem` M.keys dictLR)
         isRParens = (`elem` M.keys dictRL)
         isParens = (||) <$> isLParens <*> isRParens
         dictLR = M.fromList pairs
-        dictRL = M.fromList . map (uncurry (flip (,))) $ pairs
+        dictRL = M.fromList . map swap $ pairs
         find' a alist = fromJust . M.lookup a $ alist
         go :: String -> String -> String
-        go stack xs
-            | null xs = map (\x -> fromJust . M.lookup x $ dictLR) stack
-            | null stack = let (y:ys) = xs
-                           in if isLParens y
-                                then go (y:stack) ys
-                                else find' y dictRL : go stack ys
-            | otherwise =
-                let (y:ys) = xs
-                    (s:ss) = stack
-                in if isLParens y
-                     then go (y:stack) ys
-                     else
-                       if y == find' s dictLR
-                         then go ss ys
-                         else find' s dictLR : go ss xs
+        -- clean up stack, macth remaining parens
+        go stack [] = map (\x -> fromJust . M.lookup x $ dictLR) stack
+        go stack (y:ys)
+           -- left paren: always goes directly into the stack
+           | isLParens y = go (y:stack) ys
+           -- right paren
+           -- need to match this one immediately
+           | null stack = find' y dictRL : go stack ys
+           | otherwise =
+               let (s:ss) = stack
+               in if y == find' s dictLR
+                  then go ss ys
+                  else find' s dictLR : go ss (y:ys)
 
 main :: IO ()
 main = liftM listToMaybe getArgs
