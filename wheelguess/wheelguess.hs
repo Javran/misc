@@ -5,7 +5,7 @@ import Data.Char
 import Text.Printf
 
 wordsFromDict :: FilePath -> IO [String]
-wordsFromDict p = lines <$> SIO.readFile p
+wordsFromDict p = map (filter (not . isSpace)) . lines <$> SIO.readFile p
 
 pruneDict :: Int -> [String] -> [String]
 pruneDict l = (map . map) toLower . filter allLetter . filter ((== l) . length)
@@ -25,6 +25,7 @@ main = do
     (dpath:_) <- getArgs
     d <- wordsFromDict dpath
     let guesses = guessWords d wheels
+    _ <- printf "%d words loaded.\n" (length $ pruneDict 5 d)
     mapM_ putStrLn guesses
     printf "%d valid words found.\n" (length guesses)
     where
