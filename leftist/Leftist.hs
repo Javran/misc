@@ -1,5 +1,5 @@
-module Leftish
-    ( BTree
+module Leftist
+    ( LTree
     , merge
     , empty
     , null
@@ -19,30 +19,30 @@ import Data.Sequence (Seq, (|>), ViewL(..), viewl)
 import Data.Function
 import Prelude hiding (null)
 
-data BTree a
+data LTree a
     = Nil
-    | Node !Int !a !(BTree a) !(BTree a)
+    | Node !Int !a !(LTree a) !(LTree a)
       deriving (Show)
 
-dist :: BTree a -> Int
+dist :: LTree a -> Int
 dist Nil = -1
 dist (Node d _ _ _) = d
 
-value :: BTree a -> a
+value :: LTree a -> a
 value Nil = error "value on Nil"
 value (Node _ v _ _) = v
 
-empty :: BTree a
+empty :: LTree a
 empty = Nil
 
-null :: BTree a -> Bool
+null :: LTree a -> Bool
 null Nil = True
 null _ = False
 
-singleton :: a -> BTree a
+singleton :: a -> LTree a
 singleton x = Node 0 x Nil Nil
 
-merge :: Ord a => BTree a -> BTree a -> BTree a
+merge :: Ord a => LTree a -> LTree a -> LTree a
 merge Nil r = r
 merge l Nil = l
 merge ta tb = Node newDist v1 newL newR
@@ -53,27 +53,27 @@ merge ta tb = Node newDist v1 newL newR
         (newL,newR) = if dist r1' > dist l1 then (r1',l1) else (l1,r1')
         newDist = 1 + dist newR
 
-insert :: Ord a => a -> BTree a -> BTree a
+insert :: Ord a => a -> LTree a -> LTree a
 insert v = merge (singleton v)
 
-deleteMin :: Ord a => BTree a -> (a, BTree a)
+deleteMin :: Ord a => LTree a -> (a, LTree a)
 deleteMin Nil = error "empty tree"
 deleteMin (Node _ v l r) = (v, merge l r)
 
-toAscList :: Ord a => BTree a -> [a]
+toAscList :: Ord a => LTree a -> [a]
 toAscList Nil = []
 toAscList t =
     let (v,t') = deleteMin t
     in v:toAscList t'
 
-toList :: BTree a -> [a]
+toList :: LTree a -> [a]
 toList Nil = []
 toList (Node _ v l r) = v : ((++) `on` toList) l r
 
-fromList :: Ord a => [a] -> BTree a
+fromList :: Ord a => [a] -> LTree a
 fromList = fromSeq . fmap singleton . Seq.fromList
 
-fromSeq :: Ord a => Seq (BTree a) -> BTree a
+fromSeq :: Ord a => Seq (LTree a) -> LTree a
 fromSeq s = case viewl s of
     EmptyL -> Nil
     v1 :< seq1 -> case viewl seq1 of
@@ -83,7 +83,7 @@ fromSeq s = case viewl s of
 sort :: Ord a => [a] -> [a]
 sort = toAscList . fromList
 
-propertyHolds :: Ord a => BTree a -> Bool
+propertyHolds :: Ord a => LTree a -> Bool
 propertyHolds Nil = True
 propertyHolds (Node d v l r) =
        ((&&) `on` propertyHolds) l r

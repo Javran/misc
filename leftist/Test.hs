@@ -2,7 +2,7 @@
 module Main
 where
 
-import qualified Leftish as L
+import qualified Leftist as L
 
 import Test.QuickCheck
 
