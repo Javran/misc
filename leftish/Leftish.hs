@@ -2,21 +2,22 @@ module Leftish
     ( BTree
     , merge
     , empty
+    , null
     , singleton
     , insert
     , deleteMin
     , toList
     , toAscList
     , fromList
+    , sort
+    , propertyHolds
     )
 where
 
 import qualified Data.Sequence as Seq
 import Data.Sequence (Seq, (|>), ViewL(..), viewl)
 import Data.Function
-
--- import Control.Monad
--- import Control.Monad.Random hiding (fromList)
+import Prelude hiding (null)
 
 data BTree a
     = Nil
@@ -33,6 +34,10 @@ value (Node _ v _ _) = v
 
 empty :: BTree a
 empty = Nil
+
+null :: BTree a -> Bool
+null Nil = True
+null _ = False
 
 singleton :: a -> BTree a
 singleton x = Node 0 x Nil Nil
@@ -75,9 +80,14 @@ fromSeq s = case viewl s of
         EmptyL -> v1
         v2 :< seq2 -> fromSeq (seq2 |> merge v1 v2)
 
--- main :: IO ()
--- main = do
---      xs <- liftM (take 100000) $ getRandomRs (0 :: Int,1000000)
---      let lt = fromList xs
---          result = toAscList lt
---      print $ and $ zipWith (<=) result (tail result)
+sort :: Ord a => [a] -> [a]
+sort = toAscList . fromList
+
+propertyHolds :: Ord a => BTree a -> Bool
+propertyHolds Nil = True
+propertyHolds (Node d v l r) =
+       ((&&) `on` propertyHolds) l r
+    && ((>=) `on` dist) l r
+    && (d == 1 + dist r)
+    && (null l || v <= value l)
+    && (null r || v <= value r)
