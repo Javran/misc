@@ -1,4 +1,4 @@
 misc
 ==========
 
-miscellaneous toy programs
+some miscellaneous toy programs
