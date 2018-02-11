@@ -1,3 +1,5 @@
 instance-*/
 
 node_modules/
+
+*.jsonlines

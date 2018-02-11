@@ -1,5 +1,11 @@
 const _ = require('lodash')
-const {readdirSync} = require('fs')
+const {
+  readdirSync,
+  writeFileSync,
+  openSync,
+  writeSync,
+  closeSync,
+} = require('fs')
 const {readJsonSync, writeJsonSync} = require('fs-extra')
 const {join} = require('path-extra')
 
@@ -74,4 +80,31 @@ _.keys(merged).map(tableName => {
 })
 
 console.log(`id check done`)
-writeJsonSync(outputFilePath, merged)
+
+const dataList = _.flatMap(
+  _.toPairs(merged),
+  ([tableName, records]) =>
+    records.map(record => ({table: tableName, record}))
+)
+
+/*
+   some JavaScript have trouble when string gets too large,
+   so after all checking are done, we re-organize "merged" into
+   lines, so the original object {[...keys]: ...values} would look like:
+   [{table: key, record: value} ...] in "dataList".
+
+   then each line in the Array takes a single line in file to store it's stringify'ed form.
+
+   I'll suggest using extension *.jsonlines for this kind of file: each line is either
+   all whitespace characters, or an JSON-encoded value.
+ */
+
+{
+  const fd = openSync(outputFilePath, 'w')
+  dataList.map(data => {
+    const raw = JSON.stringify(data) + '\n'
+    writeSync(fd, raw)
+  })
+
+  closeSync(fd)
+}

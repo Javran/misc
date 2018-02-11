@@ -29,3 +29,5 @@ Merger merges record fragments together and verifies uniqueness of record ids
 npm i lodash fs-extra path-extra
 node merger <storer-instance-dir> <output-file>
 ```
+
+e.g. `node merger storer/instance-123123123 merged.jsonlines`
