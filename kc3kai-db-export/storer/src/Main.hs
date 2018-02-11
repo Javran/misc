@@ -38,3 +38,10 @@ app =
                fName = T.unpack tableName <> "-" <> T.unpack t <> ".raw"
            liftIO $ T.writeFile outputPath raw
            text "ok"
+       post "post-table-ids" $ do
+           (AppState instanceDir) <- getState
+           Just raw <- param "raw"
+           let outputPath = instanceDir </> fName
+               fName = "table-ids.json"
+           liftIO $ T.writeFile outputPath raw
+           text "ok"

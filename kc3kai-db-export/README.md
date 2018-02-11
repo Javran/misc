@@ -20,3 +20,12 @@ Edit `src/pages/strategy/strategy.html` to include it:
 ```
 
 Now go to strategy room, open console. Paste content from `test.js` to it, wait until `all done` message is printed.
+
+# merger
+
+Merger merges record fragments together and verifies uniqueness of record ids
+
+```
+npm i lodash fs-extra path-extra
+node merger <storer-instance-dir> <output-file>
+```
