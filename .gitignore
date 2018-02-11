@@ -11,3 +11,7 @@ cabal.sandbox.config
 cabal.config
 /grub-conf-updater/GrubConfUpdater
 .stack-work/
+
+compilers-class/
+*.svg
+*.json

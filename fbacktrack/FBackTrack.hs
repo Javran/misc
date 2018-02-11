@@ -1,23 +1,33 @@
--- Simple Fair back-tracking monad
--- Based on the Scheme code book-si, `Stream implementation, with incomplete'
--- as of Feb 18, 2005
+{-
+  Simple Fair back-tracking monad
+  Based on the Scheme code book-si, `Stream implementation, with incomplete'
+  as of Feb 18, 2005
 
--- $Id: FBackTrack.hs,v 1.4 2005/08/25 20:33:55 oleg Exp oleg $
+  -- $Id: FBackTrack.hs,v 1.4 2005/08/25 20:33:55 oleg Exp oleg $
+
+  Modified by Javran
+-}
 
 module FBackTrack where
 
 import Control.Monad
 import Control.Applicative
 
-data Stream a = Nil | One a | Choice a (Stream a) | Incomplete (Stream a)
+data Stream a
+  = Nil
+  | One a
+  | Choice a (Stream a)
+  | Incomplete (Stream a)
+
+bindStream :: Stream a -> (a -> Stream b) -> Stream b
+Nil          `bindStream` _ = Nil
+One a        `bindStream` f = f a
+Choice a r   `bindStream` f = f a `mplus` Incomplete (r `bindStream` f)
+Incomplete i `bindStream` f = Incomplete (i `bindStream` f)
 
 instance Monad Stream where
-  return = One
-
-  Nil          >>= f = Nil
-  One a        >>= f = f a
-  Choice a r   >>= f = f a `mplus` (Incomplete (r >>= f))
-  Incomplete i >>= f = Incomplete (i >>= f)
+    return = One
+    (>>=) = bindStream
 
 instance Applicative Stream where
     pure = One
