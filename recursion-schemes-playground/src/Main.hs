@@ -92,6 +92,18 @@ natFib = fst . natFibAux
         Nil -> ([], [()])
         -- fibAux (N+1) = let (fp0, fp1) = fibAux N in (fp1, fp0 + fp1)
         Cons () (_, (u1, u2)) -> (u2, u1++u2)
+
+-- to show that `para` is indeed an overkill.
+-- with the use of natFibAux, we can do the same with `cata`
+natFib' :: Nat -> Nat
+natFib' = fst . natFibAux
+  where
+    natFibAux :: Nat -> (Nat, Nat)
+    natFibAux = cata $ \case
+        -- fibAux 0 = (fib 0, fib 1)
+        Nil -> ([], [()])
+        -- fibAux (N+1) = let (fp0, fp1) = fibAux N in (fp1, fp0 + fp1)
+        Cons () (u,v) -> (v, u ++ v)
  
 main :: IO ()
 main = do
@@ -101,3 +113,4 @@ main = do
   print listX
   print (length $ natFac (replicate 4 ()))
   print (map (length . natFib . (`replicate` ()) ) [1..15])
+  print (map (length . natFib' . (`replicate` ()) ) [1..15])  
