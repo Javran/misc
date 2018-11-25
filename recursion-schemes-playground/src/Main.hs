@@ -2,6 +2,7 @@
 module Main where
 
 import Data.Functor.Foldable
+import Control.Comonad.Cofree
 
 list1 :: [Int]
 list1 = [1,2,4,4,8,10,24]
@@ -104,6 +105,29 @@ natFib' = fst . natFibAux
         Nil -> ([], [()])
         -- fibAux (N+1) = let (fp0, fp1) = fibAux N in (fp1, fp0 + fp1)
         Cons () (u,v) -> (v, u ++ v)
+
+natFib'' :: Nat -> Nat
+natFib'' = histo $ \case
+    -- fib 0 = 0
+    Nil -> []
+    -- fib 1 = 1
+    Cons () (_ :< Nil) -> [()]
+    -- fib (n+2) = fib (n+1) + fib n
+    Cons () (pre' :< Cons () (pre'' :< _)) -> pre' ++ pre''
+
+{-
+  seems "project" is a preparation for do recursion -
+  for List, as an example, it provides "Nil" and "Cons"
+  so that we can describe the actual computation.
+-}
+v1 :: ListF Int (Fix (ListF Int))
+v1 = case project listF1 of
+  Nil -> Nil
+  Cons a b -> Cons a b
+v2 :: ListF Int [Int]
+v2 = case project list1 of
+  Nil -> Nil
+  Cons a b -> Cons a b
  
 main :: IO ()
 main = do
@@ -113,4 +137,5 @@ main = do
   print listX
   print (length $ natFac (replicate 4 ()))
   print (map (length . natFib . (`replicate` ()) ) [1..15])
-  print (map (length . natFib' . (`replicate` ()) ) [1..15])  
+  print (map (length . natFib' . (`replicate` ()) ) [1..15])
+  print (map (length . natFib'' . (`replicate` ()) ) [1..15])  
