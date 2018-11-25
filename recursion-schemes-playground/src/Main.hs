@@ -58,7 +58,31 @@ natFac = para $ \case
   -- fac (N + 1) = (N+1) * fac N {- i.e. previous result -}
   Cons () (u, rOld) -> (() : u) >> rOld
 
+{-
+  using para might be an overkill because we are not using all info given.
+  but, well, it works.
 
+  now that given definition:
+
+  fib 0 = 0
+  fib 1 = 1
+  fib (n+2) = fib n + fib (n+1)
+
+  because we demand two previous values, this cannot be done with just one prev value available.
+  so instead, consider:
+
+  fibAux n = (fib n, fib (n+1))
+
+  by definition:
+
+  fibAux 0 = (fib 0, fib 1) = (0, 1)
+  fibAux (n+1) = (fib (n+1), fib (n+2))
+               = (fib (n+1), fib n + fib (n+1))
+    note that `fibAux n = (fib n, fib n + fib (n+1))`
+    contains all info we need - now it's good enough
+    to write an impl using para.
+
+-}
 natFib :: Nat -> Nat
 natFib = fst . natFibAux
   where
