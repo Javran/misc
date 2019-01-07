@@ -1,8 +1,10 @@
-{-# LANGUAGE FlexibleContexts, TypeFamilies, LambdaCase #-}
+{-# LANGUAGE FlexibleContexts, TypeFamilies, LambdaCase, RankNTypes, ScopedTypeVariables, TypeApplications #-}
 module Main where
 
 import Data.Functor.Foldable
 import Control.Comonad.Cofree
+import Data.Coerce
+import Data.Monoid
 
 list1 :: [Int]
 list1 = [1,2,4,4,8,10,24]
@@ -128,6 +130,32 @@ v2 :: ListF Int [Int]
 v2 = case project list1 of
   Nil -> Nil
   Cons a b -> Cons a b
+
+-- we are basically using the sum monoid
+oddSums :: [Int] -> Int
+oddSums = prepro odds sumAlg
+  where
+    -- odds is a natural transformation.
+    odds :: forall a. ListF Int a -> ListF Int a
+    odds Nil = Nil
+    odds v@(Cons h t)
+      | odd h = v
+      | otherwise = Cons 0 t
+    
+    sumAlg Nil = 0
+    sumAlg (Cons a b) = a + b
+
+oddSums' :: forall sum. sum ~ Sum Int => [Int] -> Int
+oddSums' = getSum . prepro odds sumAlg . coerce @[Int] @[sum]
+  where
+    odds :: forall a. ListF sum a -> ListF sum a
+    odds Nil = Nil
+    odds v@(Cons h t)
+      | odd (getSum h) = v
+      | otherwise = Cons 0 t
+
+    sumAlg Nil = 0
+    sumAlg (Cons a b) = a <> b
  
 main :: IO ()
 main = do
@@ -138,4 +166,5 @@ main = do
   print (length $ natFac (replicate 4 ()))
   print (map (length . natFib . (`replicate` ()) ) [1..15])
   print (map (length . natFib' . (`replicate` ()) ) [1..15])
-  print (map (length . natFib'' . (`replicate` ()) ) [1..15])  
+  print (map (length . natFib'' . (`replicate` ()) ) [1..15])
+  print (oddSums [1..15], sum (filter odd [1..15 :: Int]))
