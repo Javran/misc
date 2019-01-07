@@ -1,5 +1,24 @@
 {-# LANGUAGE TupleSections #-}
 
+{-
+  TODO: can we simplify the whole process of updating a kernel?
+
+  functions we might need:
+
+  - swap backup:
+
+    + move old backup from /boot/backup/ to /tmp
+    + put new backups into /boot/backup/
+
+  - kernel after-step:
+
+    + the idea is to assume `make` has been run on a kernel,
+      and let our tool do rest of the work
+
+  - improvement: version sorting on kernels
+
+ -}
+
 import Data.List
 import Data.List.Utils
 import Data.Maybe
