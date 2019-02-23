@@ -1,12 +1,17 @@
-#!/usr/bin/env stack
--- stack --resolver lts-9.13 --install-ghc runghc --package turtle
-{-# LANGUAGE FlexibleContexts #-}
-
+{-# LANGUAGE FlexibleContexts, RankNTypes, ScopedTypeVariables #-}
 module Main where
 
 import Data.Reflection
+import Data.Proxy
 
-tyFunc = reify (\x -> [x+1 :: Int,x+2,x*10])
+type F = Int -> [Int]
+
+func :: F
+func x = [x+1, x+2, x*10]
+
+-- func moved to type-level and is carried by Proxy
+tyFunc :: forall r. (forall s . Reifies s F => Proxy s -> r) -> r
+tyFunc = reify func
 
 main :: IO ()
-main = print (tyFunc (\p -> reflect p 20))
+main = print (tyFunc $ ($ 20) . reflect)
