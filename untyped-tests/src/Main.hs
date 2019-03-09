@@ -5,21 +5,33 @@
   , ScopedTypeVariables
   , LambdaCase
   , TypeApplications
+  , TypeOperators
   #-}
 module Main where
 
+import Control.Monad
 import Data.List
 import Data.Typeable
 import Data.Aeson
+import Data.Aeson.Types
 import Data.Maybe
+import qualified Data.Vector as Vec
 
+import Testcase
 import RawTest (TFunc, raw, g, typeReps)
 
 data GType a where
   GBool :: GType Bool
   GInt :: GType Int
   GStr :: GType String
-  GList :: Typeable a => GType a -> GType [a]
+  GList :: (Typeable a, FromJSON a) => GType a -> GType [a]
+
+eqGType :: GType a -> GType b -> Maybe (a :~: b)
+eqGType = \case
+  GBool -> \case GBool -> Just Refl; _ -> Nothing
+  GInt -> \case GInt -> Just Refl; _ -> Nothing
+  GStr -> \case GStr -> Just Refl; _ -> Nothing
+  GList n -> \case GList m -> n `eqGType` m >>= \Refl -> Just Refl; _ -> Nothing
 
 data ETyp = forall a. Typeable a => ETyp (GType a)
 
@@ -34,19 +46,11 @@ ets =
   , ETyp GStr
   ]
 
+tests :: [Testcase]
+tests = fromJust (decode raw)
 
-val :: [[Value]]
-val = fromJust (decode raw)
-
-convert :: forall v. FromJSON v => Value -> GType v -> v
-convert jsonVal = \case
-    GBool -> get (fromJSON @v jsonVal)
-    GInt -> get (fromJSON @v jsonVal)
-    GStr -> get (fromJSON @v jsonVal)
-    GList _ -> get (fromJSON @v jsonVal)
-  where
-    get (Success r) = r
-    get _ = error "parse error"
+showInp :: Testcase -> String
+showInp (Testcase d _) = show (d (,,,,,))
 
 {-
 
@@ -62,19 +66,6 @@ convert jsonVal = \case
 {-
   the idea is to have some part automatically generated based on the input
  -}
-{- generate start -}
-type Applied r = Int -> Bool -> String -> [Int] -> [Bool] -> [String] -> r
-data Testcase =
-  Testcase
-    (forall r. Applied r -> r)
-    String
-
-tests :: [Testcase]
-tests =
-    [ Testcase (\g' -> g' 1 True "a" [1,2,3] [] ["a"]) "1|True|\"a\"|[1,2,3]|[]|[\"a\"]"
-    , Testcase (\g' -> g' 20 False "zzz" [1] [False] ["a","z"]) "20|False|\"zzz\"|[1]|[False]|[\"a\",\"z\"]"
-    ]
-{- generate end -}
 
 runTest :: Int -> Testcase -> TFunc -> IO Bool
 runTest ind (Testcase d expected) g' = do
@@ -95,14 +86,16 @@ runExperiment ind (Testcase d expected) g' = do
   putStrLn $ "  Expected: " <> show expected
   putStrLn $ "  Experiment: " <> show (d g')
 
-haskellModule :: [TypeRep] -> [[Value]] -> String
-haskellModule tyReps rawTests = unlines
+haskellModule :: String
+haskellModule = unlines $
     [ "{-# LANGUAGE RankNTypes #-}"
     , "module Testcase"
     , "  ( Applied"
     , "  , Testcase(..)"
-    , "  , tests"
     , "  ) where"
+    , ""
+    , "import Data.Aeson"
+    , "import qualified Data.Vector as Vec"
     , ""
     , "type Applied r = "
       <> intercalate " -> " (map (show . eConvert) argETyps ++ ["r"])
@@ -112,21 +105,31 @@ haskellModule tyReps rawTests = unlines
     , "      (forall r. Applied r -> r)"
     , "      " <> show (eConvert resultETyp)
     , ""
-    , "tests :: [Testcase]"
-    , "tests ="
-    , "  [" <> intercalate "\n  ," (map mkTestcase rawTests)
-    , "  ]"
+    , "showInp :: Testcase -> String"
+    , "showInp (Testcase d _) = show (d (" <> replicate (argLen-1) ',' <> "))"
+    , ""
+    , "instance FromJSON Testcase where"
+    , "  parseJSON = withArray \"Testcase\" $ \\arr -> do"
+    ] <>
+    map (\s -> "    v" <> show s <> " <- parseJSON (arr Vec.! " <> show s <> ")") argInds
+    <>
+    [ "    r <- parseJSON (arr Vec.! " <> show argLen <> ")"
+    , "    pure (Testcase (\\g -> " <> unwords ("g": map (\i -> 'v':show i) argInds) <> ") r)"
     ]
   where
-    eConvert (ETyp (a :: GType t)) = typeRep (Proxy :: Proxy t)
-    mkTestcase :: [Value] -> String
-    mkTestcase jsonVals = " Testcase _ _"
-      where
+    argInds = [0..argLen-1]
+    eConvert (ETyp (_ :: GType t)) = typeRep (Proxy :: Proxy t)
     argETyps = init ets
     argLen = length argETyps
     resultETyp = last ets
 
-main :: IO ()
-main = do
-  putStrLn (haskellModule typeReps val)
-  -- mapM_ print val
+mainRunTest :: IO ()
+mainRunTest = do
+  xs <- forM (zip [0..] tests) $ \(ind, t) ->
+    runTest ind t g
+  print (and xs)
+
+mainGen :: IO ()
+mainGen = putStrLn haskellModule
+
+main = mainGen
