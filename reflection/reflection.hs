@@ -22,6 +22,9 @@ tyFunc' =
 exec :: Reifies s F => Proxy s -> IO ()
 exec p = print (reflect p 20)
 
+asProxyOf :: f s -> Proxy s -> f s
+asProxyOf a _ = a
+
 main :: IO ()
 main = do
   print (tyFunc $ ($ 20) . reflect)
@@ -30,6 +33,6 @@ main = do
   -- consumer (exec) with producer (func), it works fine
   reify func exec
 
-  -- following line doesn't work, GHC has trouble to unify two s variable,
-  -- perhaps that's exactly the point
-  -- exec tyFunc'
+  -- following line doesn't work, GHC has trouble unifying two s variable,
+  -- or perhaps it's more accurate to say that only `reify` knows the `s` type
+  -- exec (tyFunc' `asProxyOf` Proxy)
