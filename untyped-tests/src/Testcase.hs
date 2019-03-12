@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 module Testcase
-  ( Applied
+  ( Applied, TResult
   , Testcase(..)
   ) where
 
@@ -8,11 +8,12 @@ import Data.Aeson
 import qualified Data.Vector as Vec
 
 type Applied r = Int -> Bool -> [Char] -> [Int] -> [Bool] -> [[Char]] -> r
+type TResult = [Char]
 
 data Testcase
   = Testcase
       (forall r. Applied r -> r)
-      [Char]
+      TResult
 
 showInp :: Testcase -> String
 showInp (Testcase d _) = show (d (,,,,,))
