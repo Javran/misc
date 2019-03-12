@@ -90,7 +90,7 @@ haskellModule :: String
 haskellModule = unlines $
     [ "{-# LANGUAGE RankNTypes #-}"
     , "module Testcase"
-    , "  ( Applied"
+    , "  ( Applied, TResult"
     , "  , Testcase(..)"
     , "  ) where"
     , ""
@@ -99,11 +99,12 @@ haskellModule = unlines $
     , ""
     , "type Applied r = "
       <> intercalate " -> " (map (show . eConvert) argETyps ++ ["r"])
+    , "type TResult = " <> show (eConvert resultETyp)
     , ""
     , "data Testcase"
     , "  = Testcase"
     , "      (forall r. Applied r -> r)"
-    , "      " <> show (eConvert resultETyp)
+    , "      TResult"
     , ""
     , "showInp :: Testcase -> String"
     , "showInp (Testcase d _) = show (d (" <> replicate (argLen-1) ',' <> "))"
