@@ -15,6 +15,7 @@ dependencies:
 - text
 - aeson
 - unordered-containers
+- hip
 
 executables:
   overlayer:
