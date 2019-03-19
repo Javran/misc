@@ -69,9 +69,8 @@ main = do
   Just (info :: Value) <- decode <$> simpleReq infoUrl
   let Right (mapImgData :: Img) =
         HIP.decode HIP.PNG (BSL.toStrict imgData)
-
-  Right (frameData :: Img) <-
-    HIP.readImageExact HIP.PNG "frame.png"
+  let frameData =
+        HIP.makeImageR HIP.VS (35,141) (const $ HIP.PixelRGBA 0xff 0x00 0xdb 0xff) :: Img
   let ((offX, offY),(1200,720)) =  extractFrameInfo area num info
       imposed = foldl imp mapImgData coords
         where
@@ -82,9 +81,5 @@ main = do
               xy'@(x',y') = (offX+cx, offY+cy)
               cropped = HIP.crop (x'+2,y'+2) (35-4,141-4) mapImgData
 
-  -- print $ mapImgData
-  -- print $ frameData
-  -- HIP.displayImage imposed
   print $ extractFrameInfo area num info
-  -- _ <- getLine
   HIP.writeImageExact HIP.PNG [] "/tmp/test.png" imposed
