@@ -92,7 +92,7 @@ grubUpdater conf = do
         bootDir  = getConf "dir"
 
     -- prepare template
-    contents <- liftM lines $ SIO.readFile tmplPath
+    contents <- lines <$> SIO.readFile tmplPath
     let (beforeTemplate,_:rest1) = span (/= beginStr) contents
         (templatePart, _:afterTemplate) = span (/= endStr) rest1
     -- detect vmlinuz files
@@ -109,7 +109,7 @@ grubUpdater conf = do
 
 main :: IO ()
 main = do
-    result <- liftM (getOpt Permute optDescrs) getArgs
+    result <- getOpt Permute optDescrs <$> getArgs
     resultDispatch result
     where
         printHelp = infoStrLn (usageInfo "The grub.conf updater, arguments:" optDescrs)
