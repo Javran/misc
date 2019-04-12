@@ -20,11 +20,7 @@ import System.Random
   with restart mechanism intentionally placed outside of errHandler
   to see if we can reproduce the situation.
 
-  for now it all seems to work just fine:
-  since t1 takes literally forever to run,
-  waitEither should block indefinitely,
-  we'll quit whenever t0 crashes, which isn't supposed to happen
-  due to the fact that the "catch'em all" protection is set up.
+  for now it all seems to work just fine...
 
 -}
 
@@ -50,5 +46,10 @@ main = do
     sg <- newStdGen
     t0 <- async (threadLoop sg)
     t1 <- async (forever (threadDelay (1000 * 1000 * 10)) >> pure ())
-    e <- waitEither t0 t1
-    print e
+    {-
+      since t1 takes literally forever to run,
+      waitEither should block indefinitely,
+      we'll quit whenever t0 crashes, which isn't supposed to happen
+      due to the fact that the "catch'em all" protection is set up.
+     -}
+    waitEither t0 t1 >>= print
