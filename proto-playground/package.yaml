@@ -11,6 +11,8 @@ description:         description
 dependencies:
 - base
 - proto-lens
+- proto-lens-runtime
+- text
 
 extra-source-files: proto/**/*.proto
 
@@ -26,6 +28,8 @@ library:
   exposed-modules:
     - Proto.Person
     - Proto.Person_Fields
+    - Proto.Coffee.Order
+    - Proto.Coffee.Order_Fields
 
 executables:
   demo:

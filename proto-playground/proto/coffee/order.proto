@@ -1,0 +1,19 @@
+syntax="proto3";
+
+message Americano {}
+message Latte {}
+message FlatWhite {}
+message Cappuccino {}
+message Mocha {}
+
+message Coffee {
+    oneof coffee_type {
+        Americano americano = 1;
+        Latte latte= 2;
+        FlatWhite flat_white = 3;
+        Cappuccino cappuccino = 4;
+        Mocha mocha = 5;
+    }
+
+    float cost = 6;
+}
