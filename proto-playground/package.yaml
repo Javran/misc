@@ -1,0 +1,39 @@
+name:                proto-playground
+version:             0.1.0.0
+github:              "Javran/proto-playground"
+license:             BSD3
+author:              "Javran Cheng"
+maintainer:          "javran.c@gmail.com"
+copyright:           "Copyright: (c) 2019 Javran Cheng"
+
+description:         description
+
+dependencies:
+- base
+- proto-lens
+
+extra-source-files: proto/**/*.proto
+
+custom-setup:
+  dependencies:
+    - base
+    - Cabal
+    - proto-lens-setup
+
+library:
+  dependencies:
+    - proto-lens-runtime
+  exposed-modules:
+    - Proto.Person
+    - Proto.Person_Fields
+
+executables:
+  proto-playground:
+    main:                Main.hs
+    source-dirs:         src
+    dependencies:
+    - proto-lens-runtime
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
