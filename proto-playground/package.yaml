@@ -32,7 +32,7 @@ executables:
     main:                Main.hs
     source-dirs:         src
     dependencies:
-    - proto-lens-runtime
+    - proto-playground   
     ghc-options:
     - -threaded
     - -rtsopts
