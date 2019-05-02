@@ -28,11 +28,12 @@ library:
     - Proto.Person_Fields
 
 executables:
-  proto-playground:
+  demo:
     main:                Main.hs
     source-dirs:         src
     dependencies:
-    - proto-playground   
+    - proto-playground
+    - microlens
     ghc-options:
     - -threaded
     - -rtsopts
