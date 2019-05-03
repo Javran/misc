@@ -1,4 +1,27 @@
-syntax="proto3";
+syntax = "proto3";
+
+message Order {
+  float cost = 1;
+
+  repeated Coffee coffees = 2;
+
+  oneof payment_method {
+    CardPayment card = 3;
+    CashPayment cash = 4;
+  }
+}
+
+message Coffee {
+  oneof coffee_type {
+    Americano americano = 1;
+    Latte latte= 2;
+    FlatWhite flat_white = 3;
+    Cappuccino cappuccino = 4;
+    Mocha mocha = 5;
+  }
+
+  float cost = 6;
+}
 
 message Americano {}
 message Latte {}
@@ -6,14 +29,16 @@ message FlatWhite {}
 message Cappuccino {}
 message Mocha {}
 
-message Coffee {
-    oneof coffee_type {
-        Americano americano = 1;
-        Latte latte= 2;
-        FlatWhite flat_white = 3;
-        Cappuccino cappuccino = 4;
-        Mocha mocha = 5;
-    }
+message CardPayment {
+  string pin = 1;
+  Account account = 2;
+}
 
-    float cost = 6;
+message Account {
+  float current_balance = 1;
+  string pin_validation = 2;
+}
+
+message CashPayment {
+  float amount = 1;
 }
