@@ -16,6 +16,22 @@ import Data.ProtoLens.Labels ()
 import Lens.Micro
 import Lens.Micro.Extras (view)
 
+person :: P.Person
+person =
+    defMessage
+    & #name .~ "Fintan"
+    & #age .~ 24
+    & #addresses .~ [address]
+  where
+    address :: P.Address
+    address =
+        defMessage
+        & #street .~ "Yolo street"
+        & #zipCode .~ "D8"
+
+personExample :: IO ()
+personExample = putStrLn . showMessage $ person
+
 -- | Smart constructor for making an 'Americano'
 --   with a price of €2.70
 americano :: P.Coffee
@@ -56,18 +72,8 @@ mocha =
       & #cost  .~ 3.50
       & #mocha .~ defMessage
 
-person :: P.Person
-person =
-    defMessage
-    & #name .~ "Fintan"
-    & #age .~ 24
-    & #addresses .~ [address]
-  where
-    address :: P.Address
-    address =
-        defMessage
-        & #street .~ "Yolo street"
-        & #zipCode .~ "D8"
+coffeeOrderExample :: IO ()
+coffeeOrderExample = pure ()
 
 main :: IO ()
-main = pure ()
+main = personExample >> coffeeOrderExample
