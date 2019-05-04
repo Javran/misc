@@ -106,8 +106,17 @@ processCardPayment amount payment =
 totalCost :: Foldable f => f P.Coffee -> Float
 totalCost = getSum . foldMap (Sum . view #cost)
 
+addMilkToAmericano :: P.Coffee -> P.Coffee
+addMilkToAmericano coffee =
+    -- I guess the "id" is supposed to somehow add milk to Americano,
+    -- otherwise we are just traversing Maybe making no changes at all.
+    coffee & (#maybe'coffeeType . _Just . P._Coffee'Americano %~ id)
+
 coffeeOrderExample :: IO ()
-coffeeOrderExample = pure ()
+coffeeOrderExample = do
+  putStrLn $ showMessage americano
+  putStrLn $ showMessage (addMilkToAmericano americano)
+  putStrLn $ showMessage (addMilkToAmericano latte)
 
 main :: IO ()
 main = personExample >> coffeeOrderExample
