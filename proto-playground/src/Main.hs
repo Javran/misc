@@ -112,11 +112,37 @@ addMilkToAmericano coffee =
     -- otherwise we are just traversing Maybe making no changes at all.
     coffee & (#maybe'coffeeType . _Just . P._Coffee'Americano %~ id)
 
+takeOrder :: Float
+          -> P.Order
+          -> Either TransactionError ()
+takeOrder amount order =
+    maybe (Left NotPreparedForThisPayment) processPayment $
+        order ^. #maybe'paymentMethod
+  where
+    processPayment (P.Order'Card card) =
+      processCardPayment amount card
+    processPayment (P.Order'Cash cash) =
+      processCashPayment amount cash
+
 coffeeOrderExample :: IO ()
 coffeeOrderExample = do
+  -- just to show that "addMilkToAmericano" doesn't have effect
+  -- on the message because the modification is effectively doing nothing
   putStrLn $ showMessage americano
   putStrLn $ showMessage (addMilkToAmericano americano)
   putStrLn $ showMessage (addMilkToAmericano latte)
+
+  let order1Coffees = [americano, americano, flatWhite]
+      totalCost1 = totalCost order1Coffees
+  putStrLn $ "Two americans + a flat white will cost: " <> show totalCost1
+
+  let order1 :: P.Order
+      order1 = defMessage
+                    & #coffees .~ [americano, americano, flatWhite]
+                    & #cash . #amount .~ totalCost1
+  putStrLn $ case takeOrder totalCost1 order1 of
+    Left err -> show err
+    Right _  -> "Success"
 
 main :: IO ()
 main = personExample >> coffeeOrderExample
