@@ -140,7 +140,18 @@ coffeeOrderExample = do
       order1 = defMessage
                     & #coffees .~ [americano, americano, flatWhite]
                     & #cash . #amount .~ totalCost1
+      order2 = defMessage
+                    & #coffees .~ [americano, americano, flatWhite]
+                    & #card . #pin .~ "123456"
+                    & #card . #account .~ (defMessage
+                                            & #currentBalance .~ 1000
+                                            & #pinValidation .~ "123456")
+
   putStrLn $ case takeOrder totalCost1 order1 of
+    Left err -> show err
+    Right _  -> "Success"
+
+  putStrLn $ case takeOrder totalCost1 order2 of
     Left err -> show err
     Right _  -> "Success"
 
