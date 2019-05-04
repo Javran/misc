@@ -12,6 +12,7 @@ import Proto.Person as P
 import Data.ProtoLens (defMessage, showMessage)
 import qualified Proto.Coffee.Order as P
 import Data.ProtoLens.Labels ()
+import Data.Monoid
 
 import Lens.Micro
 import Lens.Micro.Extras (view)
@@ -71,6 +72,39 @@ mocha =
   defMessage
       & #cost  .~ 3.50
       & #mocha .~ defMessage
+
+data TransactionError
+  = NotEnoughMoney
+  | InvalidPin
+  | NotPreparedForThisPayment
+  deriving (Eq, Show)
+
+processCashPayment :: Float
+                   -> P.CashPayment
+                   -> Either TransactionError ()
+processCashPayment amount payment
+  | amount <= pay = pure ()
+  | otherwise     = Left NotEnoughMoney
+  where
+    pay = payment ^. #amount
+
+processCardPayment :: Float
+                   -> P.CardPayment
+                   -> Either TransactionError ()
+processCardPayment amount payment =
+    pinCheck >> balanceCheck
+  where
+    account = payment ^. #account
+    pinCheck
+      | account ^. #pinValidation == payment ^. #pin = pure ()
+      | otherwise = Left InvalidPin
+
+    balanceCheck
+      | account ^. #currentBalance >= amount = pure ()
+      | otherwise = Left NotEnoughMoney
+
+totalCost :: Foldable f => f P.Coffee -> Float
+totalCost = getSum . foldMap (Sum . view #cost)
 
 coffeeOrderExample :: IO ()
 coffeeOrderExample = pure ()
