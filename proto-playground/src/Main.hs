@@ -104,7 +104,7 @@ processCardPayment amount payment =
       | otherwise = Left NotEnoughMoney
 
 totalCost :: Foldable f => f P.Coffee -> Float
-totalCost = getSum . foldMap (Sum . view #cost)
+totalCost = getSum . foldMap (Sum . (^. #cost))
 
 addMilkToAmericano :: P.Coffee -> P.Coffee
 addMilkToAmericano coffee =
@@ -147,6 +147,8 @@ coffeeOrderExample = do
                             & #account .~ (defMessage
                                             & #currentBalance .~ 1000
                                             & #pinValidation .~ "123456"
+                                            -- should be 1200 after the change
+                                            & #currentBalance %~ (+ 200)
                                           )
                           )
 
@@ -157,6 +159,7 @@ coffeeOrderExample = do
   putStrLn $ case takeOrder totalCost1 order2 of
     Left err -> show err
     Right _  -> "Success"
+  putStrLn . showMessage $ order2
 
 main :: IO ()
 main = personExample >> coffeeOrderExample
