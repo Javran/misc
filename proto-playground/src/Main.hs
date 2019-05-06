@@ -138,14 +138,17 @@ coffeeOrderExample = do
 
   let order1 :: P.Order
       order1 = defMessage
-                    & #coffees .~ [americano, americano, flatWhite]
-                    & #cash . #amount .~ totalCost1
+               & #coffees .~ [americano, americano, flatWhite]
+               & #cash . #amount .~ totalCost1
       order2 = defMessage
-                    & #coffees .~ [americano, americano, flatWhite]
-                    & #card . #pin .~ "123456"
-                    & #card . #account .~ (defMessage
+               & #coffees .~ [americano, americano, flatWhite]
+               & #card .~ (defMessage
+                            & #pin .~ "123456"
+                            & #account .~ (defMessage
                                             & #currentBalance .~ 1000
-                                            & #pinValidation .~ "123456")
+                                            & #pinValidation .~ "123456"
+                                          )
+                          )
 
   putStrLn $ case takeOrder totalCost1 order1 of
     Left err -> show err
