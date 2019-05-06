@@ -14,8 +14,7 @@ import qualified Proto.Coffee.Order as P
 import Data.ProtoLens.Labels ()
 import Data.Monoid
 
-import Lens.Micro
-import Lens.Micro.Extras (view)
+import Control.Lens
 
 person :: P.Person
 person =
