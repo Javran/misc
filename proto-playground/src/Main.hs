@@ -80,18 +80,20 @@ data TransactionError
 
 processCashPayment :: Float
                    -> P.CashPayment
-                   -> Either TransactionError ()
+                   -> Either TransactionError P.CashPayment
 processCashPayment amount payment
-  | amount <= pay = pure ()
+  | amount <= pay = pure $ payment & #amount %~ subtract amount
   | otherwise     = Left NotEnoughMoney
   where
     pay = payment ^. #amount
 
 processCardPayment :: Float
                    -> P.CardPayment
-                   -> Either TransactionError ()
-processCardPayment amount payment =
-    pinCheck >> balanceCheck
+                   -> Either TransactionError P.CardPayment
+processCardPayment amount payment = do
+      pinCheck
+      balanceCheck
+      pure $ payment & #account . #currentBalance %~ subtract amount
   where
     account = payment ^. #account
     pinCheck
@@ -113,15 +115,15 @@ addMilkToAmericano coffee =
 
 takeOrder :: Float
           -> P.Order
-          -> Either TransactionError ()
+          -> Either TransactionError (Either P.CashPayment P.CardPayment)
 takeOrder amount order =
     maybe (Left NotPreparedForThisPayment) processPayment $
         order ^. #maybe'paymentMethod
   where
     processPayment (P.Order'Card card) =
-      processCardPayment amount card
+      Right <$> processCardPayment amount card
     processPayment (P.Order'Cash cash) =
-      processCashPayment amount cash
+      Left <$> processCashPayment amount cash
 
 coffeeOrderExample :: IO ()
 coffeeOrderExample = do
@@ -139,25 +141,30 @@ coffeeOrderExample = do
       order1 = defMessage
                & #coffees .~ [americano, americano, flatWhite]
                & #cash . #amount .~ totalCost1
+      account :: P.Account
+      account = defMessage
+                & #currentBalance .~ 0
+                & #pinValidation .~ "123456"
       order2 = defMessage
                & #coffees .~ [americano, americano, flatWhite]
                & #card .~ (defMessage
                             & #pin .~ "123456"
-                            & #account .~ (defMessage
-                                            & #currentBalance .~ 1000
-                                            & #pinValidation .~ "123456"
-                                            -- should be 1200 after the change
-                                            & #currentBalance %~ (+ 200)
+                            & #account .~ ( account
+                                            & #currentBalance %~ (+ 20)
                                           )
                           )
 
-  putStrLn $ case takeOrder totalCost1 order1 of
-    Left err -> show err
-    Right _  -> "Success"
+  case takeOrder totalCost1 order1 of
+    Left err -> print err
+    Right r  -> do
+      putStr "Success: "
+      putStrLn $ either showMessage showMessage r
 
-  putStrLn $ case takeOrder totalCost1 order2 of
-    Left err -> show err
-    Right _  -> "Success"
+  case takeOrder totalCost1 order2 of
+    Left err -> print err
+    Right r  -> do
+      putStr "Success: "
+      putStrLn $ either showMessage showMessage r
   putStrLn . showMessage $ order2
 
 main :: IO ()
