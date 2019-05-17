@@ -21,10 +21,6 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
 
-{-# START_FILE Setup.hs #-}
-import Distribution.Simple
-main = defaultMain
-
 {-# START_FILE src/Main.hs #-}
 module Main
   ( main
