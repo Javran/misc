@@ -16,11 +16,4 @@ templates:
 default-template: 'https://raw.githubusercontent.com/Javran/misc/master/project-templates/simple.hsfiles'
 ```
 
-Be aware though, stack itself will generate a `stack.yaml` with tons of junk,
-use the following content to replace it (you may change resolver version to whatever appropriate):
-
-```yaml
-resolver: lts-13.21
-packages:
-- .
-```
+Note that you might need to replace resolver in `stack.yaml` with whatever version appropriate.

@@ -33,3 +33,9 @@ main = pure ()
 .stack-work/
 {{name}}.cabal
 *~
+
+{-# START_FILE stack.yaml #-}
+resolver: lts-13.21
+packages:
+- .
+
