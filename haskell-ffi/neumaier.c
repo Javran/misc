@@ -1,8 +1,4 @@
-#include <math.h>
-
-typedef struct {
-    double sum, c;
-} neumaier_sum;
+#include "neumaier.h"
 
 void neumaier_sum_init(neumaier_sum* obj) {
     obj->sum = obj->c = 0;
