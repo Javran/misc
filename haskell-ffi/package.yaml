@@ -12,9 +12,12 @@ dependencies:
 - base
 
 executables:
-  haskell-ffi:
+  demo:
     main:                Main.hs
     source-dirs:         src
+    c-sources:
+    - c_src/neumaier.h
+    - c_src/neumaier.c
     ghc-options:
     - -threaded
     - -rtsopts
