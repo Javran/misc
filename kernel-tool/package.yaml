@@ -12,6 +12,7 @@ dependencies:
 - base
 - turtle
 - process
+- containers
 
 executables:
   kernel-tool:
