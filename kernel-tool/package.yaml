@@ -13,11 +13,14 @@ dependencies:
 - turtle
 - process
 - containers
+- text
 
 executables:
   kernel-tool:
     main:                Main.hs
     source-dirs:         src
+    other-modules:
+    - CommandSwitch
     ghc-options:
     - -threaded
     - -rtsopts

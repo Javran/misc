@@ -12,15 +12,13 @@ import System.Process
 import System.Exit
 import System.Environment
 import Turtle
+import CommandSwitch
 
 -- success as long as the given key matches exactly one result (by prefix)
 uniqueLookup :: Eq ke => [ke] -> M.Map [ke] v -> Maybe v
 uniqueLookup k m = case filter ((k `isPrefixOf`) . fst) $ M.toList m of
   [(_,v)] -> Just v
   _ -> Nothing
-
-mainSwitch :: IO ()
-mainSwitch = pure ()
 
 mainInstall :: IO ()
 mainInstall = pure ()
@@ -30,7 +28,7 @@ mainClean = pure ()
 
 subCmds :: M.Map String (IO ())
 subCmds = M.fromList
-  [ ("switch", mainSwitch)
+  [ ("switch", cmdSwitch)
   , ("install", mainInstall)
   , ("clean", mainClean)
   ]
@@ -43,8 +41,8 @@ subCmds = M.fromList
   Probably not exactly what we need (as it spawns a subshell)
   but is good enough for now.
  -}
-mainCdTest :: IO ()
-mainCdTest = do
+_mainCdTest :: IO ()
+_mainCdTest = do
     cd "/"
     shBin <- getEnv "SHELL"
     setEnv "KERNEL_TOOL" "Test"
