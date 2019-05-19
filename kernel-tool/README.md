@@ -16,4 +16,4 @@ Planned features:
 
 For simplicity, all required environments are read from environment variables.
 
-Concerns regarding working with current shell can be worked around with: https://github.com/Gabriel439/Haskell-Turtle-Library/issues/33 (given that we'll be using turtle)
+
