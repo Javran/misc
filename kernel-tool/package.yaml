@@ -14,6 +14,7 @@ dependencies:
 - process
 - containers
 - text
+- directory
 
 executables:
   kernel-tool:
