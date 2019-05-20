@@ -61,13 +61,13 @@ diveInSubshell = do
   putStrLn "When done, feel free to continute with `kernel-tool install`."
   cd "/usr/src/linux"
   shBin <- getEnv "SHELL"
-  let p = (System.Process.proc shBin [])
-          { std_in  = Inherit
-          , std_out = Inherit
-          , std_err = Inherit
-          , delegate_ctlc = True
-          }
-  (_, _, _, ph) <- createProcess p
+  (_, _, _, ph) <- createProcess $
+    (System.Process.proc shBin [])
+      { std_in  = Inherit
+      , std_out = Inherit
+      , std_err = Inherit
+      , delegate_ctlc = True
+      }
   _ <- waitForProcess ph
   pure ()
 

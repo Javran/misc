@@ -12,7 +12,7 @@ import System.Exit
 import System.Environment
 import CommandSwitch
 
--- success as long as the given key matches exactly one result (by prefix)
+-- succeed as long as the given key matches exactly one result (by prefix)
 uniqueLookup :: Eq ke => [ke] -> M.Map [ke] v -> Maybe v
 uniqueLookup k m = case filter ((k `isPrefixOf`) . fst) $ M.toList m of
   [(_,v)] -> Just v
