@@ -8,7 +8,8 @@ import Text.ParserCombinators.ReadP as P
 import Data.Char
 import Data.Maybe
 import System.Directory
-
+import System.Process
+import System.Environment
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 
@@ -52,3 +53,21 @@ cmdSwitch = do
     (ExitSuccess, cfgContent) <- procStrict "zcat" ["/proc/config.gz"] ""
     T.writeFile "/usr/src/linux/.config" cfgContent
     pure ()
+  diveInSubshell
+
+diveInSubshell :: IO ()
+diveInSubshell = do
+  putStrLn "Will now switch to subshell for `make oldconfig && make` to happen."
+  putStrLn "When done, feel free to continute with `kernel-tool install`."
+  cd "/usr/src/linux"
+  shBin <- getEnv "SHELL"
+  let p = (System.Process.proc shBin [])
+          { std_in  = Inherit
+          , std_out = Inherit
+          , std_err = Inherit
+          , delegate_ctlc = True
+          }
+  (_, _, _, ph) <- createProcess p
+  _ <- waitForProcess ph
+  pure ()
+
