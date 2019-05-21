@@ -15,6 +15,7 @@ dependencies:
 - containers
 - text
 - directory
+- foldl
 
 executables:
   kernel-tool:
