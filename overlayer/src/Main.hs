@@ -35,14 +35,29 @@ storeProcessedMap area num img = do
 serverBase :: String
 serverBase = "http://203.104.209.134"
 
-coords :: [(Int,Int)]
-coords =
+coordsNormal :: [(Int,Int)]
+coordsNormal =
   [ (261, 601)
   , (261, 796)
   , (261, 994)
   , (499, 703)
   , (499, 899)
   ]
+
+coordsWithVanguard :: [(Int,Int)]
+coordsWithVanguard =
+  [ (261, 601)
+  , (261, 796)
+  , (261, 994)
+  , (499, 601)
+  , (499, 796)
+  , (499, 994)
+  ]
+
+coords :: [(Int, Int)]
+coords = if hasVanguard then coordsWithVanguard else coordsNormal
+  where
+    hasVanguard = True
 
 getMapUrls :: Int -> Int -> (String, String)
 getMapUrls area num = (base <> "_image.png", base <> "_image.json")
