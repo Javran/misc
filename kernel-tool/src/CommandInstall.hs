@@ -5,10 +5,16 @@ module CommandInstall
 
 import Data.List
 import Data.Ord
+import System.Environment
 import qualified Control.Foldl as Foldl
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
 import Turtle hiding (fp)
 import Algorithms.NaturalSort
+import Text.Microstache
+import qualified Data.Aeson as Aeson
+import qualified Data.HashMap.Lazy as HM
+import qualified Data.Vector as Vec
 
 cmdInstall :: IO ()
 cmdInstall = do
@@ -21,7 +27,7 @@ cmdInstall = do
   updateGrubConf
 
 {-
-  TODO: recognize existing kernels and update grub.conf using a template.
+  recognize existing kernels and update grub.conf using a template.
 
   - to recognize a valid kernel version:
 
@@ -47,3 +53,15 @@ updateGrubConf = do
       True <- testfile ("/boot" </> fromText ("config-" <> kernelSet))
       pure kernelSet
   print kernelSets
+  let context =
+        Aeson.Object $
+          HM.singleton
+            "kernel_version" $
+            Aeson.Array $
+              Vec.fromList (toVerObj <$> kernelSets)
+      toVerObj :: T.Text -> Aeson.Value
+      toVerObj t = Aeson.Object $ HM.singleton "ver" (Aeson.String t)
+  tmpl <- getEnv "KERNEL_TOOL_GRUB_CONF_TEMPLATE" >>= compileMustacheFile
+  let grubConfContent = renderMustache tmpl context
+  putStrLn (T.unpack $ TL.toStrict grubConfContent)
+  -- TODO: perform the actual update.

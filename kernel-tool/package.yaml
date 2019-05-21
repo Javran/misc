@@ -17,6 +17,10 @@ dependencies:
 - directory
 - foldl
 - natural-sort
+- microstache
+- unordered-containers
+- aeson
+- vector
 
 executables:
   kernel-tool:
