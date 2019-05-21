@@ -16,6 +16,7 @@ dependencies:
 - text
 - directory
 - foldl
+- natural-sort
 
 executables:
   kernel-tool:

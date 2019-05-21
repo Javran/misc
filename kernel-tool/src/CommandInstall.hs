@@ -4,9 +4,11 @@ module CommandInstall
   ) where
 
 import Data.List
+import Data.Ord
 import qualified Control.Foldl as Foldl
 import qualified Data.Text as T
 import Turtle hiding (fp)
+import Algorithms.NaturalSort
 
 cmdInstall :: IO ()
 cmdInstall = do
@@ -32,7 +34,7 @@ cmdInstall = do
 updateGrubConf :: IO ()
 updateGrubConf = do
   -- get potential options for vmlinuz-* files.
-  kernelSets <- reduce Foldl.list $
+  kernelSets <- fmap (Data.List.sortOn (Down . sortKey)) $ reduce Foldl.list $
     ls "/boot/" >>= \fp -> do
       let fName = encodeString . filename $ fp
           vmlzMagic = "vmlinuz-"
