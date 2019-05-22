@@ -17,22 +17,21 @@ import qualified Data.HashMap.Lazy as HM
 import qualified Data.Vector as Vec
 import qualified Data.Text.IO as T
 import Control.Exception
+import Common
 
 cmdInstall :: IO ()
 cmdInstall =  sh $ do
   pushd "/usr/src/linux"
-  (ExitSuccess, _) <- procStrict "make" ["install"] ""
-  (ExitSuccess, _) <- procStrict "make" ["modules_install"] ""
+  ExitSuccess <- liftIO $ shDive "make" ["install"]
+  ExitSuccess <- liftIO $ shDive "make" ["modules_install"]
   liftIO $ Control.Exception.try @SomeException updateGrubConf >>= \case
     Left e -> putStrLn $ "Allowed to fail: " <> displayException e
     Right _ -> pure ()
-  -- TODO: perhaps inherit in/out/err?
-  r <- procStrict "emerge" ["@module-rebuild"] ""
+  r <- liftIO $ shDive "emerge" ["@module-rebuild"]
   case r of
-    (ExitSuccess, _) -> pure ()
-    (ExitFailure ec, out) -> liftIO $ do
+    ExitSuccess -> pure ()
+    ExitFailure ec  -> liftIO $
       putStrLn $ "Exitcode=" <> show ec <> " (allowed to fail)"
-      T.putStrLn out
 
 {-
   Recognize existing kernels and update grub.conf using a template.
@@ -57,7 +56,6 @@ updateGrubConf = do
       True <- testfile ("/boot" </> fromText ("System.map-" <> kernelSet))
       True <- testfile ("/boot" </> fromText ("config-" <> kernelSet))
       pure kernelSet
-  print kernelSets
   let context =
         Aeson.Object $
           HM.singleton
