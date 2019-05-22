@@ -15,26 +15,25 @@ import Text.Microstache
 import qualified Data.Aeson as Aeson
 import qualified Data.HashMap.Lazy as HM
 import qualified Data.Vector as Vec
+import qualified Data.Text.IO as T
 
 cmdInstall :: IO ()
-cmdInstall = do
-  sh $ do
-    pushd "/usr/src/linux"
-    (ExitSuccess, _) <- procStrict "make" ["install"] ""
-    (ExitSuccess, _) <- procStrict "make" ["modules_install"] ""
-    (ExitSuccess, _) <- procStrict "emerge" ["@module-rebuild"] ""
-    pure ()
-  updateGrubConf
+cmdInstall =  sh $ do
+  pushd "/usr/src/linux"
+  -- TODO: tolerate failure.
+  (ExitSuccess, _) <- procStrict "make" ["install"] ""
+  (ExitSuccess, _) <- procStrict "make" ["modules_install"] ""
+  liftIO updateGrubConf
+  (ExitSuccess, _) <- procStrict "emerge" ["@module-rebuild"] ""
+  pure ()
+
 
 {-
-  recognize existing kernels and update grub.conf using a template.
+  Recognize existing kernels and update grub.conf using a template.
 
-  - to recognize a valid kernel version:
-
-    + config-XXX, System.map-XXX, vmlinux-XXX must all exist, with XXX being exactly the same
-  - use http://hackage.haskell.org/package/natural-sort or something alike to sort
-    kernel versions
-  - use http://hackage.haskell.org/package/microstache for generating grub.conf
+  To recognize a valid kernel version,
+  config-XXX, System.map-XXX, vmlinux-XXX must all exist,
+  with XXX being exactly the same.
 
  -}
 updateGrubConf :: IO ()
@@ -63,5 +62,5 @@ updateGrubConf = do
       toVerObj t = Aeson.Object $ HM.singleton "ver" (Aeson.String t)
   tmpl <- getEnv "KERNEL_TOOL_GRUB_CONF_TEMPLATE" >>= compileMustacheFile
   let grubConfContent = renderMustache tmpl context
-  putStrLn (T.unpack $ TL.toStrict grubConfContent)
-  -- TODO: perform the actual update.
+  putStrLn "Writing to grub.conf ..."
+  T.writeFile "/boot/grub/grub.conf" $ TL.toStrict grubConfContent
