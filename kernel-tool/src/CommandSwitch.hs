@@ -12,6 +12,7 @@ import System.Process
 import System.Environment
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import Common
 
 {-
   kernel info: (<item number>, (<kernel version>, <is selected>))
@@ -61,13 +62,5 @@ diveInSubshell = do
   putStrLn "When done, feel free to continute with `kernel-tool install`."
   cd "/usr/src/linux"
   shBin <- getEnv "SHELL"
-  (_, _, _, ph) <- createProcess $
-    (System.Process.proc shBin [])
-      { std_in  = Inherit
-      , std_out = Inherit
-      , std_err = Inherit
-      , delegate_ctlc = True
-      }
-  _ <- waitForProcess ph
+  _ <- shDive shBin []
   pure ()
-

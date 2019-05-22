@@ -26,6 +26,7 @@ cmdInstall =  sh $ do
   liftIO $ Control.Exception.try @SomeException updateGrubConf >>= \case
     Left e -> putStrLn $ "Allowed to fail: " <> displayException e
     Right _ -> pure ()
+  -- TODO: perhaps inherit in/out/err?
   r <- procStrict "emerge" ["@module-rebuild"] ""
   case r of
     (ExitSuccess, _) -> pure ()

@@ -27,6 +27,7 @@ executables:
     main:                Main.hs
     source-dirs:         src
     other-modules:
+    - Common
     - CommandSwitch
     - CommandInstall
     ghc-options:
