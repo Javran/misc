@@ -1,6 +1,11 @@
+{-# LANGUAGE OverloadedStrings #-}
 module CommandClean
   ( cmdClean
   ) where
+
+import Turtle.Prelude
+import qualified Filesystem.Path.CurrentOS as FP
+import qualified Data.Text as T
 
 {-
   environment variables:
@@ -20,4 +25,17 @@ module CommandClean
     (those that have vmlinuz or System.map or config but not all of 3)
  -}
 cmdClean :: IO ()
-cmdClean = pure ()
+cmdClean = do
+  curEnv <- env
+  let kernelNumLimit :: Int
+      kernelNumLimit =
+        case lookup "KERNEL_TOOL_CLEAN_LIMIT" curEnv of
+          Just x | [(v,"")] <- reads . T.unpack $ x -> v
+          _ -> 2
+      backupDir :: FP.FilePath
+      backupDir =
+        case lookup "KERNEL_TOOL_CLEAN_BACKUP_DIR" curEnv of
+          Just p -> FP.fromText p
+          Nothing -> "/boot/backup"
+  print (kernelNumLimit, backupDir)
+  -- TODO: impl

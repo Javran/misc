@@ -21,6 +21,7 @@ dependencies:
 - unordered-containers
 - aeson
 - vector
+- system-filepath
 
 executables:
   kernel-tool:
