@@ -30,6 +30,7 @@ executables:
     - Common
     - CommandSwitch
     - CommandInstall
+    - CommandClean
     ghc-options:
     - -threaded
     - -rtsopts

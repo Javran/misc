@@ -12,6 +12,7 @@ import System.Exit
 import System.Environment
 import CommandSwitch
 import CommandInstall
+import CommandClean
 
 -- succeed as long as the given key matches exactly one result (by prefix)
 uniqueLookup :: Eq ke => [ke] -> M.Map [ke] v -> Maybe v
@@ -23,7 +24,7 @@ subCmds :: M.Map String (IO ())
 subCmds = M.fromList
   [ ("switch", cmdSwitch)
   , ("install", cmdInstall)
-  , ("clean", pure ())
+  , ("clean", cmdClean)
   ]
 
 main :: IO ()
