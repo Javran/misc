@@ -3,15 +3,16 @@ module CommandSwitch
   ( cmdSwitch
   ) where
 
-import Turtle hiding (w)
-import Text.ParserCombinators.ReadP as P
 import Data.Char
 import Data.Maybe
 import System.Directory
-import System.Process
 import System.Environment
+import Text.ParserCombinators.ReadP as P
+import Turtle hiding (w)
+
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+
 import Common
 
 {-
