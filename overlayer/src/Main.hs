@@ -9,7 +9,7 @@ import Control.Exception
 import Control.Monad
 import Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
-import Data.HashMap.Strict as HM
+import qualified Data.HashMap.Strict as HM
 import Data.List
 import qualified Data.Text as T
 import qualified Graphics.Image as HIP
@@ -66,7 +66,8 @@ getMapUrls area num = (base <> "_image.png", base <> "_image.json")
 
 type Img = HIP.Image HIP.VS HIP.RGBA HIP.Word8
 
-extractFrameInfo :: Int -> Int -> Value -> ((Int, Int), (Int, Int))
+-- return frame offsets as (offsetX,offsetY) whose frame size is always 1200x720
+extractFrameInfo :: Int -> Int -> Value -> [(Int, Int)]
 extractFrameInfo area num raw
   | Object r <- raw
   , Just (Object framesJ) <- HM.lookup "frames" r
@@ -76,8 +77,8 @@ extractFrameInfo area num raw
         g _ = error "unreachable"
     in -- note the difference:
        -- in HIP x is the vertical axis pointing down from top left corner
-       ((g "y", g "x"), (g "w", g "h"))
-  | otherwise = error "extraction error"
+      [(g "y", g "x") | g "w" == 1200, g "h" == 720]
+  | otherwise = []
   where
     -- TODO: this is just a quick and dirty fix
     _mapInfoKey = T.pack $ printf "map%03d%02d_map%d-%d" area num area num
@@ -96,8 +97,9 @@ processGameMap mgr area num = do
         HIP.decode HIP.PNG (BSL.toStrict imgData)
   let frameData =
         HIP.makeImageR HIP.VS (35,141) (const $ HIP.PixelRGBA 0xff 0x00 0xdb 0xff) :: Img
-  let ((offX,offY),(1200,720)) = extractFrameInfo area num info
-      imposed = foldl imp mapImgData coords
+  let -- ((offX,offY),(1200,720))
+      offsets = extractFrameInfo area num info
+      imposed initImg (offX,offY) = foldl imp initImg coords
         where
           imp img (cx,cy) =
             HIP.superimpose (x'+2,y'+2) cropped $
@@ -105,8 +107,9 @@ processGameMap mgr area num = do
             where
               (x',y') = (offX+cx, offY+cy)
               cropped = HIP.crop (x'+2,y'+2) (35-4,141-4) mapImgData
+      imgDataFinal = foldl imposed mapImgData offsets
 
-  storeProcessedMap area num imposed
+  storeProcessedMap area num imgDataFinal
 
 allGameMaps :: [(Int, Int)]
 allGameMaps =
