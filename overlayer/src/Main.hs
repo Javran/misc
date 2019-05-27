@@ -70,7 +70,7 @@ extractFrameInfo :: Int -> Int -> Value -> ((Int, Int), (Int, Int))
 extractFrameInfo area num raw
   | Object r <- raw
   , Just (Object framesJ) <- HM.lookup "frames" r
-  , Just (Object mapInfoRaw) <- HM.lookup mapInfoKey framesJ
+  , Just (Object mapInfoRaw) <- HM.lookup mapInfoKeyRed framesJ
   , Just (Object frameDetail) <- HM.lookup "frame" mapInfoRaw
   = let g k | Just (Number v) <- HM.lookup k frameDetail = round v
         g _ = error "unreachable"
@@ -79,7 +79,9 @@ extractFrameInfo area num raw
        ((g "y", g "x"), (g "w", g "h"))
   | otherwise = error "extraction error"
   where
-    mapInfoKey = T.pack $ printf "map%03d%02d_map%d-%d" area num area num
+    -- TODO: this is just a quick and dirty fix
+    _mapInfoKey = T.pack $ printf "map%03d%02d_map%d-%d" area num area num
+    mapInfoKeyRed = T.pack $ printf "map%03d%02d_map%d-%d_red" area num area num
 
 processGameMap :: Manager -> Int -> Int -> IO ()
 processGameMap mgr area num = do
@@ -108,7 +110,8 @@ processGameMap mgr area num = do
 
 allGameMaps :: [(Int, Int)]
 allGameMaps =
-  sort $ [(area,num) | area <- [1..6], num <- [1..5]] <> [(1,6),(7,1),(7,2)]
+  -- sort $ [(area,num) | area <- [1..6], num <- [1..5]] <> [(1,6),(7,1),(7,2)]
+  sort [(44, num) | num <- [1..5]]
 
 main :: IO ()
 main = do
