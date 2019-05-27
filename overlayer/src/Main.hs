@@ -68,21 +68,18 @@ type Img = HIP.Image HIP.VS HIP.RGBA HIP.Word8
 
 -- return frame offsets as (offsetX,offsetY) whose frame size is always 1200x720
 extractFrameInfo :: Int -> Int -> Value -> [(Int, Int)]
-extractFrameInfo area num raw
-  | Object r <- raw
-  , Just (Object framesJ) <- HM.lookup "frames" r
-  , Just (Object mapInfoRaw) <- HM.lookup mapInfoKeyRed framesJ
-  , Just (Object frameDetail) <- HM.lookup "frame" mapInfoRaw
-  = let g k | Just (Number v) <- HM.lookup k frameDetail = round v
-        g _ = error "unreachable"
-    in -- note the difference:
-       -- in HIP x is the vertical axis pointing down from top left corner
-      [(g "y", g "x") | g "w" == 1200, g "h" == 720]
-  | otherwise = []
-  where
-    -- TODO: this is just a quick and dirty fix
-    _mapInfoKey = T.pack $ printf "map%03d%02d_map%d-%d" area num area num
-    mapInfoKeyRed = T.pack $ printf "map%03d%02d_map%d-%d_red" area num area num
+extractFrameInfo area num raw = do
+  Object r <- [raw]
+  Just (Object framesJson) <- [HM.lookup "frames" r]
+  let mapInfoKeyNorm = T.pack $ printf "map%03d%02d_map%d-%d" area num area num
+      mapInfoKeyRed = mapInfoKeyNorm <> "_red"
+  (key, Object mapInfoRaw) <- HM.toList framesJson
+  guard $ key `elem` [mapInfoKeyNorm, mapInfoKeyRed]
+  Just (Object frameDetail) <- [HM.lookup "frame" mapInfoRaw]
+  let g k | Just (Number v) <- HM.lookup k frameDetail = round v
+      g _ = error "unreachable"
+  guard $ g "w" == 1200 && g "h" == 720
+  pure (g "y", g "x")
 
 processGameMap :: Manager -> Int -> Int -> IO ()
 processGameMap mgr area num = do
