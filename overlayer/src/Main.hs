@@ -94,8 +94,7 @@ processGameMap mgr area num = do
         HIP.decode HIP.PNG (BSL.toStrict imgData)
   let frameData =
         HIP.makeImageR HIP.VS (35,141) (const $ HIP.PixelRGBA 0xff 0x00 0xdb 0xff) :: Img
-  let -- ((offX,offY),(1200,720))
-      offsets = extractFrameInfo area num info
+  let offsets = extractFrameInfo area num info
       imposed initImg (offX,offY) = foldl imp initImg coords
         where
           imp img (cx,cy) =
@@ -105,13 +104,13 @@ processGameMap mgr area num = do
               (x',y') = (offX+cx, offY+cy)
               cropped = HIP.crop (x'+2,y'+2) (35-4,141-4) mapImgData
       imgDataFinal = foldl imposed mapImgData offsets
-
   storeProcessedMap area num imgDataFinal
 
 allGameMaps :: [(Int, Int)]
 allGameMaps =
-  -- sort $ [(area,num) | area <- [1..6], num <- [1..5]] <> [(1,6),(7,1),(7,2)]
-  sort [(44, num) | num <- [1..5]]
+  sort $
+    [(area,num) | area <- [1..6], num <- [1..5]] <> [(1,6),(7,1),(7,2)]
+    <> [(44, num) | num <- [1..5]]
 
 main :: IO ()
 main = do
