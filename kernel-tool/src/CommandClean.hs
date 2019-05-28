@@ -30,12 +30,17 @@ cmdClean = do
   let kernelNumLimit :: Int
       kernelNumLimit =
         case lookup "KERNEL_TOOL_CLEAN_LIMIT" curEnv of
-          Just x | [(v,"")] <- reads . T.unpack $ x -> v
+          Just x
+            | [(v,"")] <- reads . T.unpack $ x
+              -> if v < 1
+                   then error "limit should not be less than one, aborted."
+                   else v
           _ -> 2
       backupDir :: FP.FilePath
       backupDir =
         case lookup "KERNEL_TOOL_CLEAN_BACKUP_DIR" curEnv of
           Just p -> FP.fromText p
           Nothing -> "/boot/backup"
-  print (kernelNumLimit, backupDir)
+  putStrLn $ "Limit number of kernels: " <> show kernelNumLimit
+  putStrLn $ "Backup dir: " <> FP.encodeString backupDir
   -- TODO: impl
