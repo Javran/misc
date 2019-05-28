@@ -6,6 +6,7 @@ module CommandClean
 import Turtle.Prelude
 import qualified Filesystem.Path.CurrentOS as FP
 import qualified Data.Text as T
+import System.IO.Temp
 
 {-
   environment variables:
@@ -17,11 +18,11 @@ import qualified Data.Text as T
  -}
 
 {-
-  TODO:
+
   for now, `clean` command only aims at:
   - moving stuff from backup dir into /tmp/<random dir>
-  - moving old kernel into backup dir
-  - moving partial kernel files into backup
+  - (TODO) moving old kernel into backup dir
+  - (TODO) moving partial kernel files into backup
     (those that have vmlinuz or System.map or config but not all of 3)
  -}
 cmdClean :: IO ()
@@ -43,4 +44,13 @@ cmdClean = do
           Nothing -> "/boot/backup"
   putStrLn $ "Limit number of kernels: " <> show kernelNumLimit
   putStrLn $ "Backup dir: " <> FP.encodeString backupDir
+  -- move old kernel backup to somewhere under /tmp/, and clear original copy
+  mktree backupDir
+  -- temp directory that we want to drop old kernel files to.
+  -- we just need a directory name that does not conflict with anything.
+  tmpDirDrop <- FP.decodeString <$> createTempDirectory "/tmp" "kernel_backup"
+  cptree backupDir tmpDirDrop
+  rmtree backupDir
+  mktree backupDir
+  putStrLn $ "Old backup moved to: " <> FP.encodeString tmpDirDrop
   -- TODO: impl
