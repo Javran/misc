@@ -22,7 +22,6 @@ dependencies:
 - aeson
 - vector
 - system-filepath
-- temporary
 
 executables:
   kernel-tool:
