@@ -15,7 +15,6 @@ import qualified Data.Set as S
 import qualified Control.Foldl as Foldl
 import Control.Applicative
 
-
 -- scanKernelFiles ["vmlinuz","config","System.map"] "/boot/"
 -- return filesets indexed by version
 scanKernelFiles :: [T.Text] -> FP.FilePath -> Shell (M.Map T.Text (S.Set T.Text))
@@ -29,18 +28,19 @@ scanKernelFiles prefixes bootDir =
         toPattern pref =
           (pref,) <$>
             ( prefix (text pref) *> char '-'
-              *> plus (satisfy (not . isSpace)) <* eof
+              *> (T.pack <$> some (satisfy (not . isSpace))) <* eof
             )
     step curMap fp =
         case patTests of
           [] -> curMap
-          (k,v):_ ->
-            let doAlter Nothing = Just (S.singleton v)
-                doAlter (Just x) = Just (S.insert v x)
-            in M.alter doAlter k curMap
+          (comp,pat):_ ->
+            let doAlter Nothing = Just (S.singleton comp)
+                doAlter (Just x) = Just (S.insert comp x)
+            in M.alter doAlter pat curMap
       where
-        fpText = either id id $ FP.toText fp
-        patTests = [ r | pat <- patterns, r <- match pat fpText ]
+        fpText = either id id $ FP.toText (FP.filename fp)
+        -- TODO: for some reason this has to be reversed.
+        patTests = reverse [ r | pat <- patterns, r <- match pat fpText ]
     initial = M.empty
 
 {-
