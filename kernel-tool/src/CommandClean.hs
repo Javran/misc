@@ -3,17 +3,20 @@ module CommandClean
   ( cmdClean
   ) where
 
+import Control.Arrow
 import Control.Monad
 import Turtle.Prelude
 import Turtle.Shell
 import Data.Char
 import Data.List
 import Turtle.Pattern
+import Algorithms.NaturalSort
 import qualified Filesystem.Path.CurrentOS as FP
 import qualified Data.Text as T
 import qualified Data.Map.Strict as M
 import qualified Control.Foldl as Foldl
 import Control.Applicative
+import Data.Ord
 
 {-
   scan files directly under boot directory, match them against a given set
@@ -92,7 +95,12 @@ cmdClean = do
   let kernelFiles = ["vmlinuz", "System.map", "config"]
       setSize = length kernelFiles
   Just m <- reduce Foldl.head $ scanKernelFiles kernelFiles  "/boot"
-  let (mFulls, mPartials) = partition ((== setSize). M.size . snd) $ M.toList m
+  let kverSort = Data.List.sortOn (Down . sortKey . fst)
+      (mFulls, mPartials) =
+        (kverSort *** kverSort)
+        . partition ((== setSize) . M.size . snd)
+        . M.toList
+        $ m
       pprVerSet xs = forM_ xs $ \(k,fileMap) -> do
         putStrLn $ "Kernel Version: " <> T.unpack k
         forM_ (M.toList fileMap) $ \(w, fp) ->
