@@ -101,13 +101,14 @@ cmdClean = do
         . partition ((== setSize) . M.size . snd)
         . M.toList
         $ m
-      pprVerSet xs = forM_ xs $ \(k,fileMap) -> do
-        putStrLn $ "Kernel Version: " <> T.unpack k
-        forM_ (M.toList fileMap) $ \(w, fp) ->
-          putStrLn $ "\t" <> T.unpack w <> ": " <> FP.encodeString fp
-  putStrLn "Complete kernel versions:"
-  pprVerSet mFulls
-  putStrLn "Incomplete kernel versions:"
-  pprVerSet mPartials
-
-  -- TODO: impl
+      (mKeep, mBak) = splitAt kernelNumLimit mFulls
+  putStrLn "Will keep versions:"
+  forM_ mKeep $ \(k, _) -> putStrLn $ "- " <> T.unpack k
+  putStrLn "Will move versions to backup:"
+  forM_ mBak $ \(k, _) -> putStrLn $ "- " <> T.unpack k
+  putStrLn "Will move partial versions to backup:"
+  forM_ mPartials $ \(k, _) -> putStrLn $ "- " <> T.unpack k
+  let fList :: [FP.FilePath]
+      fList = foldMap (M.elems . snd) (mBak <> mPartials)
+  mapM_ print fList
+  -- TODO: perform the actual move
