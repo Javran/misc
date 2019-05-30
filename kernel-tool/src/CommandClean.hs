@@ -19,6 +19,12 @@ import Control.Applicative
 import Data.Ord
 
 {-
+  TODO: here raises a problem for those "XXX.old" files:
+  due to how natural sort is implemented, "XXX.old" is considered
+  newer than "XXX" because "" < ".old" ... need to find a way to deal with it.
+ -}
+
+{-
   scan files directly under boot directory, match them against a given set
   of file name prefixes, and return a Map from kernel versions to
   a Map from matched file name prefixes to the file path of the file in question.
