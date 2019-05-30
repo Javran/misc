@@ -89,5 +89,17 @@ cmdClean = do
           Nothing -> "/boot/backup"
   putStrLn $ "Limit number of kernels: " <> show kernelNumLimit
   putStrLn $ "Backup dir: " <> FP.encodeString backupDir
-  view $ scanKernelFiles ["vmlinuz", "System.map", "config"] "/boot"
+  let kernelFiles = ["vmlinuz", "System.map", "config"]
+      setSize = length kernelFiles
+  Just m <- reduce Foldl.head $ scanKernelFiles kernelFiles  "/boot"
+  let (mFulls, mPartials) = partition ((== setSize). M.size . snd) $ M.toList m
+      pprVerSet xs = forM_ xs $ \(k,fileMap) -> do
+        putStrLn $ "Kernel Version: " <> T.unpack k
+        forM_ (M.toList fileMap) $ \(w, fp) ->
+          putStrLn $ "\t" <> T.unpack w <> ": " <> FP.encodeString fp
+  putStrLn "Complete kernel versions:"
+  pprVerSet mFulls
+  putStrLn "Incomplete kernel versions:"
+  pprVerSet mPartials
+
   -- TODO: impl
