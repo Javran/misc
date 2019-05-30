@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, TupleSections #-}
+{-# LANGUAGE OverloadedStrings #-}
 module CommandClean
   ( cmdClean
   ) where
@@ -7,36 +7,47 @@ import Control.Monad
 import Turtle.Prelude
 import Turtle.Shell
 import Data.Char
+import Data.List
 import Turtle.Pattern
 import qualified Filesystem.Path.CurrentOS as FP
 import qualified Data.Text as T
 import qualified Data.Map.Strict as M
-import qualified Data.Set as S
 import qualified Control.Foldl as Foldl
 import Control.Applicative
 
--- scanKernelFiles ["vmlinuz","config","System.map"] "/boot/"
--- return filesets indexed by version
-scanKernelFiles :: [T.Text] -> FP.FilePath -> Shell (M.Map T.Text (S.Set T.Text))
+{-
+  scan files directly under boot directory, match them against a given set
+  of file name prefixes, and return a Map from kernel versions to
+  a Map from matched file name prefixes to the file path of the file in question.
+
+  example:
+
+  > scanKernelFiles ["vmlinuz","config","System.map"] "/boot/"
+
+  note that the given list of file name prefixes should not contain duplicates.
+ -}
+scanKernelFiles :: [T.Text] -> FP.FilePath -> Shell (M.Map T.Text (M.Map T.Text FP.FilePath))
 scanKernelFiles prefixes bootDir =
     reduce (Foldl.Fold step initial id) $
       ls bootDir >>= \fp -> testfile fp >>= guard >> pure fp
   where
-    patterns :: [Pattern (T.Text, T.Text)]
+    patterns :: [Pattern (T.Text {- version -}, T.Text {- which prefix -})]
     patterns = toPattern <$> prefixes
       where
-        toPattern pref =
-          (pref,) <$>
-            ( prefix (text pref) *> char '-'
-              *> (T.pack <$> some (satisfy (not . isSpace))) <* eof
-            )
+        toPattern :: T.Text -> Pattern (T.Text, T.Text)
+        toPattern pref = do
+          _ <- prefix (text pref)
+          _ <- char '-'
+          ver <- T.pack <$> some (satisfy (not . isSpace))
+          eof
+          pure (ver, pref)
     step curMap fp =
         case patTests of
           [] -> curMap
-          (comp,pat):_ ->
-            let doAlter Nothing = Just (S.singleton comp)
-                doAlter (Just x) = Just (S.insert comp x)
-            in M.alter doAlter pat curMap
+          (ver,whichPrefix):_ ->
+            let doAlter Nothing = Just (M.singleton whichPrefix fp)
+                doAlter (Just x) = Just (M.insert whichPrefix fp x)
+            in M.alter doAlter ver curMap
       where
         fpText = either id id $ FP.toText (FP.filename fp)
         -- TODO: for some reason this has to be reversed.
