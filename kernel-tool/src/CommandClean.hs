@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, TupleSections #-}
 module CommandClean
   ( cmdClean
   ) where
@@ -17,12 +17,6 @@ import qualified Data.Map.Strict as M
 import qualified Control.Foldl as Foldl
 import Control.Applicative
 import Data.Ord
-
-{-
-  TODO: here raises a problem for those "XXX.old" files:
-  due to how natural sort is implemented, "XXX.old" is considered
-  newer than "XXX" because "" < ".old" ... need to find a way to deal with it.
- -}
 
 {-
   scan files directly under boot directory, match them against a given set
@@ -101,20 +95,26 @@ cmdClean = do
   let kernelFiles = ["vmlinuz", "System.map", "config"]
       setSize = length kernelFiles
   Just m <- reduce Foldl.head $ scanKernelFiles kernelFiles  "/boot"
-  let kverSort = Data.List.sortOn (Down . sortKey . fst)
-      (mFulls, mPartials) =
-        (kverSort *** kverSort)
+  let {-
+        separate those versions with ".old" suffix,
+        while deciding versions to be kept, we don't want them to be involved,
+        because natural sort will think "XXX.old" to be newer than "XXX".
+        -}
+      (mOlds, mRemained) = partition ((".old" `T.isSuffixOf`) . fst) $ M.toList m
+      (mFullsSorted, mPartials) =
+        first (Data.List.sortOn (Down . sortKey . fst))
         . partition ((== setSize) . M.size . snd)
-        . M.toList
-        $ m
-      (mKeep, mBak) = splitAt kernelNumLimit mFulls
-  putStrLn "Will keep versions:"
+        $ mRemained
+      (mKeep, mBak) = splitAt kernelNumLimit mFullsSorted
+      mToBeMovedSorted = Data.List.sortOn (Down. sortKey . fst . fst) $
+        ((, "old") <$> mOlds)
+        <> ((,"partial") <$> mPartials)
+        <> ((, "limit") <$> mBak)
+  putStrLn "Will keep following versions:"
   forM_ mKeep $ \(k, _) -> putStrLn $ "- " <> T.unpack k
-  putStrLn "Will move versions to backup:"
-  forM_ mBak $ \(k, _) -> putStrLn $ "- " <> T.unpack k
-  putStrLn "Will move partial versions to backup:"
-  forM_ mPartials $ \(k, _) -> putStrLn $ "- " <> T.unpack k
+  putStrLn "Will move following versions to backup:"
+  forM_ mToBeMovedSorted $ \((k, _), reason) ->
+    putStrLn $ "- " <> T.unpack k <> " (" <> T.unpack reason <> ")"
   let fList :: [FP.FilePath]
-      fList = foldMap (M.elems . snd) (mBak <> mPartials)
+      fList = foldMap (M.elems . snd . fst) mToBeMovedSorted
   mapM_ print fList
-  -- TODO: perform the actual move
