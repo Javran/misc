@@ -54,6 +54,14 @@ coordsWithVanguard =
   , (499, 994)
   ]
 
+_coordsCombinedFleet :: [(Int, Int)]
+_coordsCombinedFleet =
+  [ (244, 649) -- 649,244 - 847,278
+  , (244, 896)
+  , (450, 649)
+  , (450, 896)
+  ]
+
 coords :: [(Int, Int)]
 coords = if hasVanguard then coordsWithVanguard else coordsNormal
   where

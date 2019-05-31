@@ -18,6 +18,8 @@ import qualified Control.Foldl as Foldl
 import Control.Applicative
 import Data.Ord
 
+import CommandInstall
+
 {-
   scan files directly under boot directory, match them against a given set
   of file name prefixes, and return a Map from kernel versions to
@@ -117,4 +119,6 @@ cmdClean = do
     putStrLn $ "- " <> T.unpack k <> " (" <> T.unpack reason <> ")"
   let fList :: [FP.FilePath]
       fList = foldMap (M.elems . snd . fst) mToBeMovedSorted
-  mapM_ print fList
+  print fList
+  sh $ forM_ fList $ \fp -> mv fp (backupDir FP.</> FP.filename fp)
+  updateGrubConf

@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings, TypeApplications, LambdaCase #-}
 module CommandInstall
   ( cmdInstall
+  , updateGrubConf
   ) where
 
 import Data.List
