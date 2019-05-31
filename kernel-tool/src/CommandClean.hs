@@ -112,13 +112,15 @@ cmdClean = do
         ((, "old") <$> mOlds)
         <> ((,"partial") <$> mPartials)
         <> ((, "limit") <$> mBak)
-  putStrLn "Will keep following versions:"
-  forM_ mKeep $ \(k, _) -> putStrLn $ "- " <> T.unpack k
-  putStrLn "Will move following versions to backup:"
-  forM_ mToBeMovedSorted $ \((k, _), reason) ->
-    putStrLn $ "- " <> T.unpack k <> " (" <> T.unpack reason <> ")"
-  let fList :: [FP.FilePath]
-      fList = foldMap (M.elems . snd . fst) mToBeMovedSorted
-  print fList
-  sh $ forM_ fList $ \fp -> mv fp (backupDir FP.</> FP.filename fp)
-  updateGrubConf
+  if null mToBeMovedSorted
+    then putStrLn "Nothing to do."
+    else do
+      putStrLn "Will keep following versions:"
+      forM_ mKeep $ \(k, _) -> putStrLn $ "- " <> T.unpack k
+      putStrLn "Will move following versions to backup:"
+      forM_ mToBeMovedSorted $ \((k, _), reason) ->
+        putStrLn $ "- " <> T.unpack k <> " (" <> T.unpack reason <> ")"
+      let fList :: [FP.FilePath]
+          fList = foldMap (M.elems . snd . fst) mToBeMovedSorted
+      sh $ forM_ fList $ \fp -> mv fp (backupDir FP.</> FP.filename fp)
+      updateGrubConf
