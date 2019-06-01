@@ -6,13 +6,15 @@ module Main
   ( main
   ) where
 
-import qualified Data.Map.Strict as M
 import Data.List
-import System.Exit
 import System.Environment
-import CommandSwitch
-import CommandInstall
+import System.Exit
+
+import qualified Data.Map.Strict as M
+
 import CommandClean
+import CommandInstall
+import CommandSwitch
 
 -- succeed as long as the given key matches exactly one result (by prefix)
 uniqueLookup :: Eq ke => [ke] -> M.Map [ke] v -> Maybe v

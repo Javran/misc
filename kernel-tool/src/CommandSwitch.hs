@@ -3,12 +3,14 @@ module CommandSwitch
   ( cmdSwitch
   ) where
 
+import Control.Monad
 import Data.Char
 import Data.Maybe
 import System.Directory
 import System.Environment
+import System.Exit
 import Text.ParserCombinators.ReadP as P
-import Turtle hiding (w)
+import Turtle.Prelude
 
 import qualified Data.Text as T
 import qualified Data.Text.IO as T

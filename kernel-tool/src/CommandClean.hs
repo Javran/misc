@@ -3,20 +3,21 @@ module CommandClean
   ( cmdClean
   ) where
 
+import Algorithms.NaturalSort
+import Control.Applicative
 import Control.Arrow
 import Control.Monad
-import Turtle.Prelude
-import Turtle.Shell
 import Data.Char
 import Data.List
-import Turtle.Pattern
-import Algorithms.NaturalSort
-import qualified Filesystem.Path.CurrentOS as FP
-import qualified Data.Text as T
-import qualified Data.Map.Strict as M
-import qualified Control.Foldl as Foldl
-import Control.Applicative
 import Data.Ord
+import Turtle.Pattern
+import Turtle.Prelude
+import Turtle.Shell
+
+import qualified Control.Foldl as Foldl
+import qualified Data.Map.Strict as M
+import qualified Data.Text as T
+import qualified Filesystem.Path.CurrentOS as FP
 
 import CommandInstall
 
@@ -69,11 +70,9 @@ scanKernelFiles prefixes bootDir =
  -}
 
 {-
-  (TODO)
   `clean` command scans /boot, detects kernel files,
   and limit the number of vaild kernels present to KERNEL_TOOL_CLEAN_LIMIT
   by moving old kernels into KERNEL_TOOL_BACKUP_DIR.
-
  -}
 cmdClean :: IO ()
 cmdClean = do
