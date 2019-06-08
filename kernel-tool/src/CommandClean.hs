@@ -42,7 +42,7 @@ scanKernelFiles prefixes bootDir =
       where
         toPattern :: T.Text -> Pattern (T.Text, T.Text)
         toPattern pref = do
-          _ <- prefix (text pref)
+          _ <- text pref
           _ <- char '-'
           ver <- T.pack <$> some (satisfy (not . isSpace))
           eof
@@ -56,8 +56,7 @@ scanKernelFiles prefixes bootDir =
             in M.alter doAlter ver curMap
       where
         fpText = either id id $ FP.toText (FP.filename fp)
-        -- TODO: for some reason this has to be reversed.
-        patTests = reverse [ r | pat <- patterns, r <- match pat fpText ]
+        patTests = [ r | pat <- patterns, r <- match pat fpText ]
     initial = M.empty
 
 {-
