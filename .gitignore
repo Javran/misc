@@ -15,3 +15,5 @@ cabal.config
 compilers-class/
 *.svg
 *.json
+stack.yaml.lock
+dist-newstyle
