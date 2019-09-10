@@ -1,0 +1,6 @@
+resolver: lts-14.0
+packages:
+- .
+
+extra-deps:
+- logging-3.0.5
