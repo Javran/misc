@@ -11,6 +11,7 @@ description:         description
 dependencies:
 - base
 - logging
+- unix
 
 executables:
   l:
