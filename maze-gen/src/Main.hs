@@ -46,6 +46,9 @@ randomWalk' rows cols cellSet curPathRev = do
         (dr,dc) <- [(-1,0),(1,0),(0,-1),(0,1)]
         let (r'',c'') = (r + dr, c + dc)
         guard $ r'' >= 0 && r'' < rows && c'' >= 0 && c'' < cols
+        let prevPath = tail curPathRev
+        -- avoid going backward directly - the path will be erased anyway.
+        guard $ null prevPath || head prevPath /= (r'',c'')
         pure (r'',c'')
       altsR = (0, length alts - 1)
   altInd <- genNext altsR
@@ -65,7 +68,7 @@ randomWalk' rows cols cellSet curPathRev = do
             if cell' == cell
               then fix $ \retry -> do
                 -- keep retrying until succeeded.
-                result' <- randomWalk' rows cols cellSet curPathRev
+                result' <- randomWalk' rows cols cellSet (cell:curPathRev)
                 case result' of
                   Right _ -> pure result'
                   Left _ -> retry
@@ -121,7 +124,7 @@ renderMaze rows cols edgeSet = firstLine : concatMap renderRow [0..rows-1]
 
 main :: IO ()
 main = do
-  let (r,c) = (10,20)
+  let (r,c) = (5,6)
   g <- newTFGen
   let edgeSet = S.fromList $ genMaze g r c
   mapM_ putStrLn $ renderMaze r c edgeSet
