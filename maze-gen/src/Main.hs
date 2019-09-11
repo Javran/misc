@@ -35,6 +35,7 @@ pickOneFromSet s = do
   let x = S.toAscList s !! ind
   pure (x, S.delete x s)
 
+
 -- cellSet: set of nodes contained in the maze
 -- curPathRev: current path in reversed order.
 -- return: Left c if path later than c need to be erased, Right if a random walk is found.
@@ -59,7 +60,7 @@ randomWalk' rows cols cellSet curPathRev = do
         pure (Right $ cell:curPathRev)
     | elem cell curPathRev ->
         -- walks into current, need elimination
-        pure (Left cell)
+        randomWalk' rows cols cellSet (cell : dropWhile (/=cell) curPathRev)
     | otherwise -> do
         result <- randomWalk' rows cols cellSet (cell:curPathRev)
         case result of
@@ -124,7 +125,7 @@ renderMaze rows cols edgeSet = firstLine : concatMap renderRow [0..rows-1]
 
 main :: IO ()
 main = do
-  let (r,c) = (5,6)
+  let (r,c) = (16,32)
   g <- newTFGen
   let edgeSet = S.fromList $ genMaze g r c
   mapM_ putStrLn $ renderMaze r c edgeSet
