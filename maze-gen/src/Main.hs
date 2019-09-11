@@ -35,21 +35,16 @@ pickOneFromSet s = do
   let x = S.toAscList s !! ind
   pure (x, S.delete x s)
 
-
 -- cellSet: set of nodes contained in the maze
 -- curPathRev: current path in reversed order.
--- return: Left c if path later than c need to be erased, Right if a random walk is found.
-randomWalk' :: Int -> Int -> S.Set Coord -> [Coord] -> State TFGen (Either Coord [Coord])
-randomWalk' rows cols cellSet curPathRev = do
+randomWalk :: Int -> Int -> S.Set Coord -> [Coord] -> State TFGen [Coord]
+randomWalk rows cols cellSet curPathRev = do
   -- INVARIANT: always non-empty.
   let (r,c):_ = curPathRev
   let alts = do
         (dr,dc) <- [(-1,0),(1,0),(0,-1),(0,1)]
         let (r'',c'') = (r + dr, c + dc)
         guard $ r'' >= 0 && r'' < rows && c'' >= 0 && c'' < cols
-        let prevPath = tail curPathRev
-        -- avoid going backward directly - the path will be erased anyway.
-        guard $ null prevPath || head prevPath /= (r'',c'')
         pure (r'',c'')
       altsR = (0, length alts - 1)
   altInd <- genNext altsR
@@ -57,32 +52,12 @@ randomWalk' rows cols cellSet curPathRev = do
   if
     | S.member cell cellSet ->
         -- next step walks into the maze, we are done.
-        pure (Right $ cell:curPathRev)
+        pure (cell:curPathRev)
     | elem cell curPathRev ->
         -- walks into current, need elimination
-        randomWalk' rows cols cellSet (cell : dropWhile (/=cell) curPathRev)
-    | otherwise -> do
-        result <- randomWalk' rows cols cellSet (cell:curPathRev)
-        case result of
-          Right _ -> pure result
-          Left cell' ->
-            if cell' == cell
-              then fix $ \retry -> do
-                -- keep retrying until succeeded.
-                result' <- randomWalk' rows cols cellSet (cell:curPathRev)
-                case result' of
-                  Right _ -> pure result'
-                  Left _ -> retry
-              else
-                -- current cell need to be erased, keep backtracking.
-                pure result
-
-randomWalk :: Int -> Int -> S.Set Coord -> [Coord] -> State TFGen [Coord]
-randomWalk rows cols cellSet curPathRev = fix $ \retry -> do
-  r <- randomWalk' rows cols cellSet curPathRev
-  case r of
-    Right x -> pure x
-    Left _ -> retry
+        randomWalk rows cols cellSet (cell : dropWhile (/=cell) curPathRev)
+    | otherwise ->
+        randomWalk rows cols cellSet (cell:curPathRev)
 
 genMaze :: TFGen -> Int -> Int -> [] Edge
 genMaze g rows cols = (`evalState` g) $ do
