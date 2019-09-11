@@ -3,11 +3,9 @@ module Main
   ( main
   ) where
 
-import Control.Monad.State
-import Control.Monad
+import Control.Monad.State.Strict
 import System.Random.TF
 import System.Random.TF.Instances
-import qualified Data.Map.Strict as IM
 import qualified Data.Set as S
 
 {-
@@ -18,6 +16,7 @@ type Coord = (Int, Int)
 
 -- undirected, Edge a b where a <= b
 data Edge = Edge Coord Coord
+  deriving Show
 
 mkEdge :: Coord -> Coord -> Edge
 mkEdge a b = if a > b then Edge b a else Edge a b
@@ -29,6 +28,12 @@ initMaze rows cols = S.fromList $ (,) <$> [0..rows-1] <*> [0..cols-1]
 genNext :: Random a => (a, a) -> State TFGen a
 genNext range =
   state $ \g -> let (v, g') = randomR range g in (v, g')
+
+pickOneFromSet :: Ord a => S.Set a -> State TFGen (a, S.Set a)
+pickOneFromSet s = do
+  ind <- genNext (0, S.size s - 1)
+  let x = S.toAscList s !! ind
+  pure (x, S.delete x s)
 
 -- cellSet: set of nodes contained in the maze
 -- curPathRev: current path in reversed order.
@@ -62,8 +67,35 @@ randomWalk rows cols cellSet curPathRev = do
                 -- retry again
                 randomWalk rows cols cellSet curPathRev
               else
-                -- current cell need to be erased, keep back tracking.
+                -- current cell need to be erased, keep backtracking.
                 pure result
 
+genMaze :: TFGen -> Int -> Int -> [] Edge
+genMaze g rows cols = (`evalState` g) $ do
+    let allCells = initMaze rows cols
+    (x, initUnused) <- pickOneFromSet allCells
+    fix (\loop curUnused curCellSet curEdges ->
+      if S.null curUnused
+        then pure curEdges
+        else fix $ \loop2 -> do
+          (c, curUnused') <- pickOneFromSet curUnused
+          mPath <- randomWalk rows cols curCellSet [c]
+          case mPath of
+            Right path -> do
+              let edges = zipWith mkEdge path (tail path)
+                  cells = S.fromList path
+                  curUnused'' = S.difference curUnused' cells
+                  curCellSet' = S.union curCellSet cells
+                  curEdges' = curEdges <> edges
+              loop curUnused'' curCellSet' curEdges'
+            Left {} -> loop2
+        )
+      initUnused
+      (S.singleton x)
+      []
+
 main :: IO ()
-main = pure ()
+main = do
+  g <- newTFGen
+  let es = genMaze g 5 6
+  print es
