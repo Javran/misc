@@ -10,8 +10,9 @@ description:         description
 
 dependencies:
 - base
-- tf-random
 - containers
+- mtl
+- tf-random
 
 executables:
   maze-gen:
