@@ -16,6 +16,12 @@ import qualified Data.Set as S
 
 type Coord = (Int, Int)
 
+-- undirected, Edge a b where a <= b
+data Edge = Edge Coord Coord
+
+mkEdge :: Coord -> Coord -> Edge
+mkEdge a b = if a > b then Edge b a else Edge a b
+
 -- initial set consists of all nodes.
 initMaze :: Int -> Int -> S.Set Coord
 initMaze rows cols = S.fromList $ (,) <$> [0..rows-1] <*> [0..cols-1]
@@ -35,7 +41,7 @@ randomWalk rows cols cellSet curPathRev = do
         pure (r'',c'')
       altsR = (0, length alts - 1)
       (altInd, g') = randomR altsR g
-      cell@(r', c') = alts !! altInd
+      cell = alts !! altInd
   put g'
   if
     | S.member cell cellSet ->
@@ -47,8 +53,15 @@ randomWalk rows cols cellSet curPathRev = do
     | otherwise -> do
         result <- randomWalk rows cols cellSet (cell:curPathRev)
         case result of
-          Right ans -> pure result
-          Left cell' -> pure undefined
+          Right _ -> pure result
+          Left cell' ->
+            if cell' == cell
+              then
+                -- retry again
+                randomWalk rows cols cellSet curPathRev
+              else
+                -- current cell need to be erased, keep back tracking.
+                pure result
 
 main :: IO ()
 main = pure ()
