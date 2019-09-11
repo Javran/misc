@@ -16,7 +16,7 @@ type Coord = (Int, Int)
 
 -- undirected, Edge a b where a <= b
 data Edge = Edge Coord Coord
-  deriving Show
+  deriving (Show, Eq, Ord)
 
 mkEdge :: Coord -> Coord -> Edge
 mkEdge a b = if a > b then Edge b a else Edge a b
@@ -101,8 +101,27 @@ genMaze g rows cols = (`evalState` g) $ do
       (S.singleton x)
       []
 
+renderMaze :: Int -> Int -> S.Set Edge -> [String]
+renderMaze rows cols edgeSet = firstLine : concatMap renderRow [0..rows-1]
+  where
+    firstLine = concat (replicate cols "+-") <> "+"
+    cs = [0..cols-1]
+    renderRow :: Int -> [String]
+    renderRow r = [topLine, bottomLine]
+      where
+        topLine = '|' : concatMap render cs
+          where
+            render c = ' ' : let e = mkEdge (r,c) (r,c+1)
+                             in if S.member e edgeSet then " " else "|"
+        bottomLine = '+' : concatMap render cs
+          where
+            render c = (let e = mkEdge (r,c) (r+1,c)
+                         in if S.member e edgeSet then " " else "-") <> "+"
+
+
 main :: IO ()
 main = do
+  let (r,c) = (10,20)
   g <- newTFGen
-  let es = genMaze g 5 6
-  print es
+  let edgeSet = S.fromList $ genMaze g r c
+  mapM_ putStrLn $ renderMaze r c edgeSet
