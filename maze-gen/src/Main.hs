@@ -38,8 +38,8 @@ pickOneFromSet s = do
 -- cellSet: set of nodes contained in the maze
 -- curPathRev: current path in reversed order.
 -- return: Left c if path later than c need to be erased, Right if a random walk is found.
-randomWalk :: Int -> Int -> S.Set Coord -> [Coord] -> State TFGen (Either Coord [Coord])
-randomWalk rows cols cellSet curPathRev = do
+randomWalk' :: Int -> Int -> S.Set Coord -> [Coord] -> State TFGen (Either Coord [Coord])
+randomWalk' rows cols cellSet curPathRev = do
   -- INVARIANT: always non-empty.
   let (r,c):_ = curPathRev
   let alts = do
@@ -58,17 +58,27 @@ randomWalk rows cols cellSet curPathRev = do
         -- walks into current, need elimination
         pure (Left cell)
     | otherwise -> do
-        result <- randomWalk rows cols cellSet (cell:curPathRev)
+        result <- randomWalk' rows cols cellSet (cell:curPathRev)
         case result of
           Right _ -> pure result
           Left cell' ->
             if cell' == cell
-              then
-                -- retry again
-                randomWalk rows cols cellSet curPathRev
+              then fix $ \retry -> do
+                -- keep retrying until succeeded.
+                result' <- randomWalk' rows cols cellSet curPathRev
+                case result' of
+                  Right _ -> pure result'
+                  Left _ -> retry
               else
                 -- current cell need to be erased, keep backtracking.
                 pure result
+
+randomWalk :: Int -> Int -> S.Set Coord -> [Coord] -> State TFGen [Coord]
+randomWalk rows cols cellSet curPathRev = fix $ \retry -> do
+  r <- randomWalk' rows cols cellSet curPathRev
+  case r of
+    Right x -> pure x
+    Left _ -> retry
 
 genMaze :: TFGen -> Int -> Int -> [] Edge
 genMaze g rows cols = (`evalState` g) $ do
@@ -77,18 +87,15 @@ genMaze g rows cols = (`evalState` g) $ do
     fix (\loop curUnused curCellSet curEdges ->
       if S.null curUnused
         then pure curEdges
-        else fix $ \loop2 -> do
+        else do
           (c, curUnused') <- pickOneFromSet curUnused
-          mPath <- randomWalk rows cols curCellSet [c]
-          case mPath of
-            Right path -> do
-              let edges = zipWith mkEdge path (tail path)
-                  cells = S.fromList path
-                  curUnused'' = S.difference curUnused' cells
-                  curCellSet' = S.union curCellSet cells
-                  curEdges' = curEdges <> edges
-              loop curUnused'' curCellSet' curEdges'
-            Left {} -> loop2
+          path <- randomWalk rows cols curCellSet [c]
+          let edges = zipWith mkEdge path (tail path)
+              cells = S.fromList path
+              curUnused'' = S.difference curUnused' cells
+              curCellSet' = S.union curCellSet cells
+              curEdges' = curEdges <> edges
+          loop curUnused'' curCellSet' curEdges'
         )
       initUnused
       (S.singleton x)
