@@ -1,15 +1,22 @@
-{-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE
+    MultiWayIf
+  , LambdaCase
+  #-}
 module Main
   ( main
   ) where
 
 import Control.Monad.State.Strict
+import System.Environment
 import System.Random.TF
 import System.Random.TF.Instances
+
 import qualified Data.Set as S
 
 {-
   Use Willson's algorithm to generate mazes.
+
+  TODO: use brick to implement a playable game?
  -}
 
 type Coord = (Int, Int)
@@ -99,8 +106,13 @@ renderMaze rows cols edgeSet = firstLine : concatMap renderRow [0..rows-1]
 
 
 main :: IO ()
-main = do
-  let (r,c) = (16,32)
-  g <- newTFGen
-  let edgeSet = S.fromList $ genMaze g r c
-  mapM_ putStrLn $ renderMaze r c edgeSet
+main = getArgs >>= \case
+  [rRaw, cRaw]
+    | [(r,"")] <- reads rRaw
+    , [(c,"")] <- reads cRaw
+    -> do
+        g <- newTFGen
+        let edgeSet = S.fromList $ genMaze g r c
+        mapM_ putStrLn $ renderMaze r c edgeSet
+  _ ->
+    putStrLn "maze-gen <rows :: Int> <cols :: Int>"
