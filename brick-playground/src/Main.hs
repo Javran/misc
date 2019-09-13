@@ -5,15 +5,12 @@ module Main
 import Brick
 import Brick.Widgets.Center
 import Brick.Widgets.Border
-import Brick.Widgets.Border.Style
-import Data.List
 
 ui :: Widget ()
-ui = center $ vBox (replicate 4 wLine)
+ui = center $ joinBorders $ border $ vLimit 10 $ hLimit 20 $ row <+> vBorder <+> row <+> vBorder <+> row
   where
-    wLine =
-      hBox $ intersperse (str "|")
-        $ vLimit 5 . hLimit 10 . str <$> words "AAAA BBBB CCCC DDDD"
+    row = wTest <=> hBorder <=> wTest <=> hBorder <=> wTest
+    wTest = vLimit 2 . hLimit 4 $ str "text"
 
 main :: IO ()
 main = simpleMain ui
