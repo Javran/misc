@@ -17,8 +17,19 @@ initBoard :: Board
 initBoard = M.fromList [((3,3),False), ((4,4),False), ((3,4),True), ((4,3),True)]
 
 renderBoard :: Board -> [String]
-renderBoard bd = zipWith (:) leftBorder (topBorder : ([0..7] >>= renderRow))
+renderBoard bd =
+    topAxis
+    : zipWith (:)
+        (concat ((\v -> ' ': show v) <$> [1..8 :: Int]) <> " ")
+        rendered
   where
+    topAxis = ' ' : (['a'..'h'] >>= \c -> [' ',c])
+    -- rendered board without axis
+    rendered =
+      zipWith (:)
+        leftBorder
+        (topBorder : ([0..7] >>= renderRow))
+
     dark = 'X'
     light = 'O'
     leftBorder = '┌' : concat (replicate 7 "│├") <> "│└"
