@@ -5,12 +5,14 @@ module Main
 import Brick
 import Brick.Widgets.Center
 import Brick.Widgets.Border
+import Data.List
 
 ui :: Widget ()
-ui = center $ joinBorders $ border $ setAvailableSize (20,10) $ row <+> vBorder <+> center row <+> vBorder <+> row
+ui = joinBorders $ center $ border $ vLimit 15 $ hLimit 15 grid
   where
-    row = wTest <=> hBorder <=> center wTest <=> hBorder <=> wTest
-    wTest = setAvailableSize (5,3) $ str "text"
+    grid = center $ vBox (intersperse hBorder (replicate 8 row))
+    row = center $ hBox (intersperse vBorder (replicate 8 wTest))
+    wTest = vLimit 1 $ hLimit 1 $ str "#"
 
 main :: IO ()
 main = simpleMain ui
