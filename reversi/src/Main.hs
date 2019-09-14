@@ -16,5 +16,25 @@ type Board = M.Map Coord Disk
 initBoard :: Board
 initBoard = M.fromList [((3,3),False), ((4,4),False), ((3,4),True), ((4,3),True)]
 
+renderBoard :: Board -> [String]
+renderBoard bd = zipWith (:) leftBorder (topBorder : ([0..7] >>= renderRow))
+  where
+    dark = 'X'
+    light = 'O'
+    leftBorder = '┌' : concat (replicate 7 "│├") <> "│└"
+    topBorder = concat (replicate 7 "─┬") <> "─┐"
+    renderRow :: Int -> [String]
+    renderRow r = [firstLine, secondLine]
+      where
+        (cross, cross') = if r == 7 then ('┴','┘') else ('┼','┤')
+        firstLine :: String
+        firstLine = concatMap (\c -> render c : "│") [0..7]
+          where
+            render c = case bd M.!? (r,c) of
+              Nothing -> ' '
+              Just d -> if d then dark else light
+        secondLine :: String
+        secondLine = concat (replicate 7 ['─',cross]) <> ['─',cross']
+
 main :: IO ()
-main = pure ()
+main = mapM_ putStrLn (renderBoard initBoard)
