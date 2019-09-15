@@ -12,6 +12,7 @@ dependencies:
 - base
 - containers
 - mtl
+- text
 - tf-random
 
 executables:

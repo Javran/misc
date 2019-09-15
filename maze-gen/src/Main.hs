@@ -1,6 +1,7 @@
 {-# LANGUAGE
     MultiWayIf
   , LambdaCase
+  , OverloadedStrings
   #-}
 module Main
   ( main
@@ -10,8 +11,10 @@ import Control.Monad.State.Strict
 import System.Environment
 import System.Random.TF
 import System.Random.TF.Instances
+import Data.Bits
 
 import qualified Data.Set as S
+import qualified Data.Text as T
 
 {-
   Use Willson's algorithm to generate mazes.
@@ -27,6 +30,22 @@ data Edge = Edge Coord Coord
 
 mkEdge :: Coord -> Coord -> Edge
 mkEdge a b = if a > b then Edge b a else Edge a b
+
+{-
+  indexing: U,D,L,R from most significant bit to the least one.
+ -}
+crosses :: T.Text
+crosses = " ╶╴─╷┌┐┬╵└┘┴│├┤┼"
+
+renderCross :: Bool -> Bool -> Bool -> Bool -> Char
+renderCross up down left right = T.index crosses ind
+  where
+    ind =
+      (if up then (`setBit` 3) else id)
+      . (if down then (`setBit` 2) else id)
+      . (if left then (`setBit` 1) else id)
+      . (if right then (`setBit` 0) else id)
+      $ 0
 
 -- initial set consists of all nodes.
 initMaze :: Int -> Int -> S.Set Coord
