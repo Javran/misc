@@ -109,20 +109,30 @@ genMaze g rows cols = (`evalState` g) $ do
 renderMaze :: Int -> Int -> S.Set Edge -> [String]
 renderMaze rows cols edgeSet = firstLine : concatMap renderRow [0..rows-1]
   where
-    firstLine = concat (replicate cols "+-") <> "+"
+    firstLine = concat (replicate cols "┼─") <> "┼"
     cs = [0..cols-1]
     renderRow :: Int -> [String]
     renderRow r = [topLine, bottomLine]
       where
-        topLine = '|' : concatMap render cs
+        topLine = '│' : concatMap render cs
           where
             render c = ' ' : let e = mkEdge (r,c) (r,c+1)
-                             in if S.member e edgeSet then " " else "|"
-        bottomLine = '+' : concatMap render cs
+                             in if S.member e edgeSet then " " else "│"
+        bottomLine = '┼' : concatMap render cs
           where
-            render c = (let e = mkEdge (r,c) (r+1,c)
-                         in if S.member e edgeSet then " " else "-") <> "+"
-
+            render c =
+              (let e = mkEdge tl bl
+                in if S.member e edgeSet then " " else "─")
+              <> [renderCross up down left right]
+              where
+                tl = (r,c)
+                tr = (r,c+1)
+                bl = (r+1,c)
+                br = (r+1,c+1)
+                up = S.notMember (mkEdge tl tr) edgeSet
+                down = S.notMember (mkEdge bl br) edgeSet
+                left = S.notMember (mkEdge tl bl) edgeSet
+                right = S.notMember (mkEdge tr br) edgeSet
 
 main :: IO ()
 main = getArgs >>= \case
