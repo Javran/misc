@@ -10,13 +10,12 @@ import Data.List
 vhLimit :: Int -> Int -> Widget a -> Widget a
 vhLimit v h = vLimit v . hLimit h
 
-ui :: Widget ()
-ui = joinBorders $ center $ border $ vhLimit (v*8+7) (v*8+7) grid
+ui :: Int -> Int -> Widget ()
+ui v h = joinBorders $ center $ border $ vhLimit (v*8+7) (h*8+7) grid
   where
-    (v,h) = (2,2)
     grid = center $ vBox (intersperse hBorder (replicate 8 row))
     row = center $ hBox (intersperse vBorder (replicate 8 cell))
-    cell = vhLimit v h $ str "#"
+    cell = vhLimit v h $ center $ str "#"
 
 main :: IO ()
-main = simpleMain ui
+main = simpleMain (ui 3 3)
