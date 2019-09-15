@@ -12,6 +12,7 @@ import System.Environment
 import System.Random.TF
 import System.Random.TF.Instances
 import Data.Bits
+import Data.List
 
 import qualified Data.Set as S
 import qualified Data.Text as T
@@ -106,10 +107,34 @@ genMaze g rows cols = (`evalState` g) $ do
       (S.singleton x)
       []
 
+{-
+  renderCorner rows cols edgeSet (r,c) renders
+  the bottom right corner of cell (r,c).
+  edgeSet should contain all inner connections of the maze.
+ -}
+renderCorner :: Int -> Int -> S.Set Edge -> Coord -> Char
+renderCorner rows cols edgeSet (r,c) = renderCross up down left right
+  where
+    inside (r',c') = 0 <= r' && r' < rows && 0 <= c' && c' < cols
+    tl = (r,c)
+    tr = (r,c+1)
+    bl = (r+1,c)
+    br = (r+1,c+1)
+    checkLoc x y
+      | not (inside x) && not (inside y) = False
+      | inside x && inside y = S.notMember (mkEdge x y) edgeSet
+      | otherwise = True
+    up = checkLoc tl tr
+    down = checkLoc bl br
+    left = checkLoc tl bl
+    right = checkLoc tr br
+
 renderMaze :: Int -> Int -> S.Set Edge -> [String]
 renderMaze rows cols edgeSet = firstLine : concatMap renderRow [0..rows-1]
   where
-    firstLine = concat (replicate cols "┼─") <> "┼"
+    firstLine = intersperse '─' $ render <$> [-1..cols-1]
+      where
+        render c = renderCorner rows cols edgeSet (-1,c)
     cs = [0..cols-1]
     renderRow :: Int -> [String]
     renderRow r = [topLine, bottomLine]
@@ -118,21 +143,15 @@ renderMaze rows cols edgeSet = firstLine : concatMap renderRow [0..rows-1]
           where
             render c = ' ' : let e = mkEdge (r,c) (r,c+1)
                              in if S.member e edgeSet then " " else "│"
-        bottomLine = '┼' : concatMap render cs
+        bottomLine = renderCorner rows cols edgeSet (r,-1) : concatMap render cs
           where
             render c =
               (let e = mkEdge tl bl
                 in if S.member e edgeSet then " " else "─")
-              <> [renderCross up down left right]
+              <> [renderCorner rows cols edgeSet (r,c)]
               where
                 tl = (r,c)
-                tr = (r,c+1)
                 bl = (r+1,c)
-                br = (r+1,c+1)
-                up = S.notMember (mkEdge tl tr) edgeSet
-                down = S.notMember (mkEdge bl br) edgeSet
-                left = S.notMember (mkEdge tl bl) edgeSet
-                right = S.notMember (mkEdge tr br) edgeSet
 
 main :: IO ()
 main = getArgs >>= \case
