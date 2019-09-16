@@ -16,6 +16,19 @@ type Board = M.Map Coord Disk
 initBoard :: Board
 initBoard = M.fromList [((3,3),False), ((4,4),False), ((3,4),True), ((4,3),True)]
 
+type Dir = (Int, Int)
+
+dirs :: [] Dir
+dirs = ds <> ((\(r,c) -> (-r,-c)) <$> ds)
+  where
+    ds = [(1,0),(0,1),(1,1),(1,-1)]
+
+-- get the list of disks starting from coord, along dir.
+getDisks :: Board -> Coord -> Dir -> [(Coord, Maybe Disk)]
+getDisks bd coord (dr,dc) = (\k -> (k, M.lookup k bd)) <$> coords
+  where
+    coords = iterate (\(r,c) -> (r+dr,c+dc)) coord
+
 renderBoard :: Board -> [String]
 renderBoard bd =
     topAxis
