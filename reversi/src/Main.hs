@@ -6,6 +6,9 @@ module Main
   Implmentation of Reversi (https://en.wikipedia.org/wiki/Reversi)
  -}
 
+import Data.Maybe
+import Control.Monad
+import qualified Data.Set as S
 import qualified Data.Map.Strict as M
 
 type Coord = (Int {- row -}, Int {- col -}) -- note that this is 0-based index
@@ -28,6 +31,35 @@ getDisks :: Board -> Coord -> Dir -> [(Coord, Maybe Disk)]
 getDisks bd coord (dr,dc) = (\k -> (k, M.lookup k bd)) <$> coords
   where
     coords = iterate (\(r,c) -> (r+dr,c+dc)) coord
+
+-- get the list of coordinates of disks that will be filpped
+-- because of next moving being coord :: Coord.
+applyMoveOnDir :: Board -> Disk -> Coord -> Dir -> [Coord]
+applyMoveOnDir bd who coord dir =
+    if null owns
+      then []
+      else fst <$> oppos
+  where
+    (oppos, owns) = span ((/= who) . snd) consecutives
+    consecutives =
+      fmap (\(k, Just v) -> (k, v))
+      -- only take consecutive non-empty values
+      . takeWhile (isJust . snd)
+      -- skip first element, which is coord itself.
+      . tail $ getDisks bd coord dir
+
+applyMove :: Board -> Disk -> Coord -> Maybe (S.Set Coord, Board)
+applyMove bd who coord = do
+  guard $ M.notMember coord bd
+  let flipCoords = dirs >>= \dir -> applyMoveOnDir bd who coord dir
+      flipCoordsSet = S.fromList flipCoords
+      bd' =
+        S.foldr
+          (\coord' -> M.insert coord' who)
+          (M.insert coord who bd)
+          flipCoordsSet
+  guard . not . null $ flipCoords
+  pure (flipCoordsSet, bd')
 
 renderBoard :: Board -> [String]
 renderBoard bd =
@@ -55,7 +87,11 @@ renderBoard bd =
         firstLine = concatMap (\c -> render c : "│") [0..7]
           where
             render c = case bd M.!? (r,c) of
-              Nothing -> ' '
+              Nothing ->
+                -- test possible moves
+                case applyMove bd True (r,c) of
+                  Nothing -> ' '
+                  Just _ -> '?'
               Just d -> if d then dark else light
         secondLine :: String
         secondLine = concat (replicate 7 ['─',cross]) <> ['─',cross']
