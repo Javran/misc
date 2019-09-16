@@ -11,8 +11,6 @@ import Control.Monad.State.Strict
 import System.Environment
 import System.Random.TF
 import System.Random.TF.Instances
-import Data.Bits
-import Data.List
 
 import qualified Data.Set as S
 import qualified Data.Text as T
@@ -41,12 +39,12 @@ crosses = " ╶╴─╷┌┐┬╵└┘┴│├┤┼"
 renderCross :: Bool -> Bool -> Bool -> Bool -> Char
 renderCross up down left right = T.index crosses ind
   where
-    ind =
-      (if up then (`setBit` 3) else id)
-      . (if down then (`setBit` 2) else id)
-      . (if left then (`setBit` 1) else id)
-      . (if right then (`setBit` 0) else id)
-      $ 0
+    ind = sum
+      [ if up then 8 else 0
+      , if down then 4 else 0
+      , if left then 2 else 0
+      , if right then 1 else 0
+      ]
 
 -- initial set consists of all nodes.
 initMaze :: Int -> Int -> S.Set Coord
@@ -130,25 +128,24 @@ renderCorner rows cols edgeSet (r,c) = renderCross up down left right
     right = checkLoc tr br
 
 renderMaze :: Int -> Int -> S.Set Edge -> [String]
-renderMaze rows cols edgeSet = firstLine : concatMap renderRow [0..rows-1]
+renderMaze rows cols edgeSet =
+    tail $ concatMap renderRow [-1..rows-1]
   where
-    firstLine = intersperse '─' $ render <$> [-1..cols-1]
-      where
-        render c = renderCorner rows cols edgeSet (-1,c)
-    cs = [0..cols-1]
+    corner = renderCorner rows cols edgeSet
+    cs = [-1..cols-1]
     renderRow :: Int -> [String]
     renderRow r = [topLine, bottomLine]
       where
-        topLine = '│' : concatMap render cs
+        topLine = tail $ concatMap render cs
           where
             render c = ' ' : let e = mkEdge (r,c) (r,c+1)
                              in if S.member e edgeSet then " " else "│"
-        bottomLine = renderCorner rows cols edgeSet (r,-1) : concatMap render cs
+        bottomLine = tail $ concatMap render cs
           where
             render c =
               (let e = mkEdge tl bl
                 in if S.member e edgeSet then " " else "─")
-              <> [renderCorner rows cols edgeSet (r,c)]
+              <> [corner (r,c)]
               where
                 tl = (r,c)
                 bl = (r+1,c)
