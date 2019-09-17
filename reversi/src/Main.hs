@@ -61,8 +61,8 @@ applyMove bd who coord = do
   guard . not . null $ flipCoords
   pure (flipCoordsSet, bd')
 
-renderBoard :: Board -> [String]
-renderBoard bd =
+renderBoard :: Board -> (Board -> Coord -> Maybe Char) -> [String]
+renderBoard bd renderEx =
     topAxis
     : zipWith (:)
         (concat ((\v -> ' ': show v) <$> [1..8 :: Int]) <> " ")
@@ -88,13 +88,15 @@ renderBoard bd =
           where
             render c = case bd M.!? (r,c) of
               Nothing ->
-                -- test possible moves
-                case applyMove bd True (r,c) of
-                  Nothing -> ' '
-                  Just _ -> '?'
+                fromMaybe ' ' (renderEx bd (r,c))
               Just d -> if d then dark else light
         secondLine :: String
         secondLine = concat (replicate 7 ['─',cross]) <> ['─',cross']
 
 main :: IO ()
-main = mapM_ putStrLn (renderBoard initBoard)
+main = mapM_ putStrLn (renderBoard initBoard renderEx)
+  where
+    renderEx bd (r,c) =
+      case applyMove bd True (r,c) of
+        Nothing -> Nothing
+        Just _ -> Just '?'
