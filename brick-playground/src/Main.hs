@@ -11,10 +11,19 @@ vhLimit :: Int -> Int -> Widget a -> Widget a
 vhLimit v h = vLimit v . hLimit h
 
 ui :: Int -> Int -> Widget ()
-ui v h = joinBorders $ center $ border $ vhLimit (v*8+7) (h*8+7) grid
+ui v h = joinBorders $ center $ vhLimit fullV fullH grid
   where
-    grid = center $ vBox (intersperse hBorder (replicate 8 row))
-    row = center $ hBox (intersperse vBorder (replicate 8 cell))
+    (fullV, fullH) = ((v+1)*8+1, (h+1)*8+1)
+    grid = center $ vBox (intersperse hBorder $ firstRow : rows)
+      where
+        firstRow = vLimit 1 $
+          center $ hBox $ intersperse vBorder $
+            tl : (hLimit h . center . str <$> (show <$> [1 :: Int ..8]))
+        tl = vhLimit 1 1 $ fill ' '
+        rows = row <$> ['a'..'h']
+    row hd = center $ hBox (intersperse vBorder (hdW : replicate 8 cell))
+      where
+        hdW = vhLimit v 1 $ center $ str [hd]
     cell = vhLimit v h $ center $ str "#"
 
 main :: IO ()
