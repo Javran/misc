@@ -104,14 +104,16 @@ renderBoard bd renderEx =
             render c = case bd M.!? (r,c) of
               Nothing ->
                 fromMaybe ' ' (renderEx bd (r,c))
-              Just d -> if d then dark else light
+              Just d ->
+                fromMaybe (if d then dark else light) (renderEx bd (r,c))
         secondLine :: String
         secondLine = concat (replicate 7 ['─',cross]) <> ['─',cross']
 
-possibleMoves :: Board -> Color -> [] (S.Set Coord, Board)
-possibleMoves bd who = mapMaybe (applyMove bd who) allCoords
+possibleMoves :: Board -> Color -> [] Coord
+possibleMoves bd who =
+    filter (\c -> isJust $ applyMove bd who c) allCoords
   where
-    allCoords = [(r,c) | r <- [0..8], c <- [0..8]]
+    allCoords = [(r,c) | r <- [0..7], c <- [0..7]]
 
 proceedGame :: StateT GameState IO ()
 proceedGame = do
@@ -123,6 +125,8 @@ proceedGame = do
   liftIO $ do
     putStrLn $ (if who then "Dark (X)" else "Light (O)") <> "'s turn."
     mapM_ putStrLn $ renderBoard bd renderEx
+    let showMove (r',c') = [['a' .. 'h'] !! c', ['1'..'8'] !! r']
+    liftIO $ putStrLn $ "Possible moves: " <> unwords (showMove <$> possibleMoves bd who)
   mMove <- readMove <$> liftIO getLine
   case mMove of
     Just coord |
