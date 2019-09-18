@@ -29,9 +29,9 @@ readMove :: String -> Maybe Coord
 readMove raw = coordTable M.!? raw
   where
     coordTable = M.fromList
-      [ ([colCh,rowCh], (c,r))
+      [ ([colCh,rowCh], (r,c))
       | (c,colCh) <- zip [0..] ['a'..'h']
-      , (r,rowCh) <- zip [0..] ['0'..'8']
+      , (r,rowCh) <- zip [0..] ['1'..'8']
       ]
 
 type Dir = (Int, Int)
@@ -108,10 +108,49 @@ renderBoard bd renderEx =
         secondLine :: String
         secondLine = concat (replicate 7 ['─',cross]) <> ['─',cross']
 
-main :: IO ()
-main = mapM_ putStrLn (renderBoard initBoard renderEx)
+possibleMoves :: Board -> Color -> [] (S.Set Coord, Board)
+possibleMoves bd who = mapMaybe (applyMove bd who) allCoords
   where
-    renderEx bd (r,c) =
-      case applyMove bd True (r,c) of
-        Nothing -> Nothing
-        Just _ -> Just '?'
+    allCoords = [(r,c) | r <- [0..8], c <- [0..8]]
+
+proceedGame :: StateT GameState IO ()
+proceedGame = do
+  (bd, who) <- get
+  let renderEx _ (r,c) =
+        case applyMove bd who (r,c) of
+          Nothing -> Nothing
+          Just _ -> Just '?'
+  liftIO $ do
+    putStrLn $ (if who then "Dark (X)" else "Light (O)") <> "'s turn."
+    mapM_ putStrLn $ renderBoard bd renderEx
+  mMove <- readMove <$> liftIO getLine
+  case mMove of
+    Just coord |
+      Just (_,bd') <- applyMove bd who coord -> do
+        -- check whether opponent has any possible moves
+        let who' = not who
+        if null (possibleMoves bd' who')
+          then
+            if null (possibleMoves bd' who)
+              then do
+                liftIO $ putStrLn "Game over."
+                let (darks, lights) = M.partition id bd'
+                liftIO $ putStrLn $ " Dark: " <> show (M.size darks)
+                liftIO $ putStrLn $ " Light: " <> show (M.size lights)
+              else do
+                liftIO $ putStrLn $
+                  (if who' then "Dark" else "Light")
+                  <> " does not have any valid move, passing."
+                put (bd', who)
+                proceedGame
+          else do
+            -- next move is possible, proceed.
+            put (bd', who')
+            proceedGame
+    _ -> do
+      liftIO $ putStrLn "Invalid move."
+      proceedGame
+
+
+main :: IO ()
+main = evalStateT proceedGame initGameState
