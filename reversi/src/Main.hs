@@ -8,6 +8,7 @@ module Main
 
 import Data.Maybe
 import Control.Monad
+import Control.Monad.State
 import qualified Data.Set as S
 import qualified Data.Map.Strict as M
 
@@ -16,8 +17,22 @@ type Color = Bool -- False for light, True for dark
 
 type Board = M.Map Coord Color
 
+type GameState = (Board, Color) -- current board & who's turn
+
 initBoard :: Board
 initBoard = M.fromList [((3,3),False), ((4,4),False), ((3,4),True), ((4,3),True)]
+
+initGameState :: GameState
+initGameState = (initBoard, True)
+
+readMove :: String -> Maybe Coord
+readMove raw = coordTable M.!? raw
+  where
+    coordTable = M.fromList
+      [ ([colCh,rowCh], (c,r))
+      | (c,colCh) <- zip [0..] ['a'..'h']
+      , (r,rowCh) <- zip [0..] ['0'..'8']
+      ]
 
 type Dir = (Int, Int)
 
