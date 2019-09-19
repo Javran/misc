@@ -7,11 +7,17 @@ module Game.Reversi.Core
   , initGameState
   , possibleMoves
   , applyMove
+  , applyMoveOnGs
+  , possibleMovesGs
+  , gsBoard
+  , gsTurn
+  , gameConcludedGs
   ) where
 
 import Control.Monad
-import Data.Maybe
 import Data.Bifunctor
+import Data.Bool
+import Data.Maybe
 
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
@@ -91,3 +97,27 @@ applyMove bd who coord = do
 possibleMoves :: Board -> Color -> S.Set Coord
 possibleMoves bd who =
   S.filter (\c -> isJust $ applyMove bd who c) allCoords
+
+possibleMovesGs :: GameState -> S.Set Coord
+possibleMovesGs gs = bool fst snd (gsTurn gs) . gsNextMoves $ gs
+
+gameConcludedGs :: GameState -> Bool
+gameConcludedGs GameState { gsNextMoves = (movesLight, movesDark)} =
+  S.null movesLight && S.null movesDark
+
+applyMoveOnGs :: GameState -> Coord -> Maybe GameState
+applyMoveOnGs gs coord = do
+  let who = gsTurn gs
+      nextMoves = possibleMovesGs gs
+  guard $ S.member coord nextMoves
+  let -- TODO: safe destruct
+      Just (_, bd') = applyMove (gsBoard gs) who coord
+      freeCells = S.delete coord (gsFreeCells gs)
+  pure GameState
+    { gsBoard = bd'
+    , gsFreeCells = freeCells
+    , gsTurn = not who
+    , gsNextMoves =
+        let pm = possibleMoves bd'
+        in bimap pm pm (False, True)
+    }
