@@ -11,7 +11,9 @@ module Game.Reversi.Core
   , possibleMovesGs
   , gsBoard
   , gsTurn
+  , gsNextMoves
   , gameConcludedGs
+  , switchSide
   ) where
 
 import Control.Monad
@@ -121,3 +123,8 @@ applyMoveOnGs gs coord = do
         let pm = possibleMoves bd'
         in bimap pm pm (False, True)
     }
+
+switchSide :: GameState -> Maybe GameState
+switchSide gs = do
+  guard $ M.null $ possibleMovesGs gs
+  pure (gs {gsTurn = not (gsTurn gs)})

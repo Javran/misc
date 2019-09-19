@@ -10,16 +10,7 @@ import Data.Maybe
 import Control.Monad.State
 import qualified Data.Map.Strict as M
 
-import Game.Reversi.Core hiding (GameState, initGameState)
-
-type GameState = (Board, Color) -- current board & who's turn
-
-
-initBoard :: Board
-initBoard = M.fromList [((3,3),False), ((4,4),False), ((3,4),True), ((4,3),True)]
-
-initGameState :: GameState
-initGameState = (initBoard, True)
+import Game.Reversi.Core
 
 readMove :: String -> Maybe Coord
 readMove raw = coordTable M.!? raw
@@ -65,7 +56,9 @@ renderBoard bd renderEx =
 
 proceedGame :: StateT GameState IO ()
 proceedGame = do
-  (bd, who) <- get
+  gs <- get
+  let bd = gsBoard gs
+      who = gsTurn gs
   let renderEx _ (r,c) =
         case applyMove bd who (r,c) of
           Nothing -> Nothing
@@ -75,35 +68,33 @@ proceedGame = do
     mapM_ putStrLn $ renderBoard bd renderEx
     let showMove (r',c') = [['a' .. 'h'] !! c', ['1'..'8'] !! r']
     liftIO $ putStrLn $ "Possible moves: " <>
-      unwords (showMove <$> M.keys (possibleMoves bd who))
+      unwords (showMove <$> M.keys (possibleMovesGs gs))
   mMove <- readMove <$> liftIO getLine
   case mMove of
     Just coord |
-      Just (_,bd') <- applyMove bd who coord -> do
-        -- check whether opponent has any possible moves
-        let who' = not who
-        if null (possibleMoves bd' who')
-          then
-            if null (possibleMoves bd' who)
-              then do
-                liftIO $ putStrLn "Game over."
-                let (darks, lights) = M.partition id bd'
-                liftIO $ putStrLn $ " Dark: " <> show (M.size darks)
-                liftIO $ putStrLn $ " Light: " <> show (M.size lights)
-              else do
+      Just gs' <- applyMoveOnGs gs coord ->
+        if gameConcludedGs gs'
+          then liftIO $ do
+            putStrLn "Game over."
+            let (darks, lights) = M.partition id (gsBoard gs')
+            putStrLn $ "  Dark: " <> show (M.size darks)
+            putStrLn $ "  Light: " <> show (M.size lights)
+          else
+            -- switchSide is a possible move only if no other move can be performed.
+            case switchSide gs' of
+              Just gs'' -> do
+                let who' = gsTurn gs'
                 liftIO $ putStrLn $
                   (if who' then "Dark" else "Light")
                   <> " does not have any valid move, passing."
-                put (bd', who)
+                put gs''
                 proceedGame
-          else do
-            -- next move is possible, proceed.
-            put (bd', who')
-            proceedGame
+              Nothing -> do
+                put gs'
+                proceedGame
     _ -> do
       liftIO $ putStrLn "Invalid move."
       proceedGame
-
 
 main :: IO ()
 main = evalStateT proceedGame initGameState
