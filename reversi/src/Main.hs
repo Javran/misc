@@ -8,7 +8,6 @@ module Main
 
 import Data.Maybe
 import Control.Monad.State
-import qualified Data.Set as S
 import qualified Data.Map.Strict as M
 
 import Game.Reversi.Core hiding (GameState, initGameState)
@@ -76,7 +75,7 @@ proceedGame = do
     mapM_ putStrLn $ renderBoard bd renderEx
     let showMove (r',c') = [['a' .. 'h'] !! c', ['1'..'8'] !! r']
     liftIO $ putStrLn $ "Possible moves: " <>
-      unwords (showMove <$> S.toList (possibleMoves bd who))
+      unwords (showMove <$> M.keys (possibleMoves bd who))
   mMove <- readMove <$> liftIO getLine
   case mMove of
     Just coord |

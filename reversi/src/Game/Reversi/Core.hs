@@ -32,7 +32,7 @@ data GameState
   { gsBoard :: Board
   , gsFreeCells :: S.Set Coord -- not yet occupied cells
   , gsTurn :: Color -- who's turn
-  , gsNextMoves :: (S.Set Coord, S.Set Coord)
+  , gsNextMoves :: (M.Map Coord Board, M.Map Coord Board)
     -- (<next possible moves for light>, <next possible moves for dark>)
   }
 
@@ -94,25 +94,25 @@ applyMove bd who coord = do
   guard . not . null $ flipCoords
   pure (flipCoordsSet, bd')
 
-possibleMoves :: Board -> Color -> S.Set Coord
-possibleMoves bd who =
-  S.filter (\c -> isJust $ applyMove bd who c) allCoords
+possibleMoves :: Board -> Color -> M.Map Coord Board
+possibleMoves bd who = M.fromDistinctAscList $
+  mapMaybe
+    (\c -> do { (_, bd') <- applyMove bd who c; pure (c,bd') })
+    (S.toAscList allCoords)
 
-possibleMovesGs :: GameState -> S.Set Coord
+possibleMovesGs :: GameState -> M.Map Coord Board
 possibleMovesGs gs = bool fst snd (gsTurn gs) . gsNextMoves $ gs
 
 gameConcludedGs :: GameState -> Bool
 gameConcludedGs GameState { gsNextMoves = (movesLight, movesDark)} =
-  S.null movesLight && S.null movesDark
+  M.null movesLight && M.null movesDark
 
 applyMoveOnGs :: GameState -> Coord -> Maybe GameState
 applyMoveOnGs gs coord = do
   let who = gsTurn gs
       nextMoves = possibleMovesGs gs
-  guard $ S.member coord nextMoves
-  let -- TODO: safe destruct
-      Just (_, bd') = applyMove (gsBoard gs) who coord
-      freeCells = S.delete coord (gsFreeCells gs)
+  bd' <- nextMoves M.!? coord
+  let freeCells = S.delete coord (gsFreeCells gs)
   pure GameState
     { gsBoard = bd'
     , gsFreeCells = freeCells
