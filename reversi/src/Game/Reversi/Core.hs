@@ -35,6 +35,13 @@ data GameState
   , gsFreeCells :: S.Set Coord -- not yet occupied cells
   , gsTurn :: Color -- who's turn
   , gsNextMoves :: (M.Map Coord Board, M.Map Coord Board)
+    {-
+      TODO: note that using Map might not be the most efficient idea here,
+      this is because Map expects a finite set and to test the emptiness of a Map,
+      all keys must be visited
+      (e.g. `M.null $ M.fromList [1..]` will not terminate despite
+      that the result looks obvious)
+    -}
     -- (<next possible moves for light>, <next possible moves for dark>)
   }
 
