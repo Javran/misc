@@ -103,11 +103,15 @@ applyMove bd who coord = do
   guard . not . null $ flipCoords
   pure (flipCoordsSet, bd')
 
+possibleMoves' :: S.Set Coord -> Board -> Color -> M.Map Coord Board
+possibleMoves' coords bd who = M.fromDistinctAscList $
+  S.foldr'
+    (\c acc -> [ (c,bd') | Just (_, bd') <- [applyMove bd who c] ] <> acc)
+    []
+    coords
+
 possibleMoves :: Board -> Color -> M.Map Coord Board
-possibleMoves bd who = M.fromDistinctAscList $
-  mapMaybe
-    (\c -> do { (_, bd') <- applyMove bd who c; pure (c,bd') })
-    (S.toAscList allCoords)
+possibleMoves = possibleMoves' allCoords
 
 possibleMovesGs :: GameState -> M.Map Coord Board
 possibleMovesGs gs = bool fst snd (gsTurn gs) . gsNextMoves $ gs
@@ -127,7 +131,7 @@ applyMoveOnGs gs coord = do
     , gsFreeCells = freeCells
     , gsTurn = not who
     , gsNextMoves =
-        let pm = possibleMoves bd'
+        let pm = possibleMoves' freeCells bd'
         in bimap pm pm (False, True)
     }
 
