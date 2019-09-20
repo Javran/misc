@@ -63,38 +63,37 @@ proceedGame = do
         case applyMove bd who (r,c) of
           Nothing -> Nothing
           Just _ -> Just '?'
-  liftIO $ do
-    putStrLn $ (if who then "Dark (X)" else "Light (O)") <> "'s turn."
-    mapM_ putStrLn $ renderBoard bd renderEx
-    let showMove (r',c') = [['a' .. 'h'] !! c', ['1'..'8'] !! r']
-    liftIO $ putStrLn $ "Possible moves: " <>
-      unwords (showMove <$> M.keys (possibleMovesGs gs))
-  mMove <- readMove <$> liftIO getLine
-  case mMove of
-    Just coord |
-      Just gs' <- applyMoveOnGs gs coord ->
-        if gameConcludedGs gs'
-          then liftIO $ do
-            putStrLn "Game over."
-            let (darks, lights) = M.partition id (gsBoard gs')
-            putStrLn $ "  Dark: " <> show (M.size darks)
-            putStrLn $ "  Light: " <> show (M.size lights)
-          else
-            -- switchSide is a possible move only if no other move can be performed.
-            case switchSide gs' of
-              Just gs'' -> do
-                let who' = gsTurn gs'
-                liftIO $ putStrLn $
-                  (if who' then "Dark" else "Light")
-                  <> " does not have any valid move, passing."
-                put gs''
-                proceedGame
-              Nothing -> do
+  liftIO $ mapM_ putStrLn $ renderBoard bd renderEx
+  if gameConcludedGs gs
+    then liftIO $ do
+      putStrLn "Game over."
+      let (darks, lights) = M.partition id (gsBoard gs)
+      putStrLn $ "  Dark: " <> show (M.size darks)
+      putStrLn $ "  Light: " <> show (M.size lights)
+    else
+      -- switchSide is a possible move only if no other move can be performed.
+      case switchSide gs of
+        Just gs' -> do
+          liftIO $ putStrLn $
+            (if who then "Dark" else "Light")
+            <> " does not have any valid move, passing."
+          put gs'
+          proceedGame
+        Nothing -> do
+          liftIO $ do
+            putStrLn $ (if who then "Dark (X)" else "Light (O)") <> "'s turn."
+            let showMove (r',c') = [['a' .. 'h'] !! c', ['1'..'8'] !! r']
+            putStrLn $ "Possible moves: " <>
+              unwords (showMove <$> M.keys (possibleMovesGs gs))
+          mMove <- readMove <$> liftIO getLine
+          case mMove of
+            Just coord |
+              Just gs' <- applyMoveOnGs gs coord -> do
                 put gs'
                 proceedGame
-    _ -> do
-      liftIO $ putStrLn "Invalid move."
-      proceedGame
+            _ -> do
+              liftIO $ putStrLn "Invalid move."
+              proceedGame
 
 main :: IO ()
 main = evalStateT proceedGame initGameState
