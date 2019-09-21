@@ -46,7 +46,16 @@ data GameState
       all keys must be visited
       (e.g. `M.null $ M.fromList [1..]` will not terminate despite
       that the result looks obvious)
-    -}
+
+      TODO: I want to define PossibleMoves = Either Board (M.Map Coord Board),
+
+      - Left Board indicates that no move is possible, must switch side,
+      - Right (M.Map Coord Board) indicates that some moves are possible.
+
+      by doing so, we can branch ASAP based on list and don't need to wait for Map
+      to visit all of its keys.
+
+     -}
     -- (<next possible moves for light>, <next possible moves for dark>)
   }
 
