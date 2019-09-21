@@ -59,7 +59,9 @@ proceedGame = do
   gs <- get
   let bd = gsBoard gs
       who = gsTurn gs
-      nextMoves = possibleMoves gs
+      nextMoves = case possibleMoves gs of
+        Left _ -> M.empty
+        Right m -> m
   let renderEx _ coord = '?' <$ (nextMoves M.!? coord)
   liftIO $ mapM_ putStrLn $ renderBoard bd renderEx
   if gameConcluded gs

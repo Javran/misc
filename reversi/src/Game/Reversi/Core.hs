@@ -33,8 +33,8 @@ type Color = Bool -- False for light, True for dark
 
 type Board = M.Map Coord Color
 
-allCoords :: S.Set Coord
-allCoords = S.fromList [ (r,c) | r <- [0..7], c <- [0..7] ]
+allCoords :: [] Coord
+allCoords = [ (r,c) | r <- [0..7], c <- [0..7] ]
 
 initBoard :: Board
 initBoard = M.fromList [((3,3),False), ((4,4),False), ((3,4),True), ((4,3),True)]
@@ -81,9 +81,9 @@ applyMove bd who coord = do
   guard . not . null $ flipCoords
   pure (flipCoordsSet, bd')
 
-possibleMoves :: S.Set Coord -> Board -> Color -> M.Map Coord Board
-possibleMoves coords bd who = M.fromDistinctAscList $
-  S.foldr'
+possibleMoves :: [] Coord -> Board -> Color -> [] (Coord, Board)
+possibleMoves coords bd who =
+  foldr
     (\c acc -> [ (c,bd') | Just (_, bd') <- [applyMove bd who c] ] <> acc)
     []
     coords
