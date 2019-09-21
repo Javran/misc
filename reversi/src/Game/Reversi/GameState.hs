@@ -16,6 +16,7 @@ module Game.Reversi.GameState
   ) where
 
 import Data.Bifunctor
+import Data.Bool
 
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
@@ -82,7 +83,7 @@ mkPossibleMoves cs bd who = case Core.possibleMoves cs bd who of
   moves@(_:_) -> Right (M.fromDistinctAscList moves)
 
 possibleMoves :: GameState -> PossibleMoves
-possibleMoves = undefined
+possibleMoves gs = bool fst snd (gsTurn gs) . gsNextMoves $ gs
 
 gameConcluded :: GameState -> Bool
 gameConcluded GameState { gsNextMoves = (Left _, Left _) } = True
