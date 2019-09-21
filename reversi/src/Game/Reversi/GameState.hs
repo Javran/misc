@@ -5,15 +5,13 @@ module Game.Reversi.GameState
   , Color
   , Board
   , initGameState
+  , applyMove
   , possibleMoves
-  , applyMoveOnGs
-  , possibleMovesGs
   , gsBoard
   , gsTurn
   , gsNextMoves
-  , gameConcludedGs
+  , gameConcluded
   , switchSide
-  , Core.applyMove
   ) where
 
 import Control.Monad
@@ -27,11 +25,14 @@ import qualified Game.Reversi.Core as Core
 import Game.Reversi.Core
   ( Coord
   , Color
+  , Board
   , allCoords
   , initBoard
   )
 
-type Board = M.Map Coord Color
+{-
+  This module defines GameState and operations around it.
+ -}
 
 data GameState
   = GameState
@@ -59,20 +60,17 @@ initGameState = GameState {..}
       where
         pm = Core.possibleMoves allCoords gsBoard
 
-possibleMoves :: Board -> Color -> M.Map Coord Board
-possibleMoves = Core.possibleMoves allCoords
+possibleMoves :: GameState -> M.Map Coord Board
+possibleMoves gs = bool fst snd (gsTurn gs) . gsNextMoves $ gs
 
-possibleMovesGs :: GameState -> M.Map Coord Board
-possibleMovesGs gs = bool fst snd (gsTurn gs) . gsNextMoves $ gs
-
-gameConcludedGs :: GameState -> Bool
-gameConcludedGs GameState { gsNextMoves = (movesLight, movesDark)} =
+gameConcluded :: GameState -> Bool
+gameConcluded GameState { gsNextMoves = (movesLight, movesDark)} =
   M.null movesLight && M.null movesDark
 
-applyMoveOnGs :: GameState -> Coord -> Maybe GameState
-applyMoveOnGs gs coord = do
+applyMove :: GameState -> Coord -> Maybe GameState
+applyMove gs coord = do
   let who = gsTurn gs
-      nextMoves = possibleMovesGs gs
+      nextMoves = possibleMoves gs
   bd' <- nextMoves M.!? coord
   let freeCells = S.delete coord (gsFreeCells gs)
   pure GameState
@@ -86,5 +84,5 @@ applyMoveOnGs gs coord = do
 
 switchSide :: GameState -> Maybe GameState
 switchSide gs = do
-  guard $ M.null $ possibleMovesGs gs
+  guard $ M.null $ possibleMoves gs
   pure (gs {gsTurn = not (gsTurn gs)})

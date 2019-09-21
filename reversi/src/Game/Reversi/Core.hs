@@ -1,6 +1,7 @@
 module Game.Reversi.Core
   ( Coord
   , Color
+  , Board
   , allCoords
   , initBoard
   , dirs
@@ -15,6 +16,17 @@ import Data.Maybe
 
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
+
+{-
+  Core game logic of Reversi.
+
+  This module is supposed to define no data type
+  and work on well-known data structures only.
+
+  For manipulation on GameState, use Game.Reversi.GameState
+  and avoid directly importing this module.
+  (as there will be intentional name conflicts)
+ -}
 
 type Coord = (Int {- row -}, Int {- col -}) -- note that this is 0-based index
 type Color = Bool -- False for light, True for dark
@@ -39,7 +51,6 @@ getDisks :: Board -> Coord -> Dir -> [(Coord, Maybe Color)]
 getDisks bd coord (dr,dc) = (\k -> (k, M.lookup k bd)) <$> coords
   where
     coords = iterate (\(r,c) -> (r+dr,c+dc)) coord
-
 
 -- get the list of coordinates of disks that will be filpped
 -- because of next moving being coord :: Coord.

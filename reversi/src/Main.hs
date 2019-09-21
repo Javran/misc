@@ -59,12 +59,10 @@ proceedGame = do
   gs <- get
   let bd = gsBoard gs
       who = gsTurn gs
-  let renderEx _ (r,c) =
-        case applyMove bd who (r,c) of
-          Nothing -> Nothing
-          Just _ -> Just '?'
+      nextMoves = possibleMoves gs
+  let renderEx _ coord = '?' <$ (nextMoves M.!? coord)
   liftIO $ mapM_ putStrLn $ renderBoard bd renderEx
-  if gameConcludedGs gs
+  if gameConcluded gs
     then liftIO $ do
       putStrLn "Game over."
       let (darks, lights) = M.partition id (gsBoard gs)
@@ -84,11 +82,11 @@ proceedGame = do
             putStrLn $ (if who then "Dark (X)" else "Light (O)") <> "'s turn."
             let showMove (r',c') = [['a' .. 'h'] !! c', ['1'..'8'] !! r']
             putStrLn $ "Possible moves: " <>
-              unwords (showMove <$> M.keys (possibleMovesGs gs))
+              unwords (showMove <$> M.keys nextMoves)
           mMove <- readMove <$> liftIO getLine
           case mMove of
             Just coord |
-              Just gs' <- applyMoveOnGs gs coord -> do
+              Just gs' <- applyMove gs coord -> do
                 put gs'
                 proceedGame
             _ -> do
