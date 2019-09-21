@@ -10,7 +10,7 @@ import Data.Maybe
 import Control.Monad.State
 import qualified Data.Map.Strict as M
 
-import Game.Reversi.Core
+import Game.Reversi.GameState
 
 readMove :: String -> Maybe Coord
 readMove raw = coordTable M.!? raw
