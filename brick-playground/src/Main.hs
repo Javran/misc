@@ -10,8 +10,13 @@ import Data.List
 vhLimit :: Int -> Int -> Widget a -> Widget a
 vhLimit v h = vLimit v . hLimit h
 
-ui :: Int -> Int -> Widget ()
-ui v h = joinBorders $ center $ vhLimit fullV fullH grid
+data RName = RName deriving (Eq, Ord)
+
+ui :: Int -> Int -> Widget RName
+ui v h =
+  joinBorders $ center
+    $ showCursor RName (Location (4, 6)) -- TODO: should move according to state
+    $ vhLimit fullV fullH grid
   where
     (fullV, fullH) = ((v+1)*8+1, (h+1)*8+1)
     grid = center $ vBox (intersperse hBorder $ firstRow : rows)
@@ -27,4 +32,12 @@ ui v h = joinBorders $ center $ vhLimit fullV fullH grid
     cell = vhLimit v h $ center $ str "#"
 
 main :: IO ()
-main = simpleMain (ui 3 3)
+main = do
+  let app = (simpleApp (ui 1 1)) { appChooseCursor = const $ showCursorNamed RName }
+      {-
+        TODO: for now let's set state as coordinate,
+        and implement moving cursor around with arrow keys
+        until hitting 'q'
+       -}
+      initState = (0,0) :: (Int, Int)
+  print =<< defaultMain app initState
