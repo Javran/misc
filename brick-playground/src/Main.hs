@@ -12,10 +12,15 @@ vhLimit v h = vLimit v . hLimit h
 
 data RName = RName deriving (Eq, Ord)
 
+type Coord = (Int, Int)
+
+toWidgetPos :: Int -> Int -> Coord -> Location
+toWidgetPos v h (r,c) = Location (2 + c*(h+1), 2 + r*(v+1))
+
 ui :: Int -> Int -> Widget RName
 ui v h =
   joinBorders $ center
-    $ showCursor RName (Location (4, 6)) -- TODO: should move according to state
+    $ showCursor RName (toWidgetPos v h (2,4))
     $ vhLimit fullV fullH grid
   where
     (fullV, fullH) = ((v+1)*8+1, (h+1)*8+1)
@@ -33,11 +38,13 @@ ui v h =
 
 main :: IO ()
 main = do
-  let app = (simpleApp (ui 1 1)) { appChooseCursor = const $ showCursorNamed RName }
+  let app = (simpleApp (ui 1 1))
+        { appChooseCursor = const $ showCursorNamed RName
+        }
       {-
         TODO: for now let's set state as coordinate,
         and implement moving cursor around with arrow keys
         until hitting 'q'
        -}
-      initState = (0,0) :: (Int, Int)
+      initState = (2,5) :: (Int, Int)
   print =<< defaultMain app initState
