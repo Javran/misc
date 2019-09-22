@@ -11,6 +11,7 @@ description:         description
 dependencies:
 - base
 - brick
+- vty
 
 executables:
   demo:
