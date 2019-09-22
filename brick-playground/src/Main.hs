@@ -7,6 +7,7 @@ import Brick.Widgets.Border
 import Brick.Widgets.Center
 import Data.List
 import Graphics.Vty.Attributes (defAttr)
+import Graphics.Vty.Input.Events
 
 vhLimit :: Int -> Int -> Widget a -> Widget a
 vhLimit v h = vLimit v . hLimit h
@@ -37,12 +38,32 @@ ui v h coord =
         hdW = vhLimit v 1 $ center $ str [hd]
     cell = vhLimit v h $ center $ str "#"
 
+clamped :: (Coord -> Coord) -> (Coord -> Coord)
+clamped f s
+  | r >= 0 && r < 8 && c >= 0 && c < 8 = s'
+  | otherwise = s
+  where
+    s'@(r,c) = f s
+
+handleEvent :: Coord -> BrickEvent RName e -> EventM RName (Next Coord)
+handleEvent c e = case e of
+    VtyEvent (EvKey k [])
+      | Just move <- keyMove k -> continue (move c)
+    _ -> resizeOrQuit c e
+
+keyMove :: Key -> Maybe (Coord -> Coord)
+keyMove KLeft = pure $ clamped $ \(r,c) -> (r,c-1)
+keyMove KRight = pure $ clamped $ \(r,c) -> (r,c+1)
+keyMove KUp = pure $ clamped $ \(r,c) -> (r-1,c)
+keyMove KDown = pure $ clamped $ \(r,c) -> (r+1,c)
+keyMove _ = Nothing
+
 main :: IO ()
 main = do
   let app =
         App
         { appDraw = \s -> [ui 1 1 s]
-        , appHandleEvent = resizeOrQuit
+        , appHandleEvent = handleEvent
         , appStartEvent = pure
         , appAttrMap = const $ attrMap defAttr []
         , appChooseCursor = const $ showCursorNamed RName
