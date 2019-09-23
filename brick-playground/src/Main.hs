@@ -21,7 +21,8 @@ toWidgetPos v h (r,c) = Location (2 + c*(h+1), 2 + r*(v+1))
 
 ui :: Int -> Int -> Coord -> Widget RName
 ui v h coord =
-  joinBorders $ center
+  center
+    $ border $ padAll 1 $ joinBorders
     $ showCursor RName (toWidgetPos v h coord)
     $ vhLimit fullV fullH grid
   where
@@ -46,10 +47,11 @@ clamped f s
     s'@(r,c) = f s
 
 handleEvent :: Coord -> BrickEvent RName e -> EventM RName (Next Coord)
-handleEvent c e = case e of
+handleEvent s e = case e of
     VtyEvent (EvKey k [])
-      | Just move <- keyMove k -> continue (move c)
-    _ -> resizeOrQuit c e
+      | Just move <- keyMove k -> continue (move s)
+    VtyEvent (EvKey (KChar 'q') []) -> halt s
+    _ -> continue s
 
 keyMove :: Key -> Maybe (Coord -> Coord)
 keyMove KLeft = pure $ clamped $ \(r,c) -> (r,c-1)
