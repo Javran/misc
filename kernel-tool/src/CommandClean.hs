@@ -90,6 +90,7 @@ cmdClean = do
         case lookup "KERNEL_TOOL_CLEAN_BACKUP_DIR" curEnv of
           Just p -> FP.fromText p
           Nothing -> "/boot/backup"
+  mktree backupDir
   putStrLn $ "Limit number of kernels: " <> show kernelNumLimit
   putStrLn $ "Backup dir: " <> FP.encodeString backupDir
   let kernelFiles = ["vmlinuz", "System.map", "config"]
