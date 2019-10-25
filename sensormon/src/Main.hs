@@ -10,6 +10,8 @@ import System.Exit
 import Turtle.Prelude
 import Data.Text.Encoding (encodeUtf8)
 import Data.Aeson
+import Data.Char
+import Text.ParserCombinators.ReadP
 
 import qualified Data.Text as T
 import qualified Data.ByteString.Lazy as BSL
@@ -30,6 +32,19 @@ data TempInfo
   , tiMax :: Maybe Int
   , tiCrit :: Maybe Int
   }
+
+parseTempField :: T.Text -> Maybe T.Text
+parseTempField inp = case readP_to_S pTemp (T.unpack inp) of
+    [(v, "")] -> Just v
+    _ -> Nothing
+  where
+    pTemp :: ReadP T.Text
+    pTemp =
+      T.pack <$> (
+        string "temp"
+        *> munch1 isDigit
+        *> char '_'
+        *> munch1 (const True))
 
 {-
   This program parses output from `sensors` and print out useful info
