@@ -12,6 +12,7 @@ dependencies:
 - aeson
 - base
 - bytestring
+- containers
 - scientific
 - system-filepath
 - text

@@ -1,24 +1,28 @@
-{-# LANGUAGE OverloadedStrings, TupleSections, TypeApplications #-}
+{-# LANGUAGE
+    OverloadedStrings
+  , TupleSections
+  , TypeApplications
+  #-}
 module Main
   ( main
   ) where
 
 import Prelude hiding (FilePath)
 
-import Filesystem.Path.CurrentOS
-import System.Exit
-import Turtle.Prelude
-import Data.Text.Encoding (encodeUtf8)
 import Data.Aeson
-import Data.Aeson.Types
 import Data.Char
 import Data.Maybe
-import Text.ParserCombinators.ReadP
 import Data.Scientific
+import Data.Text.Encoding (encodeUtf8)
+import Filesystem.Path.CurrentOS
+import System.Exit
+import Text.ParserCombinators.ReadP
+import Turtle.Prelude
 
 import qualified Data.Text as T
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.HashMap.Strict as HM
+import qualified Data.Map.Strict as M
 
 {-
   the corresponding object looks like:
@@ -35,7 +39,7 @@ data TempInfo
   { tiInput :: Int
   , tiMax :: Maybe Int
   , tiCrit :: Maybe Int
-  }
+  } deriving (Show)
 
 parseTempField :: T.Text -> Maybe T.Text
 parseTempField inp = case readP_to_S pTemp (T.unpack inp) of
@@ -82,7 +86,11 @@ toText' = either id id . toText
 main :: IO ()
 main = do
   Just sensorsBinPath <- which "sensors"
-  (ExitSuccess, rawOut) <- procStrict (toText' sensorsBinPath) ["-j"] ""
-  let parsed :: Object
-      Right parsed = eitherDecode' . BSL.fromStrict . encodeUtf8 $ rawOut
-  print parsed
+  (ExitSuccess, rawOut) <- procStrict (toText' sensorsBinPath) ["-j", "-A"] ""
+  case
+      eitherDecode' @(M.Map T.Text (M.Map T.Text (Maybe TempInfo)))
+      . BSL.fromStrict
+      . encodeUtf8
+      $ rawOut of
+    Right v -> print v
+    Left e -> print e
