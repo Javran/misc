@@ -11,10 +11,13 @@ description:         description
 dependencies:
 - aeson
 - base
+- bytestring
+- system-filepath
+- text
 - turtle
 
 executables:
-  sensormon:
+  smon:
     main:                Main.hs
     source-dirs:         src
     ghc-options:
