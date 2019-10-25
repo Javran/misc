@@ -12,9 +12,11 @@ dependencies:
 - aeson
 - base
 - bytestring
+- scientific
 - system-filepath
 - text
 - turtle
+- unordered-containers
 
 executables:
   smon:

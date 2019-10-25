@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, TupleSections, TypeApplications #-}
 module Main
   ( main
   ) where
@@ -10,11 +10,15 @@ import System.Exit
 import Turtle.Prelude
 import Data.Text.Encoding (encodeUtf8)
 import Data.Aeson
+import Data.Aeson.Types
 import Data.Char
+import Data.Maybe
 import Text.ParserCombinators.ReadP
+import Data.Scientific
 
 import qualified Data.Text as T
 import qualified Data.ByteString.Lazy as BSL
+import qualified Data.HashMap.Strict as HM
 
 {-
   the corresponding object looks like:
@@ -45,6 +49,19 @@ parseTempField inp = case readP_to_S pTemp (T.unpack inp) of
         *> munch1 isDigit
         *> char '_'
         *> munch1 (const True))
+
+instance FromJSON TempInfo where
+  parseJSON = withObject "TempInfo" $ \obj -> do
+    let obj' :: Object
+        obj' =
+          HM.fromList
+          . mapMaybe (\(k,v) -> (,v) <$> parseTempField k)
+          $ HM.toList obj
+        cov = round @Scientific
+    TempInfo
+      <$> fmap cov (obj' .: "input")
+      <*> (fmap . fmap) cov (obj' .:? "max")
+      <*> (fmap . fmap) cov (obj' .:? "crit")
 
 {-
   This program parses output from `sensors` and print out useful info
