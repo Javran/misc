@@ -11,7 +11,9 @@ import Prelude hiding (FilePath)
 
 import Data.Aeson
 import Data.Char
+import Data.Foldable
 import Data.Maybe
+import Data.Ord
 import Data.Scientific
 import Data.Text.Encoding (encodeUtf8)
 import Filesystem.Path.CurrentOS hiding (null)
@@ -83,6 +85,21 @@ toText' = either id id . toText
   https://www.kernel.org/doc/Documentation/hwmon/sysfs-interface
  -}
 
+type TempInfoTable = M.Map T.Text [TempInfo] -- this list is guaranteed to be non-empty
+
+renderInfo :: T.Text -> TempInfoTable -> T.Text
+renderInfo k tbl = case tbl M.!? k of
+  Nothing -> "Unknown"
+  Just ts ->
+    let ti = maximumBy (comparing tiInput) ts
+        criticality = "Normal" -- TODO
+    in T.pack $ criticality <> ", " <> show (tiInput ti)
+
+displayInfo :: T.Text -> TempInfoTable -> IO ()
+displayInfo k tbl = do
+  putStrLn (T.unpack k)
+  putStrLn $ "  " <> T.unpack (renderInfo k tbl)
+
 main :: IO ()
 main = do
   Just sensorsBinPath <- which "sensors"
@@ -93,11 +110,13 @@ main = do
       . encodeUtf8
       $ rawOut of
     Left e -> print e
-    Right parsed ->
-      let tbl :: M.Map T.Text [TempInfo]
+    Right parsed -> do
+      let tbl :: TempInfoTable
           tbl =
             -- non-empty list only, with those that can be parsed successfully.
             M.filter (not . null)
             . M.map (catMaybes . M.elems)
             $ parsed
-      in print tbl
+      mapM_
+        (\k -> displayInfo k tbl)
+        ["acpitz-acpi-0", "coretemp-isa-0000", "intended-missing"]
