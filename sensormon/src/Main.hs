@@ -14,7 +14,7 @@ import Data.Char
 import Data.Maybe
 import Data.Scientific
 import Data.Text.Encoding (encodeUtf8)
-import Filesystem.Path.CurrentOS
+import Filesystem.Path.CurrentOS hiding (null)
 import System.Exit
 import Text.ParserCombinators.ReadP
 import Turtle.Prelude
@@ -92,5 +92,12 @@ main = do
       . BSL.fromStrict
       . encodeUtf8
       $ rawOut of
-    Right v -> print v
     Left e -> print e
+    Right parsed ->
+      let tbl :: M.Map T.Text [TempInfo]
+          tbl =
+            -- non-empty list only, with those that can be parsed successfully.
+            M.filter (not . null)
+            . M.map (catMaybes . M.elems)
+            $ parsed
+      in print tbl
