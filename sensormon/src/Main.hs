@@ -9,6 +9,8 @@ module Main
 
 import Prelude hiding (FilePath)
 
+import Control.Applicative
+import Control.Monad
 import Data.Aeson
 import Data.Char
 import Data.Foldable
@@ -92,8 +94,21 @@ renderInfo k tbl = case tbl M.!? k of
   Nothing -> "Unknown"
   Just ts ->
     let ti = maximumBy (comparing tiInput) ts
-        criticality = "Normal" -- TODO
-    in T.pack $ criticality <> ", " <> show (tiInput ti)
+        inp = tiInput ti
+        Just criticality =
+            shouldShowCrit
+            <|> shouldShowHigh
+            <|> Just "Normal"
+          where
+            shouldShowCrit = do
+              critBound <- tiCrit ti
+              guard $ inp >= critBound
+              pure "Critical"
+            shouldShowHigh = do
+              highBound <- tiMax ti
+              guard $ inp >= highBound
+              pure "High"
+    in T.pack $ criticality <> ", " <> show inp
 
 displayInfo :: T.Text -> TempInfoTable -> IO ()
 displayInfo k tbl = do
