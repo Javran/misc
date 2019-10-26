@@ -10,6 +10,7 @@ module Main
 import Prelude hiding (FilePath)
 
 import Control.Applicative
+import Control.Concurrent
 import Control.Monad
 import Data.Aeson
 import Data.Char
@@ -115,9 +116,8 @@ displayInfo k tbl = do
   putStrLn (T.unpack k)
   putStrLn $ "  " <> T.unpack (renderInfo k tbl)
 
-main :: IO ()
-main = do
-  Just sensorsBinPath <- which "sensors"
+sensorLoop :: FilePath -> IO ()
+sensorLoop sensorsBinPath = do
   (ExitSuccess, rawOut) <- procStrict (toText' sensorsBinPath) ["-j", "-A"] ""
   case
       eitherDecode' @(M.Map T.Text (M.Map T.Text (Maybe TempInfo)))
@@ -135,3 +135,11 @@ main = do
       mapM_
         (\k -> displayInfo k tbl)
         ["acpitz-acpi-0", "coretemp-isa-0000", "intended-missing"]
+
+main :: IO ()
+main = do
+  Just sensorsBinPath <- which "sensors"
+  forever $ do
+    putStrLn ""
+    sensorLoop sensorsBinPath
+    threadDelay $ 1000 * 1000
