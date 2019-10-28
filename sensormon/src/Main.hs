@@ -30,6 +30,12 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Map.Strict as M
 
 {-
+  TODO: the current implementaion does not work as part of SysInfoBar for my xmonad config.
+  I suspect "turtle" might have done some weird stuff that messed up threading.
+  Let's try to write this directly using CreateProcess without using "turtle" package.
+ -}
+
+{-
   the corresponding object looks like:
 
   - tempX_input
