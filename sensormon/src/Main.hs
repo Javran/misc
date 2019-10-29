@@ -92,34 +92,10 @@ instance FromJSON TempInfo where
  -}
 
 type TempInfoTable = M.Map T.Text [TempInfo] -- this list is guaranteed to be non-empty
+data Criticality = CNormal | CHigh | CCritical deriving Show
+type TempDisplay = (Int, Criticality)
 
-renderInfo :: T.Text -> TempInfoTable -> T.Text
-renderInfo k tbl = case tbl M.!? k of
-  Nothing -> "Unknown"
-  Just ts ->
-    let ti = maximumBy (comparing tiInput) ts
-        inp = tiInput ti
-        Just criticality =
-            shouldShowCrit
-            <|> shouldShowHigh
-            <|> Just "Normal"
-          where
-            shouldShowCrit = do
-              critBound <- tiCrit ti
-              guard $ inp >= critBound
-              pure "Critical"
-            shouldShowHigh = do
-              highBound <- tiMax ti
-              guard $ inp >= highBound
-              pure "High"
-    in T.pack $ criticality <> ", " <> show inp
-
-displayInfo :: T.Text -> TempInfoTable -> IO ()
-displayInfo k tbl = do
-  putStrLn (T.unpack k)
-  putStrLn $ "  " <> T.unpack (renderInfo k tbl)
-
-readFromSensors :: String -> IO ()
+readFromSensors :: String -> IO (Maybe TempDisplay, Maybe TempDisplay)
 readFromSensors binPath = do
   let cp =
         (shell $ unwords [binPath, "-j", "-A"])
@@ -131,7 +107,7 @@ readFromSensors binPath = do
   ExitSuccess <- waitForProcess ph
   raw <- BSL.hGetContents hOut
   case eitherDecode' @(M.Map T.Text (M.Map T.Text (Maybe TempInfo))) raw of
-    Left e -> print e
+    Left _e -> pure (Nothing, Nothing)
     Right parsed -> do
       let tbl :: TempInfoTable
           tbl =
@@ -139,14 +115,31 @@ readFromSensors binPath = do
             M.filter (not . null)
             . M.map (catMaybes . M.elems)
             $ parsed
-      mapM_
-        (\k -> displayInfo k tbl)
-        ["acpitz-acpi-0", "coretemp-isa-0000", "intended-missing"]
+          toDisplay :: T.Text -> Maybe TempDisplay
+          toDisplay prop = do
+            vs <- tbl M.!? prop
+            let ti = maximumBy (comparing tiInput) vs
+                inp = tiInput ti
+                Just crit =
+                    shouldShowCrit
+                    <|> shouldShowHigh
+                    <|> Just CNormal
+                  where
+                    shouldShowCrit = do
+                      critBound <- tiCrit ti
+                      guard $ inp >= critBound
+                      pure CCritical
+                    shouldShowHigh = do
+                      highBound <- tiMax ti
+                      guard $ inp >= highBound
+                      pure CHigh
+            pure (inp, crit)
+      pure (toDisplay "coretemp-isa-0000", toDisplay "acpitz-acpi-0")
 
 main :: IO ()
 main = do
   Just sensorsBinPath <- findExecutable "sensors"
   forever $ do
     putStrLn ""
-    readFromSensors sensorsBinPath
+    readFromSensors sensorsBinPath >>= print
     threadDelay $ 1000 * 1000
