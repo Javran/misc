@@ -13,10 +13,10 @@ dependencies:
 - base
 - bytestring
 - containers
+- directory
+- process
 - scientific
-- system-filepath
 - text
-- turtle
 - unordered-containers
 
 executables:

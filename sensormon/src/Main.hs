@@ -18,11 +18,10 @@ import Data.Foldable
 import Data.Maybe
 import Data.Ord
 import Data.Scientific
-import Data.Text.Encoding (encodeUtf8)
-import Filesystem.Path.CurrentOS hiding (null)
+import System.Directory
 import System.Exit
+import System.Process
 import Text.ParserCombinators.ReadP
-import Turtle.Prelude
 
 import qualified Data.Text as T
 import qualified Data.ByteString.Lazy as BSL
@@ -85,8 +84,6 @@ instance FromJSON TempInfo where
   Eventually this will end up being info source to some xmonad components.
 
  -}
-toText' :: FilePath -> T.Text
-toText' = either id id . toText
 
 {-
   naming here is a bit confusing, the following doc looks authoritative on this topic:
@@ -122,14 +119,18 @@ displayInfo k tbl = do
   putStrLn (T.unpack k)
   putStrLn $ "  " <> T.unpack (renderInfo k tbl)
 
-sensorLoop :: FilePath -> IO ()
-sensorLoop sensorsBinPath = do
-  (ExitSuccess, rawOut) <- procStrict (toText' sensorsBinPath) ["-j", "-A"] ""
-  case
-      eitherDecode' @(M.Map T.Text (M.Map T.Text (Maybe TempInfo)))
-      . BSL.fromStrict
-      . encodeUtf8
-      $ rawOut of
+readFromSensors :: String -> IO ()
+readFromSensors binPath = do
+  let cp =
+        (shell $ unwords [binPath, "-j", "-A"])
+          { std_in = NoStream
+          , std_out = CreatePipe
+          , std_err = Inherit
+          }
+  (_, Just hOut, _, ph) <- createProcess cp
+  ExitSuccess <- waitForProcess ph
+  raw <- BSL.hGetContents hOut
+  case eitherDecode' @(M.Map T.Text (M.Map T.Text (Maybe TempInfo))) raw of
     Left e -> print e
     Right parsed -> do
       let tbl :: TempInfoTable
@@ -144,8 +145,8 @@ sensorLoop sensorsBinPath = do
 
 main :: IO ()
 main = do
-  Just sensorsBinPath <- which "sensors"
+  Just sensorsBinPath <- findExecutable "sensors"
   forever $ do
     putStrLn ""
-    sensorLoop sensorsBinPath
+    readFromSensors sensorsBinPath
     threadDelay $ 1000 * 1000
