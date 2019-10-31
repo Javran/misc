@@ -29,12 +29,6 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Map.Strict as M
 
 {-
-  TODO: the current implementaion does not work as part of SysInfoBar for my xmonad config.
-  I suspect "turtle" might have done some weird stuff that messed up threading.
-  Let's try to write this directly using CreateProcess without using "turtle" package.
- -}
-
-{-
   the corresponding object looks like:
 
   - tempX_input
@@ -91,11 +85,10 @@ instance FromJSON TempInfo where
   https://www.kernel.org/doc/Documentation/hwmon/sysfs-interface
  -}
 
-type TempInfoTable = M.Map T.Text [TempInfo] -- this list is guaranteed to be non-empty
 data Criticality = CNormal | CHigh | CCritical deriving Show
 type TempDisplay = (Int, Criticality)
 
-readFromSensors :: String -> IO (Maybe TempDisplay, Maybe TempDisplay)
+readFromSensors :: String -> IO (Maybe TempDisplay)
 readFromSensors binPath = do
   let cp =
         (shell $ unwords [binPath, "-j", "-A"])
@@ -107,34 +100,31 @@ readFromSensors binPath = do
   ExitSuccess <- waitForProcess ph
   raw <- BSL.hGetContents hOut
   case eitherDecode' @(M.Map T.Text (M.Map T.Text (Maybe TempInfo))) raw of
-    Left _e -> pure (Nothing, Nothing)
+    Left _e -> pure Nothing
     Right parsed -> do
-      let tbl :: TempInfoTable
-          tbl =
-            -- non-empty list only, with those that can be parsed successfully.
-            M.filter (not . null)
-            . M.map (catMaybes . M.elems)
-            $ parsed
-          toDisplay :: T.Text -> Maybe TempDisplay
-          toDisplay prop = do
-            vs <- tbl M.!? prop
-            let ti = maximumBy (comparing tiInput) vs
-                inp = tiInput ti
-                Just crit =
-                    shouldShowCrit
-                    <|> shouldShowHigh
-                    <|> Just CNormal
-                  where
-                    shouldShowCrit = do
-                      critBound <- tiCrit ti
-                      guard $ inp >= critBound
-                      pure CCritical
-                    shouldShowHigh = do
-                      highBound <- tiMax ti
-                      guard $ inp >= highBound
-                      pure CHigh
-            pure (inp, crit)
-      pure (toDisplay "coretemp-isa-0000", toDisplay "acpitz-acpi-0")
+      let tInfoList :: [TempInfo]
+          tInfoList = foldMap (catMaybes . M.elems) parsed
+          {-
+            Let's only show the maximum temp - all of those might
+            have a different definition for max, crit etc.
+            But we do get the general idea of which part of the component stands out.
+           -}
+          ti = maximumBy (comparing tiInput) tInfoList
+          inp = tiInput ti
+          Just crit =
+              shouldShowCrit
+              <|> shouldShowHigh
+              <|> Just CNormal
+            where
+              shouldShowCrit = do
+                critBound <- tiCrit ti
+                guard $ inp >= critBound
+                pure CCritical
+              shouldShowHigh = do
+                highBound <- tiMax ti
+                guard $ inp >= highBound
+                pure CHigh
+      pure $ Just (inp, crit)
 
 main :: IO ()
 main = do
