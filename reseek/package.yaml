@@ -1,0 +1,22 @@
+name:                reseek
+version:             0.1.0.0
+github:              "Javran/reseek"
+license:             BSD3
+author:              "Javran Cheng"
+maintainer:          "javran.c@gmail.com"
+copyright:           "Copyright: (c) 2019 Javran Cheng"
+
+description:         description
+
+dependencies:
+- base
+- bytestring
+
+executables:
+  reseek:
+    main:                Main.hs
+    source-dirs:         src
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
