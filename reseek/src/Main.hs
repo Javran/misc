@@ -14,8 +14,8 @@ module Main
   - /proc/net/dev
   - /proc/meminfo
 
-  Well we don't actually need to try sysfs
-
+  Well we don't actually need to try sysfs - it was
+  required for dealing with battery, but there's no need for Senatus.
  -}
 
 import Data.Function
@@ -24,7 +24,7 @@ import Control.Monad
 
 import qualified Data.ByteString.Char8 as BSC
 
-reseekContent :: Handle -> IO ()
+reseekContent :: Handle -> IO BSC.ByteString
 reseekContent h = do
   hSeek h AbsoluteSeek 0
   -- we need to do this in low-level fashion because
@@ -34,32 +34,43 @@ reseekContent h = do
   -- Looks like large buffer (> 16384-ish) is slower,
   -- presumbly there are allocation penalty involved.
   let bufSize = 512
-  count <- fix
-    (\readMore !acc -> do
+  dlist <- fix
+    (\readMore acc -> do
         b <- hIsEOF h
         if b
           then pure acc
           else do
             raw <- BSC.hGetNonBlocking h bufSize
-            readMore (acc + BSC.length raw)
-          ) 0
-  putStrLn $ "Got " <> show count <> " bytes."
+            readMore (acc . (raw:))
+          ) id
+  pure (BSC.concat (dlist []))
 
-readProc :: IO ()
+readProc :: IO BSC.ByteString
 readProc = do
   h <- openFile "/proc/cpuinfo" ReadMode
-  raw <- BSC.hGetContents h -- no need of closing as hGetContents does that automatically.
-  putStrLn $ "Got " <> show (BSC.length raw) <> " bytes."
+  BSC.hGetContents h -- no need of closing as hGetContents does that automatically.
 
 mainNormal :: Int -> IO ()
-mainNormal opCount = replicateM_ opCount readProc
+mainNormal opCount = replicateM_ opCount $ do
+  raw <- readProc
+  putStrLn $ "Got " <> show (BSC.length raw) <> " bytes."
 
 mainReseek :: Int -> IO ()
 mainReseek opCount = do
   h <- openFile "/proc/cpuinfo" ReadMode
-  replicateM_ opCount (reseekContent h)
+  replicateM_ opCount $ do
+    raw <- reseekContent h
+    putStrLn $ "Got " <> show (BSC.length raw) <> " bytes."
   hClose h
 
+{-
+  Note: so far mainNormal vs. mainReseek doesn't appear to have significant difference.
+  but mainReseek defintely requires some tuning on bufSize to get a little bit better on performance.
+
+  However, this situation might change once we use attoparsec to parse the data on the fly,
+  for now the re-seeking method has to piece things together with concat, which still require some copy
+  while we don't need to worry about that for hGetContents.
+ -}
 main :: IO ()
 main = mainNormal 10000
 -- main = mainReseek 10000
