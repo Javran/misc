@@ -22,7 +22,7 @@ import Data.Function
 import System.IO
 import Control.Monad
 
-import ProcStatReader
+import ProcFsReader
 
 import qualified Data.ByteString.Char8 as BSC
 

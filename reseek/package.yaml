@@ -12,6 +12,7 @@ dependencies:
 - attoparsec
 - base
 - bytestring
+- scientific
 
 executables:
   reseek:
