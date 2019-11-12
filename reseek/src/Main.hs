@@ -22,6 +22,8 @@ import Data.Function
 import System.IO
 import Control.Monad
 
+import ProcStatReader
+
 import qualified Data.ByteString.Char8 as BSC
 
 reseekContent :: Handle -> IO BSC.ByteString
@@ -71,6 +73,6 @@ mainReseek opCount = do
   for now the re-seeking method has to piece things together with concat, which still require some copy
   while we don't need to worry about that for hGetContents.
  -}
-main :: IO ()
-main = mainNormal 10000
+-- main :: IO ()
+-- main = mainNormal 10000
 -- main = mainReseek 10000
