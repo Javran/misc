@@ -10,10 +10,10 @@ module ProcFsReader where
 
   - extract cpu utilizations for each core from /proc/stat
   - extract cpu frequencies for each core from /proc/cpuinfo
+  - extract network device stats from /proc/net/dev for net stat
 
   TODO:
 
-  - /proc/net/dev for net stat
   - /proc/meminfo for mem usage
 
  -}
@@ -66,6 +66,50 @@ parseProcStat = do
   xs <- many1 (parseCpuStatRow False)
   pure (cpuSummary, xs)
 
+
+data NetDevStat a
+  = NetDevStat
+  { ndRxBytes :: a
+  , ndRxPackets :: a
+  , ndRxErrs :: a
+  , ndRxDrop :: a
+  , ndRxFifo :: a
+  , ndRxFrame :: a
+  , ndRxCompressed :: a
+  , ndRxMulticast :: a
+  , ndTxBytes :: a
+  , ndTxPackets :: a
+  , ndTxErrs :: a
+  , ndTxDrop :: a
+  , ndTxFifo :: a
+  , ndTxColls :: a
+  , ndTxCarrier :: a
+  , ndTxCompressed :: a
+  } deriving Show
+
+-- kernel source: net/core/net-procfs.c
+-- parseProcNetDev :: Parser [(BSC.ByteString, 
+parseProcNetDev = do
+    -- skip first two lines which are hard-coded header.
+    restOfCurrentLine
+    restOfCurrentLine
+    many1 ifLine
+  where
+    ifLine = do
+      skipSpace
+      -- https://git.kernel.org/pub/scm/network/iproute2/iproute2.git/tree/lib/utils.c?id=1f420318bda3cc62156e89e1b56d60cc744b48ad#n827
+      ifName <- P.takeWhile (\c -> not (c == ':' || c == '\\' || isSpace c))
+      skipSpace
+      ":"
+      [ ndRxBytes, ndRxPackets, ndRxErrs, ndRxDrop
+        , ndRxFifo, ndRxFrame, ndRxCompressed, ndRxMulticast
+        , ndTxBytes, ndTxPackets, ndTxErrs, ndTxDrop
+        , ndTxFifo, ndTxColls, ndTxCarrier, ndTxCompressed
+        ] <- replicateM 16 (skipSpace *> decimal)
+      -- the table is hard-coded, so I'd prefer to be picky and insists that it ends right here.
+      "\n"
+      pure (ifName, NetDevStat {..})
+
 parseCpuFreqs :: Parser [Scientific]
 parseCpuFreqs =
     catMaybes <$>
@@ -91,7 +135,17 @@ testParseCpuFreqs = do
     Left err ->
       putStrLn err
 
+testParseProcNetDev :: IO ()
+testParseProcNetDev = do
+  raw <- BSC.readFile "/proc/net/dev"
+  case parseOnly parseProcNetDev raw of
+    Right v ->
+      mapM_ print v
+    Left err ->
+      putStrLn err
+
 main :: IO ()
 main = do
   testParseProcStat
   testParseCpuFreqs
+  testParseProcNetDev
