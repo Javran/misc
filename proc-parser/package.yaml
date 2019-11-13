@@ -1,6 +1,6 @@
-name:                reseek
+name:                proc-parser
 version:             0.1.0.0
-github:              "Javran/reseek"
+github:              "Javran/misc/proc-parser"
 license:             BSD3
 author:              "Javran Cheng"
 maintainer:          "javran.c@gmail.com"
@@ -15,7 +15,7 @@ dependencies:
 - scientific
 
 executables:
-  reseek:
+  demo:
     main:                Main.hs
     source-dirs:         src
     ghc-options:
