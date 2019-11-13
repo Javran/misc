@@ -47,7 +47,7 @@ type ParsedCpuStatRow = (Maybe Word8, (CpuStatRow Word64, BSC.ByteString))
 
 -- consume rest of the current line, '\n' is also consumed but removed from the result.
 restOfCurrentLine :: Parser BSC.ByteString
-restOfCurrentLine = P.takeWhile (/= '\n') <* "\n"
+restOfCurrentLine = P.takeWhile (/= '\n') <* anyChar -- this one must be newline, no check necessary.
 
 parseCpuStatRow :: Bool -> Parser ParsedCpuStatRow
 parseCpuStatRow isSummaryRow = do
