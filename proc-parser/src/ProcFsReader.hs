@@ -88,7 +88,7 @@ data NetDevStat a
   } deriving Show
 
 -- kernel source: net/core/net-procfs.c
--- parseProcNetDev :: Parser [(BSC.ByteString, 
+parseProcNetDev :: Parser [(BSC.ByteString, NetDevStat Word64)]
 parseProcNetDev = do
     -- skip first two lines which are hard-coded header.
     restOfCurrentLine
