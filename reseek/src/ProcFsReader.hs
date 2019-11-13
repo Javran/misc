@@ -45,6 +45,10 @@ data CpuStatRow a = CpuStatRow
 -- return type: (<cpu id>, (<parsed>, <leftovers of that line>))
 type ParsedCpuStatRow = (Maybe Word8, (CpuStatRow Word64, BSC.ByteString))
 
+-- consume rest of the current line, '\n' is also consumed but removed from the result.
+restOfCurrentLine :: Parser BSC.ByteString
+restOfCurrentLine = P.takeWhile (/= '\n') <* "\n"
+
 parseCpuStatRow :: Bool -> Parser ParsedCpuStatRow
 parseCpuStatRow isSummaryRow = do
   _ <- "cpu"
@@ -53,8 +57,7 @@ parseCpuStatRow isSummaryRow = do
     else Just <$> decimal
   [user, nice, system, idle, ioWait, irq, softIrq, steal] <-
     replicateM 8 (skipSpace >> decimal)
-  leftover <- P.takeWhile (/= '\n')
-  _ <- "\n"
+  leftover <- restOfCurrentLine
   pure (mCpuId, (CpuStatRow {..}, leftover))
 
 parseProcStat :: Parser (ParsedCpuStatRow, [ParsedCpuStatRow])
@@ -66,13 +69,12 @@ parseProcStat = do
 parseCpuFreqs :: Parser [Scientific]
 parseCpuFreqs =
     catMaybes <$>
-      many1 ((Just <$> parseCpuFreqLine) <|> (Nothing <$ P.takeWhile (/= '\n') <* "\n"))
+      many1 ((Just <$> parseCpuFreqLine) <|> (Nothing <$ restOfCurrentLine))
   where
     parseCpuFreqLine =
       "cpu MHz" >> skipSpace
       >> ":" >> skipSpace
-      >> P.scientific
-      <* P.takeWhile (/= '\n') <* "\n"
+      >> P.scientific <* restOfCurrentLine
 
 testParseProcStat :: IO ()
 testParseProcStat = do
@@ -80,11 +82,16 @@ testParseProcStat = do
   let Right (v, vs) = parseOnly parseProcStat raw
   mapM_ print (v : vs)
 
-main :: IO ()
-main = do
+testParseCpuFreqs :: IO ()
+testParseCpuFreqs = do
   raw <- BSC.readFile "/proc/cpuinfo"
   case parseOnly parseCpuFreqs raw of
     Right freqs ->
       mapM_ print freqs
     Left err ->
       putStrLn err
+
+main :: IO ()
+main = do
+  testParseProcStat
+  testParseCpuFreqs
