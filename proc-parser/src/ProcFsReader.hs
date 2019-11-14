@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards, DeriveGeneric, DeriveAnyClass #-}
 module ProcFsReader where
 
 {-
@@ -22,6 +22,8 @@ import Data.Attoparsec.ByteString.Char8 as P
 import Data.Scientific
 import Data.Word
 import System.IO
+import GHC.Generics
+import Control.DeepSeq
 
 import qualified Data.ByteString.Char8 as BSC
 
@@ -37,7 +39,7 @@ data CpuStatRow a = CpuStatRow
     -- there are actually 2 extra fields called "guest" and "guest_nice"
     -- in a recent version of kernel,
     -- but no word is given on how to deal with these two fields - guess we'll just ignore them.
-  } deriving (Show)
+  } deriving (Show, Generic, NFData)
 
 -- return type: (<cpu id>, (<parsed>, <leftovers of that line>))
 type ParsedCpuStatRow = (Maybe Word8, (CpuStatRow Word64, BSC.ByteString))
@@ -82,7 +84,7 @@ data NetDevStat a
   , ndTxColls :: a
   , ndTxCarrier :: a
   , ndTxCompressed :: a
-  } deriving Show
+  } deriving (Show, Generic, NFData)
 
 -- kernel source: net/core/net-procfs.c
 parseProcNetDev :: Parser [(BSC.ByteString, NetDevStat Word64)]
