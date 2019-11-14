@@ -11,10 +11,7 @@ module ProcFsReader where
   - extract cpu utilizations for each core from /proc/stat
   - extract cpu frequencies for each core from /proc/cpuinfo
   - extract network device stats from /proc/net/dev for net stat
-
-  TODO:
-
-  - /proc/meminfo for mem usage
+  - extract info about memory utilization from /proc/meminfo.
 
  -}
 
@@ -120,6 +117,22 @@ parseCpuFreqs =
       >> ":" >> skipSpace
       >> P.scientific <* restOfCurrentLine
 
+parseMemInfo :: Parser (Word64, Word64, Word64)
+parseMemInfo = do
+  "MemTotal:"
+  skipSpace
+  memTotal <- decimal
+  " kB\n"
+  "MemFree:"
+  skipSpace
+  memFree <- decimal
+  " kB\n"
+  "MemAvailable:"
+  skipSpace
+  memAva <- decimal
+  " kB\n"
+  pure (memTotal, memFree, memAva)
+
 testParseProcStat :: IO ()
 testParseProcStat = do
   raw <- BSC.readFile "/proc/stat"
@@ -144,8 +157,18 @@ testParseProcNetDev = do
     Left err ->
       putStrLn err
 
+testParseMemInfo :: IO ()
+testParseMemInfo = do
+  raw <- BSC.readFile "/proc/meminfo"
+  case parseOnly parseMemInfo raw of
+    Right v ->
+      print v
+    Left err ->
+      putStrLn err
+
 main :: IO ()
 main = do
   testParseProcStat
   testParseCpuFreqs
   testParseProcNetDev
+  testParseMemInfo
