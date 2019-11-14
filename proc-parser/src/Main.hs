@@ -18,13 +18,29 @@ module Main
   required for dealing with battery, but there's no need for Senatus.
  -}
 
-import Data.Function
-import System.IO
 import Control.Monad
-
-import ProcFsReader
+import Data.Attoparsec.ByteString.Char8
+import Data.Function
+import Debug.Trace
+import System.IO
 
 import qualified Data.ByteString.Char8 as BSC
+
+import ProcFsReader hiding (main)
+
+reseekAndParse :: Handle -> Parser a -> IO a
+reseekAndParse h p = do
+  hSeek h AbsoluteSeek 0
+  let bufSize = 512
+  fix (\loop parseNext -> do
+    inp <- BSC.hGet h bufSize
+    case parseNext inp of
+      Fail _ ctxt errs ->
+        error $ "Parsing failed, context: " <> show ctxt <> "error: " <> show errs
+      Partial parseK ->
+        loop parseK
+      Done _ r ->
+        pure r) (parse p)
 
 reseekContent :: Handle -> IO BSC.ByteString
 reseekContent h = do
@@ -63,6 +79,13 @@ mainReseek opCount = do
   replicateM_ opCount $ do
     raw <- reseekContent h
     putStrLn $ "Got " <> show (BSC.length raw) <> " bytes."
+  hClose h
+
+main :: IO ()
+main = do
+  h <- openFile "/proc/cpuinfo" ReadMode
+  r <- reseekAndParse h parseCpuFreqs
+  print r
   hClose h
 
 {-
