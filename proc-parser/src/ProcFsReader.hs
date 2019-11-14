@@ -118,20 +118,14 @@ parseCpuFreqs =
       >> P.scientific <* restOfCurrentLine
 
 parseMemInfo :: Parser (Word64, Word64, Word64)
-parseMemInfo = do
-  "MemTotal:"
-  skipSpace
-  memTotal <- decimal
-  " kB\n"
-  "MemFree:"
-  skipSpace
-  memFree <- decimal
-  " kB\n"
-  "MemAvailable:"
-  skipSpace
-  memAva <- decimal
-  " kB\n"
-  pure (memTotal, memFree, memAva)
+parseMemInfo =
+    (,,)
+      <$> parseRowKb "MemTotal:"
+      <*> parseRowKb "MemFree:"
+      <*> parseRowKb "MemAvailable:"
+  where
+    parseRowKb fieldNameP =
+      fieldNameP *> skipSpace *> decimal <* " kB\n"
 
 testParseProcStat :: IO ()
 testParseProcStat = do
