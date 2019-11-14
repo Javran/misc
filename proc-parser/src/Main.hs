@@ -21,7 +21,7 @@ module Main
 import Control.Monad
 import Data.Attoparsec.ByteString.Char8
 import Data.Function
-import Debug.Trace
+import Control.DeepSeq
 import System.IO
 
 import qualified Data.ByteString.Char8 as BSC
@@ -68,6 +68,21 @@ readProc = do
   h <- openFile "/proc/cpuinfo" ReadMode
   BSC.hGetContents h -- no need of closing as hGetContents does that automatically.
 
+parsingTestNormal, parsingTestReseek :: NFData a => Int -> FilePath -> Parser a -> IO ()
+parsingTestNormal nTimes fPath parser = replicateM_ nTimes doParsing
+  where
+    doParsing = do
+      h <- openFile fPath ReadMode
+      raw <- BSC.hGetContents h
+      pure $ rnf (parseOnly parser)
+
+parsingTestReseek nTimes fPath parser = do
+  h <- openFile fPath ReadMode
+  replicateM_ nTimes $ do
+    r <- reseekAndParse h parser
+    pure (rnf r)
+  hClose h
+
 mainNormal :: Int -> IO ()
 mainNormal opCount = replicateM_ opCount $ do
   raw <- readProc
@@ -83,10 +98,8 @@ mainReseek opCount = do
 
 main :: IO ()
 main = do
-  h <- openFile "/proc/cpuinfo" ReadMode
-  r <- reseekAndParse h parseCpuFreqs
-  print r
-  hClose h
+  -- parsingTestNormal 10000 "/proc/cpuinfo" parseCpuFreqs
+  parsingTestReseek 1000 "/proc/cpuinfo" parseCpuFreqs
 
 {-
   Note: so far mainNormal vs. mainReseek doesn't appear to have significant difference.
