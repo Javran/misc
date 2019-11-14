@@ -9,11 +9,11 @@ cabal-dev
 .cabal-sandbox/
 cabal.sandbox.config
 cabal.config
-/grub-conf-updater/GrubConfUpdater
 .stack-work/
 
-compilers-class/
 *.svg
 *.json
 stack.yaml.lock
 dist-newstyle
+
+*.cabal
