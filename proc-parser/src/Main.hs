@@ -16,6 +16,7 @@ module Main
 
   Well we don't actually need to try sysfs - it was
   required for dealing with battery, but there's no need for Senatus.
+
  -}
 
 import Control.Monad
@@ -68,6 +69,15 @@ readProc = do
   h <- openFile "/proc/cpuinfo" ReadMode
   BSC.hGetContents h -- no need of closing as hGetContents does that automatically.
 
+{-
+  Few conclusions on this:
+
+  - parsingTestReseek is slower than parsingTestNormal, I guess the problem being
+    there are too many context switches between feeding buffers and reading from IO.
+  - I suspect tuning the buffer size will impact performance of re-seeking approach,
+    but this is another layer of complication that I don't really want to deal with
+    (and unjustified, given that the performance doesn't seem to matter that much).
+ -}
 parsingTestNormal, parsingTestReseek :: NFData a => Int -> FilePath -> Parser a -> IO ()
 parsingTestNormal nTimes fPath parser = replicateM_ nTimes doParsing
   where
