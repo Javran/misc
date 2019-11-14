@@ -14,6 +14,7 @@ dependencies:
 - bytestring
 - deepseq
 - scientific
+- time
 
 executables:
   demo:

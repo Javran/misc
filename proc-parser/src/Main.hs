@@ -24,6 +24,8 @@ import Data.Attoparsec.ByteString.Char8
 import Data.Function
 import Control.DeepSeq
 import System.IO
+import Data.Time.Clock
+import Text.Printf
 
 import qualified Data.ByteString.Char8 as BSC
 
@@ -106,10 +108,22 @@ mainReseek opCount = do
     putStrLn $ "Got " <> show (BSC.length raw) <> " bytes."
   hClose h
 
+measuredAction :: IO r -> IO r
+measuredAction act = do
+  tStart <- getCurrentTime
+  r <- act
+  tEnd <- getCurrentTime
+  printf "Action completed in %.4f\n" (realToFrac $ diffUTCTime tEnd tStart :: Double)
+  pure r
+
 main :: IO ()
 main = do
-  -- parsingTestNormal 10000 "/proc/cpuinfo" parseCpuFreqs
-  parsingTestReseek 1000 "/proc/cpuinfo" parseCpuFreqs
+  putStrLn "normal"
+  measuredAction $
+    parsingTestNormal 10000 "/proc/cpuinfo" parseCpuFreqs
+  putStrLn "reseek"
+  measuredAction $
+    parsingTestReseek 10000 "/proc/cpuinfo" parseCpuFreqs
 
 {-
   Note: so far mainNormal vs. mainReseek doesn't appear to have significant difference.
