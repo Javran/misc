@@ -65,7 +65,7 @@ _coordsCombinedFleet =
 coords :: [(Int, Int)]
 coords = if hasVanguard then coordsWithVanguard else coordsNormal
   where
-    hasVanguard = False
+    hasVanguard = True
 
 getMapUrls :: Int -> Int -> (String, String)
 getMapUrls area num = (base <> "_image.png", base <> "_image.json")
