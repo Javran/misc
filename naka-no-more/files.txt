@@ -29,11 +29,17 @@
 /kcs2/resources/ship/character_up_dmg/0160_4431.png
 /kcs2/resources/ship/character_up_dmg/0224_7189.png
 /kcs2/resources/ship/full/0056_2530_vopfxipptsrt.png
+/kcs2/resources/ship/full/0056_2530_vopfxipptsxs.png
 /kcs2/resources/ship/full/0160_1259_lvjcqqulbluo.png
+/kcs2/resources/ship/full/0160_1259_lvjcqqulblxs.png
 /kcs2/resources/ship/full/0224_3673_vxkcklmfevkk.png
+/kcs2/resources/ship/full/0224_3673_vxkcklmfevxs.png
 /kcs2/resources/ship/full_dmg/0056_2989_vopfxipptsrt.png
+/kcs2/resources/ship/full_dmg/0056_2989_vopfxipptsxs.png
 /kcs2/resources/ship/full_dmg/0160_6059_lvjcqqulbluo.png
+/kcs2/resources/ship/full_dmg/0160_6059_lvjcqqulblxs.png
 /kcs2/resources/ship/full_dmg/0224_2899_vxkcklmfevkk.png
+/kcs2/resources/ship/full_dmg/0224_2899_vxkcklmfevxs.png
 /kcs2/resources/ship/remodel/0056_8875.png
 /kcs2/resources/ship/remodel/0160_2846.png
 /kcs2/resources/ship/remodel/0224_3328.png
