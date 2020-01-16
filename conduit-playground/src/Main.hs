@@ -13,6 +13,7 @@ module Main
 import Control.Monad
 import Control.Monad.Primitive
 import Control.Monad.ST
+import Data.Bits
 import Data.Conduit
 import Data.Function
 import Data.Int
@@ -84,7 +85,8 @@ cells =
 
 laggedFibGen :: PrimMonad m => ConduitT () Int32 m ()
 laggedFibGen = do
-    let sz = 1024
+    let sz = 65536
+        mask = 0xFFFF
         fInt = fromIntegral
     vec <- VUM.unsafeNew sz
     -- for 1 <= k <= 55
@@ -97,13 +99,13 @@ laggedFibGen = do
       VUM.write vec k val
       yield val
     forM_ [56..] $ \k -> do
-      kM24 <- VUM.read vec ((k-24) `rem` sz)
-      kM55 <- VUM.read vec ((k-55) `rem` sz)
+      kM24 <- VUM.read vec ((k-24) .&. mask)
+      kM55 <- VUM.read vec ((k-55) .&. mask)
       let v0 :: Int
           v0 = modPlus (modPlus (fInt kM24) (fInt kM55)) 1000000
           val :: Int32
           val = fInt (v0 - 500000)
-      VUM.write vec (k `rem` sz) val
+      VUM.write vec (k .&. mask) val
       yield val
   where
     modPlus a b = (a + b) `rem` m
