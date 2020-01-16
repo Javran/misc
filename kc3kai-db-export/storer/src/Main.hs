@@ -32,15 +32,15 @@ app =
            text "Use post/<table-name>"
        post ("post" <//> var) $ \(tableName :: T.Text) -> do
            (AppState instanceDir) <- getState
-           Just t <- param "time"
-           Just raw <- param "raw"
+           ~(Just t) <- param "time"
+           ~(Just raw) <- param "raw"
            let outputPath = instanceDir </> fName
                fName = T.unpack tableName <> "-" <> T.unpack t <> ".raw"
            liftIO $ T.writeFile outputPath raw
            text "ok"
        post "post-table-ids" $ do
            (AppState instanceDir) <- getState
-           Just raw <- param "raw"
+           ~(Just raw) <- param "raw"
            let outputPath = instanceDir </> fName
                fName = "table-ids.json"
            liftIO $ T.writeFile outputPath raw
