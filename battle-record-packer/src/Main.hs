@@ -33,10 +33,9 @@ loadAndDecompress fp = do
   x `seq` hClose h
   pure $ BSL.fromStrict x
 
-combineAndCompress :: [BSL.ByteString] -> BSL.ByteString
-combineAndCompress =
-  compress
-  . BSLB.toLazyByteString
+combine :: [BSL.ByteString] -> BSL.ByteString
+combine =
+  BSLB.toLazyByteString
   . foldMap (\x -> BSLB.lazyByteString x <> "\n")
 
 main :: IO ()
@@ -54,7 +53,7 @@ main = do
         else do
           putStrLn $ "Record count: " <> show (length files)
           contents <- mapM (\fn -> loadAndDecompress $ srcDirRaw <> "/" <> fn ) files
-          let raw = combineAndCompress contents
+          let raw = combine contents
           BSL.writeFile outFile raw
     _ -> do
       putStrLn "brp <source dir> <output file>"
