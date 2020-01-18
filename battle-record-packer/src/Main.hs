@@ -47,7 +47,7 @@ main = do
         then error $ "File " <> outFile <> " already exists."
         else do
           putStrLn $ "Record count: " <> show (length files)
-          raw <- combineAndCompress <$> mapM loadAndDecompress files
+          raw <- combineAndCompress <$> mapM (\fn -> loadAndDecompress $ srcDirRaw <> "/" <> fn ) files
           BSL.writeFile outFile raw
     _ -> do
       putStrLn "brp <source dir> <output file>"
