@@ -11,6 +11,8 @@ description:         description
 dependencies:
 - aeson
 - base
+- bytestring
+- directory
 - zlib
 
 executables:
