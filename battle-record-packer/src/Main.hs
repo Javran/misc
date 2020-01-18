@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Main
   ( main
   ) where
@@ -7,6 +8,10 @@ import System.Directory
 
 import Data.List
 import Data.Aeson
+import Codec.Compression.GZip
+
+import qualified Data.ByteString.Lazy as BSL
+import qualified Data.ByteString.Lazy.Builder as BSLB
 
 {-
   For packing poi battle-detail records into one.
@@ -18,6 +23,15 @@ import Data.Aeson
   - then we can use whatever tool we like to compress that to a smaller one.
 
  -}
+
+loadAndDecompress :: FilePath -> IO BSL.ByteString
+loadAndDecompress = fmap decompress . BSL.readFile
+
+combineAndCompress :: [BSL.ByteString] -> BSL.ByteString
+combineAndCompress =
+  compress
+  . BSLB.toLazyByteString
+  . foldMap (\x -> BSLB.lazyByteString x <> "\n")
 
 main :: IO ()
 main = do
@@ -31,7 +45,10 @@ main = do
       bOutExist <- doesFileExist outFile
       if bOutExist
         then error $ "File " <> outFile <> " already exists."
-        else putStrLn $ "Record count: " <> show (length files)
+        else do
+          putStrLn $ "Record count: " <> show (length files)
+          raw <- combineAndCompress <$> mapM loadAndDecompress files
+          BSL.writeFile outFile raw
     _ -> do
       putStrLn "brp <source dir> <output file>"
       pure ()
