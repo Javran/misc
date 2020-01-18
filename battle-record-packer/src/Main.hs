@@ -5,6 +5,7 @@ module Main
 
 import System.Environment
 import System.Directory
+import System.IO
 
 import Data.List
 import Data.Aeson
@@ -25,7 +26,12 @@ import qualified Data.ByteString.Lazy.Builder as BSLB
  -}
 
 loadAndDecompress :: FilePath -> IO BSL.ByteString
-loadAndDecompress = fmap decompress . BSL.readFile
+loadAndDecompress fp = do
+  h <- openFile fp ReadMode
+  raw <- BSL.hGetContents h
+  let x = BSL.toStrict $ decompress raw
+  x `seq` hClose h
+  pure $ BSL.fromStrict x
 
 combineAndCompress :: [BSL.ByteString] -> BSL.ByteString
 combineAndCompress =
@@ -47,7 +53,8 @@ main = do
         then error $ "File " <> outFile <> " already exists."
         else do
           putStrLn $ "Record count: " <> show (length files)
-          raw <- combineAndCompress <$> mapM (\fn -> loadAndDecompress $ srcDirRaw <> "/" <> fn ) files
+          contents <- mapM (\fn -> loadAndDecompress $ srcDirRaw <> "/" <> fn ) files
+          let raw = combineAndCompress contents
           BSL.writeFile outFile raw
     _ -> do
       putStrLn "brp <source dir> <output file>"
