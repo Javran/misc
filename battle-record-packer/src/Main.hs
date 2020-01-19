@@ -49,9 +49,8 @@ xzCompressFile hOutp = do
   (Just hInp, _, _, ph) <- createProcess cp
   pure (hInp, ph)
 
-main :: IO ()
-main = do
-  args <- getArgs
+packCommand :: [String] -> IO ()
+packCommand args =
   case args of
     [srcDirRaw, outFile] -> do
       -- get files under srcDirRaw.
@@ -80,5 +79,14 @@ main = do
           print e
           pure ()
     _ -> do
-      putStrLn "brp <source dir> <output file>"
+      putStrLn "brp pack <source dir> <output file>"
+      pure ()
+
+main :: IO ()
+main = do
+  args <- getArgs
+  case args of
+    "pack" : as -> packCommand as
+    _ -> do
+      putStrLn "brp pack ..."
       pure ()
