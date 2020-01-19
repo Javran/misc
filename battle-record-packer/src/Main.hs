@@ -5,6 +5,7 @@ module Main
 
 import Codec.Compression.GZip
 import Data.Aeson
+import Data.Function
 import Data.List
 import System.Directory
 import System.Environment
@@ -38,14 +39,15 @@ combine =
   BSLB.toLazyByteString
   . foldMap (\x -> BSLB.lazyByteString x <> "\n")
 
-xzCompressFile :: FilePath -> IO (Handle, ProcessHandle)
-xzCompressFile outFile = do
+xzCompressFile :: Handle -> IO (Handle, ProcessHandle)
+xzCompressFile hOutp = do
   let cp =
-        (proc "/usr/bin/xz" ["-9e", "-T20", outFile])
+        (proc "/usr/bin/xz" ["-9e", "-T20"])
           { std_in = CreatePipe
+          , std_out = UseHandle hOutp
           }
-  (Just h, _, _, ph) <- createProcess cp
-  pure (h, ph)
+  (Just hInp, _, _, ph) <- createProcess cp
+  pure (hInp, ph)
 
 main :: IO ()
 main = do
@@ -55,15 +57,28 @@ main = do
       -- get files under srcDirRaw.
       -- this also serves as a sanity check to confirm that this
       -- is actually a directory.
-      files <- filter ("json.gz" `isSuffixOf`) <$> listDirectory srcDirRaw
+      initFiles <- filter ("json.gz" `isSuffixOf`) <$> listDirectory srcDirRaw
       bOutExist <- doesFileExist outFile
       if bOutExist
         then error $ "File " <> outFile <> " already exists."
         else do
-          putStrLn $ "Record count: " <> show (length files)
-          contents <- mapM (\fn -> loadAndDecompress $ srcDirRaw <> "/" <> fn ) files
-          let raw = combine contents
-          BSL.writeFile outFile raw
+          putStrLn $ "Record count: " <> show (length initFiles)
+          hOutp <- openFile outFile WriteMode
+          (hInp, ph) <- xzCompressFile hOutp
+          fix (\loop fns ->
+                 case fns of
+                   [] -> pure ()
+                   (fn:fns') -> do
+                     raw <- loadAndDecompress $ srcDirRaw <> "/" <> fn
+                     BSL.hPutStr hInp raw
+                     BSL.hPutStr hInp "\n"
+                     loop fns')
+            initFiles
+          hClose hInp
+          hClose hOutp
+          e <- waitForProcess ph
+          print e
+          pure ()
     _ -> do
       putStrLn "brp <source dir> <output file>"
       pure ()
