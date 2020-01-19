@@ -4,7 +4,9 @@ module Main
   ) where
 
 import Codec.Compression.GZip
+import Control.Applicative
 import Data.Aeson
+import Data.Aeson.Parser
 import Data.Function
 import Data.List
 import System.Directory
@@ -12,6 +14,8 @@ import System.Environment
 import System.IO
 import System.Process
 
+import qualified Data.Attoparsec.ByteString as Parser
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString.Lazy.Builder as BSLB
 
@@ -49,6 +53,15 @@ xzCompressFile hOutp = do
   (Just hInp, _, _, ph) <- createProcess cp
   pure (hInp, ph)
 
+xzDecompressFile :: FilePath -> IO (Handle, ProcessHandle)
+xzDecompressFile xzFile = do
+  let cp =
+        (proc "/usr/bin/xz" ["-d", "-c", xzFile])
+          { std_out = CreatePipe
+          }
+  (_, Just hOutp, _, ph) <- createProcess cp
+  pure (hOutp, ph)
+
 packCommand :: [String] -> IO ()
 packCommand args =
   case args of
@@ -82,11 +95,37 @@ packCommand args =
       putStrLn "brp pack <source dir> <output file>"
       pure ()
 
+verifyCommand :: [String] -> IO ()
+verifyCommand args =
+  case args of
+    [packedFile] -> do
+      (hInp, ph) <- xzDecompressFile packedFile
+      r <- fix
+        (\loop consume ->
+            do
+              b <- hIsEOF hInp
+              if b
+                then
+                  pure (consume "")
+                else do
+                  raw <- BS.hGetLine hInp
+                  case consume raw of
+                    v@(Parser.Done _ r) -> pure v
+                    Parser.Fail _ _ m -> error (show m)
+                    Parser.Partial consume' -> loop consume')
+        (Parser.parse (some json'))
+      let Parser.Done _ xs = r
+      putStrLn $ "Line count: " <> show (length xs)
+    _ -> do
+      putStrLn "brp verify <xz file>"
+      pure ()
+
 main :: IO ()
 main = do
   args <- getArgs
   case args of
     "pack" : as -> packCommand as
+    "verify" : as -> verifyCommand as
     _ -> do
-      putStrLn "brp pack ..."
+      putStrLn "brp <pack|verify> ..."
       pure ()
