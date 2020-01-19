@@ -9,6 +9,7 @@ import Data.Aeson
 import Data.Aeson.Parser
 import Data.Function
 import Data.List
+import Data.Monoid
 import System.Directory
 import System.Environment
 import System.IO
@@ -55,11 +56,16 @@ xzCompressFile hOutp = do
 
 xzDecompressFile :: FilePath -> IO (Handle, ProcessHandle)
 xzDecompressFile xzFile = do
+  -- here we use the verbose mode to check on progress.
+  -- since the bottleneck is in parsing, the "decompress" speed
+  -- actually indicates how fast our parser can go.
   let cp =
-        (proc "/usr/bin/xz" ["-d", "-c", xzFile])
+        (proc "/usr/bin/xz" ["-d", "-c", "-vv", xzFile])
           { std_out = CreatePipe
           }
   (_, Just hOutp, _, ph) <- createProcess cp
+  hSetBinaryMode hOutp True
+  hSetBuffering hOutp (BlockBuffering (Just 65536))
   pure (hOutp, ph)
 
 packCommand :: [String] -> IO ()
@@ -108,14 +114,14 @@ verifyCommand args =
                 then
                   pure (consume "")
                 else do
-                  raw <- BS.hGetLine hInp
+                  raw <- BS.hGet hInp 65536
                   case consume raw of
                     v@(Parser.Done _ r) -> pure v
                     Parser.Fail _ _ m -> error (show m)
                     Parser.Partial consume' -> loop consume')
-        (Parser.parse (some json'))
+        (Parser.parse (some ((1 :: Sum Int) <$ json)))
       let Parser.Done _ xs = r
-      putStrLn $ "Line count: " <> show (length xs)
+      putStrLn $ "Line count: " <> show (getSum $ mconcat xs)
     _ -> do
       putStrLn "brp verify <xz file>"
       pure ()
