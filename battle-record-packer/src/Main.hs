@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, TypeApplications #-}
 module Main
   ( main
   ) where
@@ -14,6 +14,7 @@ import System.Directory
 import System.Environment
 import System.IO
 import System.Process
+import Control.Exception
 
 import qualified Data.Attoparsec.ByteString as Parser
 import qualified Data.ByteString as BS
@@ -31,13 +32,20 @@ import qualified Data.ByteString.Lazy.Builder as BSLB
 
  -}
 
-loadAndDecompress :: FilePath -> IO BSL.ByteString
-loadAndDecompress fp = do
+loadAndDecompress' :: FilePath -> IO BSL.ByteString
+loadAndDecompress' fp = do
   h <- openFile fp ReadMode
   raw <- BSL.hGetContents h
   let x = BSL.toStrict $ decompress raw
   x `seq` hClose h
   pure $ BSL.fromStrict x
+
+loadAndDecompress :: FilePath -> IO BSL.ByteString
+loadAndDecompress fp =
+  catch @SomeException (loadAndDecompress' fp) $ \e -> do
+    hPutStrLn stderr $ "Error decompressing file: " <> fp
+    hPutStrLn stderr $ displayException e
+    pure ""
 
 combine :: [BSL.ByteString] -> BSL.ByteString
 combine =
@@ -47,7 +55,7 @@ combine =
 xzCompressFile :: Handle -> IO (Handle, ProcessHandle)
 xzCompressFile hOutp = do
   let cp =
-        (proc "/usr/bin/xz" ["-9e", "-T20"])
+        (proc "/usr/bin/xz" ["-9e", "-T20", "-vv", "--memlimit-decompress=4GiB", "--memlimit-compress=16GiB"])
           { std_in = CreatePipe
           , std_out = UseHandle hOutp
           }
