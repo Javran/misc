@@ -3,13 +3,13 @@ module Main
   ( main
   ) where
 
-import System.Environment
-import System.Directory
-import System.IO
-
-import Data.List
-import Data.Aeson
 import Codec.Compression.GZip
+import Data.Aeson
+import Data.List
+import System.Directory
+import System.Environment
+import System.IO
+import System.Process
 
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString.Lazy.Builder as BSLB
@@ -37,6 +37,15 @@ combine :: [BSL.ByteString] -> BSL.ByteString
 combine =
   BSLB.toLazyByteString
   . foldMap (\x -> BSLB.lazyByteString x <> "\n")
+
+xzCompressFile :: FilePath -> IO (Handle, ProcessHandle)
+xzCompressFile outFile = do
+  let cp =
+        (proc "/usr/bin/xz" ["-9e", "-T20", outFile])
+          { std_in = CreatePipe
+          }
+  (Just h, _, _, ph) <- createProcess cp
+  pure (h, ph)
 
 main :: IO ()
 main = do

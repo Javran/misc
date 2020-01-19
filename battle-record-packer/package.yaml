@@ -13,6 +13,7 @@ dependencies:
 - base
 - bytestring
 - directory
+- process
 - zlib
 
 executables:
