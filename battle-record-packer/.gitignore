@@ -3,3 +3,4 @@ battle-record-packer.cabal
 *~
 
 private/
+*.xz
