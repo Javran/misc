@@ -13,7 +13,7 @@ dependencies:
 - dhall
 
 executables:
-  dhall-playground:
+  demo:
     main:                Main.hs
     source-dirs:         src
     ghc-options:
