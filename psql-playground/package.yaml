@@ -10,7 +10,10 @@ description:         description
 
 dependencies:
 - base
+- bytestring
+- dhall
 - hasql
+- text
 
 executables:
   demo:
