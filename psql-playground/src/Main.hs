@@ -30,7 +30,7 @@ instance FromDhall PsqlConfig
 testStatement :: Statement Int64 [Int64]
 testStatement = Statement sql encoder decoder True
   where
-    sql = "SELECT raw -> 'time' from poi_recordsb LIMIT $1"
+    sql = "SELECT ((raw -> 'time') :: bigint) AS t FROM poi_recordsb ORDER BY t LIMIT $1"
     encoder = Encoders.param (Encoders.nonNullable Encoders.int8)
     decoder = Decoders.rowList (Decoders.column (Decoders.nonNullable Decoders.int8))
 
