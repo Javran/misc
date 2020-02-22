@@ -8,6 +8,7 @@ import Control.Exception
 import Dhall
 import Hasql.Connection
 import Hasql.Statement
+import Hasql.Session
 import System.Environment
 import Data.Text.Encoding (encodeUtf8)
 
@@ -52,5 +53,12 @@ main = do
     Right conn -> do
       putStrLn "connection acquired successfully."
       -- main logic after connection goes here.
+      let sess = statement 20 testStatement
+      mResult <- run sess conn
+      case mResult of
+        Left qe -> do
+          putStrLn "query error"
+          print qe
+        Right rs -> print rs
       putStrLn "releasing connection ..."
       release conn
