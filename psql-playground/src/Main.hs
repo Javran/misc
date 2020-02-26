@@ -11,6 +11,7 @@ import Hasql.Statement
 import Hasql.Session
 import System.Environment
 import Data.Text.Encoding (encodeUtf8)
+import PostgreSQL.Binary.Data
 
 import qualified Hasql.Encoders as Encoders
 import qualified Hasql.Decoders as Decoders
@@ -34,6 +35,21 @@ testStatement = Statement sql encoder decoder True
     encoder = Encoders.param (Encoders.nonNullable Encoders.int8)
     decoder = Decoders.rowList (Decoders.column (Decoders.nonNullable Decoders.int8))
 
+data TestRow
+  = TestRow
+  { trTime :: LocalTime
+  , trV :: Int64
+  , trS :: Text
+  , trJ :: [TestJson]
+  }
+
+data TestJson
+  = TestJson
+  { tjLength :: Int
+  , tjNums :: [Int]
+  , tjMeta :: Text
+  }
+
 {-
   Create a test table on demand, the schema will look like:
 
@@ -51,9 +67,9 @@ testTableCreationStatement =
     sql =
       "CREATE TABLE IF NOT EXISTS test_table (\
       \  time timestamp PRIMARY KEY NOT NULL,\
-      \  v integer,\
-      \  s text,\
-      \  j jsonb\
+      \  v int8 NOT NULL,\
+      \  s text NOT NULL,\
+      \  j jsonb NOT NULL\
       \)"
 
 main :: IO ()
