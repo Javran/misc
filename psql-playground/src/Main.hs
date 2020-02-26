@@ -3,19 +3,24 @@ module Main
   ( main
   ) where
 
-import Data.Int
 import Control.Exception
+import Control.Monad.State.Strict
+import Data.Int
+import Data.Text.Encoding (encodeUtf8)
 import Dhall
 import Hasql.Connection
-import Hasql.Statement
 import Hasql.Session
-import System.Environment
-import Data.Text.Encoding (encodeUtf8)
+import Hasql.Statement
 import PostgreSQL.Binary.Data
+import System.Environment
+import System.Random.TF
+import System.Random.TF.Gen
+import System.Random.TF.Instances
 
 import qualified Hasql.Encoders as Encoders
 import qualified Hasql.Decoders as Decoders
 import qualified Data.ByteString as BS
+import qualified Data.Text as T
 
 data PsqlConfig
   = PsqlConfig
@@ -40,15 +45,34 @@ data TestRow
   { trTime :: LocalTime
   , trV :: Int64
   , trS :: Text
-  , trJ :: [TestJson]
-  }
+  , trJ :: TestJson
+  } deriving Show
 
 data TestJson
   = TestJson
   { tjLength :: Int
   , tjNums :: [Int]
   , tjMeta :: Text
-  }
+  } deriving Show
+
+type M = StateT TFGen IO
+
+genChar :: M Char
+genChar = (xs !!) <$> state (randomR (0, length xs - 1))
+  where
+    xs = ['a'..'z'] <> ['A' .. 'Z'] <> ['0'..'9'] <> "_+=!?"
+
+genText :: (Int, Int) -> M Text
+genText range = do
+    l <- state (randomR range)
+    T.pack <$> replicateM l genChar
+
+genTestJson :: M TestJson
+genTestJson = do
+  l <- state (randomR (0, 5))
+  xs <- replicateM l (state random)
+  meta <- genText (7,10)
+  pure $ TestJson l xs meta
 
 {-
   Create a test table on demand, the schema will look like:

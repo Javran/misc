@@ -13,8 +13,10 @@ dependencies:
 - bytestring
 - dhall
 - hasql
+- mtl
 - postgresql-binary
 - text
+- tf-random
 
 executables:
   demo:
