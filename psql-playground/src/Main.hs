@@ -70,7 +70,7 @@ genText range = do
 genTestJson :: M TestJson
 genTestJson = do
   l <- state (randomR (0, 5))
-  xs <- replicateM l (state random)
+  xs <- replicateM l (state (randomR (-10000,10000)))
   meta <- genText (7,10)
   pure $ TestJson l xs meta
 
@@ -114,6 +114,9 @@ main = do
       print e
     Right conn -> do
       putStrLn "connection acquired successfully."
+      g <- newTFGen
+      xs <- evalStateT (replicateM 6 genTestJson) g
+      mapM_ print xs
       -- main logic after connection goes here.
       let sess = statement () testTableCreationStatement
       mResult <- run sess conn
