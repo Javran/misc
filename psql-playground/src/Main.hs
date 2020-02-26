@@ -34,6 +34,28 @@ testStatement = Statement sql encoder decoder True
     encoder = Encoders.param (Encoders.nonNullable Encoders.int8)
     decoder = Decoders.rowList (Decoders.column (Decoders.nonNullable Decoders.int8))
 
+{-
+  Create a test table on demand, the schema will look like:
+
+  - time: as primary key (for our use case, it can rarely duplicate)
+  - v: a random integer column
+  - s: a random string column
+  - j: a column holding json AST value
+    - {length: <length>, nums: <array of numbers>, meta: <some random string>}
+ -}
+
+testTableCreationStatement :: Statement () ()
+testTableCreationStatement =
+    Statement sql Encoders.noParams Decoders.noResult False
+  where
+    sql =
+      "CREATE TABLE IF NOT EXISTS test_table (\
+      \  time timestamp PRIMARY KEY NOT NULL,\
+      \  v integer,\
+      \  s text,\
+      \  j jsonb\
+      \)"
+
 main :: IO ()
 main = do
   [configPath] <- getArgs
@@ -53,7 +75,7 @@ main = do
     Right conn -> do
       putStrLn "connection acquired successfully."
       -- main logic after connection goes here.
-      let sess = statement 20 testStatement
+      let sess = statement () testTableCreationStatement
       mResult <- run sess conn
       case mResult of
         Left qe -> do
