@@ -166,8 +166,7 @@ main = do
     Right conn -> do
       putStrLn "connection acquired successfully."
       g <- newTFGen
-      xs <- evalStateT (replicateM 16 genTestRow) g
-      mapM_ print xs
+      rows <- evalStateT (replicateM 16 genTestRow) g
       -- main logic after connection goes here.
       let sess = statement () testTableCreationStatement
       mResult <- run sess conn
@@ -176,5 +175,13 @@ main = do
           putStrLn "query error"
           print qe
         Right rs -> print rs
+      forM_ rows $ \r -> do
+        let sess' = statement r insertStatement
+        mR <- run sess' conn
+        case mR of
+          Left e -> do
+            putStrLn $ "Error while inserting " <> show r
+            print e
+          Right _ -> pure ()
       putStrLn "releasing connection ..."
       release conn
