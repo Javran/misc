@@ -42,7 +42,8 @@ testStatement = Statement sql encoder decoder True
 
 data TestRow
   = TestRow
-  { trTime :: LocalTime
+  { trId :: Int64
+  , trTime :: LocalTime
   , trV :: Int64
   , trS :: Text
   , trJ :: TestJson
@@ -77,7 +78,8 @@ genTestJson = do
 {-
   Create a test table on demand, the schema will look like:
 
-  - time: as primary key (for our use case, it can rarely duplicate)
+  - id: as primary key
+  - time: timestamp
   - v: a random integer column
   - s: a random string column
   - j: a column holding json AST value
@@ -90,7 +92,8 @@ testTableCreationStatement =
   where
     sql =
       "CREATE TABLE IF NOT EXISTS test_table (\
-      \  time timestamp PRIMARY KEY NOT NULL,\
+      \  id int8 PRIMARY KEY NOT NULL,\
+      \  time timestamp NOT NULL,\
       \  v int8 NOT NULL,\
       \  s text NOT NULL,\
       \  j jsonb NOT NULL\
