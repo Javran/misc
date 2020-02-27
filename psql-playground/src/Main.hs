@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric, OverloadedStrings, TypeApplications #-}
 module Main
   ( main
   ) where
@@ -7,12 +7,17 @@ import Control.Exception
 import Control.Monad.State.Strict
 import Data.Int
 import Data.Text.Encoding (encodeUtf8)
+import Data.Time.Clock.POSIX
+import Data.Time.LocalTime
+import Data.UnixTime
 import Dhall
+import Foreign.C.Types
 import Hasql.Connection
 import Hasql.Session
 import Hasql.Statement
 import PostgreSQL.Binary.Data
 import System.Environment
+import System.Posix.Types
 import System.Random.TF
 import System.Random.TF.Gen
 import System.Random.TF.Instances
@@ -74,6 +79,23 @@ genTestJson = do
   xs <- replicateM l (state (randomR (-10000,10000)))
   meta <- genText (7,10)
   pure $ TestJson l xs meta
+
+genEpoch :: M CTime
+genEpoch = CTime <$> state (randomR (lo, hi))
+  where
+    parse = toEpochTime . parseUnixTimeGMT "%Y-%m-%d"
+    CTime lo = parse "2020-01-01"
+    CTime hi = parse "2021-01-01"
+
+epochToLocal :: EpochTime -> LocalTime
+epochToLocal =
+  utcToLocalTime utc
+  . posixSecondsToUTCTime
+  . realToFrac @EpochTime @POSIXTime
+
+genTimestamp :: M (Int64, LocalTime)
+genTimestamp =
+  (\x@(CTime t) -> (t, epochToLocal x)) <$> genEpoch
 
 {-
   Create a test table on demand, the schema will look like:

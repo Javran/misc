@@ -16,7 +16,9 @@ dependencies:
 - mtl
 - postgresql-binary
 - text
+- time
 - tf-random
+- unix-time
 
 executables:
   demo:
