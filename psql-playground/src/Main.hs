@@ -5,6 +5,7 @@ module Main
 
 import Control.Exception
 import Control.Monad.State.Strict
+import Data.Aeson
 import Data.Int
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock.POSIX
@@ -45,6 +46,15 @@ testStatement = Statement sql encoder decoder True
     encoder = Encoders.param (Encoders.nonNullable Encoders.int8)
     decoder = Decoders.rowList (Decoders.column (Decoders.nonNullable Decoders.int8))
 
+data TestJson
+  = TestJson
+  { tjLength :: Int
+  , tjNums :: [Int]
+  , tjMeta :: Text
+  } deriving (Show, Generic)
+
+instance ToJSON TestJson
+
 data TestRow
   = TestRow
   { trId :: Int64
@@ -52,13 +62,6 @@ data TestRow
   , trV :: Int64
   , trS :: Text
   , trJ :: TestJson
-  } deriving Show
-
-data TestJson
-  = TestJson
-  { tjLength :: Int
-  , tjNums :: [Int]
-  , tjMeta :: Text
   } deriving Show
 
 type M = StateT TFGen IO
@@ -97,6 +100,14 @@ genTimestamp :: M (Int64, LocalTime)
 genTimestamp =
   (\x@(CTime t) -> (t, epochToLocal x)) <$> genEpoch
 
+genTestRow :: M TestRow
+genTestRow = do
+  (tsId, tsT) <- genTimestamp
+  TestRow tsId tsT
+    <$> state (randomR (100000,999999))
+    <*> genText (10,12)
+    <*> genTestJson
+
 {-
   Create a test table on demand, the schema will look like:
 
@@ -121,6 +132,21 @@ testTableCreationStatement =
       \  j jsonb NOT NULL\
       \)"
 
+insertStatement :: Statement TestRow ()
+insertStatement =
+    Statement sql encoder Decoders.noResult False
+  where
+    sql =
+      "INSERT INTO test_table (id, time, v, s, j)\
+      \  VALUES ($1, $2, $3, $4, $5)"
+    nNulParam = Encoders.param . Encoders.nonNullable
+    encoder =
+      (trId >$< nNulParam Encoders.int8)
+      <> (trTime >$< nNulParam Encoders.timestamp)
+      <> (trV >$< nNulParam Encoders.int8)
+      <> (trS >$< nNulParam Encoders.text)
+      <> ((toJSON . trJ) >$< nNulParam Encoders.jsonb)
+
 main :: IO ()
 main = do
   [configPath] <- getArgs
@@ -140,7 +166,7 @@ main = do
     Right conn -> do
       putStrLn "connection acquired successfully."
       g <- newTFGen
-      xs <- evalStateT (replicateM 6 genTestJson) g
+      xs <- evalStateT (replicateM 16 genTestRow) g
       mapM_ print xs
       -- main logic after connection goes here.
       let sess = statement () testTableCreationStatement
