@@ -15,7 +15,7 @@ import qualified Hasql.Encoders as Encoders
   type: text
   map: array of int2
   desciption: nullable text -- note: desc is a keyword.
-  time: timestamp
+  time: timestamptz
   fleet: jsonb
   packet: array of jsonb
  -}
@@ -31,7 +31,7 @@ createTable tblName =
       \  type text NOT NULL,\
       \  map int2 ARRAY NOT NULL,\
       \  desciption text,\
-      \  time timestamp NOT NULL,\
+      \  time timestamptz NOT NULL,\
       \  fleet jsonb NOT NULL,\
       \  packet jsonb ARRAY NOT NULL\
       \)"
