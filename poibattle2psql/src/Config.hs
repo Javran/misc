@@ -14,6 +14,9 @@ data PsqlConfig
 
 instance FromDhall PsqlConfig
 
+-- TODO: we should probably verify that pcTableName is nothing fancy.
+-- TODO: current nesting is not actually necessary.
+
 data ProgConfig
   = ProgConfig
   { pcSqlConfig :: PsqlConfig

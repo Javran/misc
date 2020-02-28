@@ -6,12 +6,14 @@ module Main
 import Data.Text.Encoding (encodeUtf8)
 import Dhall
 import Hasql.Connection
+import Hasql.Session
 import System.Environment
 import System.Exit
 
 import qualified Data.Text as Text
 
 import Config
+import qualified Statement
 
 acquireFromConfig :: PsqlConfig -> IO Connection
 acquireFromConfig (PsqlConfig hst pt u pw db) =
@@ -38,6 +40,13 @@ main = getArgs >>= \case
       } <- inputFile auto configPath
     conn <- acquireFromConfig sqlConfig
     putStrLn "connection acquired successfully."
+    -- create the table
+    let sess = statement () $ Statement.createTable (pcTableName pConf)
+    run sess conn >>= \case
+      Left qe -> do
+        putStrLn "query error"
+        print qe
+      Right rs -> print rs
     putStrLn "releasing connection ..."
     release conn
   _ -> do
