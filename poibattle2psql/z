@@ -1,0 +1,3 @@
+#!/bin/bash
+
+stack build && stack exec -- pb2psql /home/javran/projects/github/misc/poibattle2psql/private/c.dhall
