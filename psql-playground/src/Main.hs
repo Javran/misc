@@ -86,9 +86,9 @@ genTestJson = do
 genEpoch :: M CTime
 genEpoch = CTime <$> state (randomR (lo, hi))
   where
-    parse = toEpochTime . parseUnixTimeGMT "%Y-%m-%d"
-    CTime lo = parse "2020-01-01"
-    CTime hi = parse "2021-01-01"
+    parse = toEpochTime . parseUnixTimeGMT "%Y-%m-%d %H:%M:%S"
+    CTime lo = parse "2020-01-01 00:00:00"
+    CTime hi = parse "2020-01-01 00:00:10"
 
 epochToLocal :: EpochTime -> LocalTime
 epochToLocal =
@@ -138,7 +138,8 @@ insertStatement =
   where
     sql =
       "INSERT INTO test_table (id, time, v, s, j)\
-      \  VALUES ($1, $2, $3, $4, $5)"
+      \  VALUES ($1, $2, $3, $4, $5)\
+      \  ON CONFLICT DO NOTHING"
     nNulParam = Encoders.param . Encoders.nonNullable
     encoder =
       (trId >$< nNulParam Encoders.int8)
