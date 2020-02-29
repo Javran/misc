@@ -41,7 +41,6 @@ createTable tblName =
       \  packet jsonb ARRAY NOT NULL\
       \)"
 
-
 queryMissingRecords :: T.Text ->  Statement [Int64] [Int64]
 queryMissingRecords tblName =
     Statement sql encoder decoder False

@@ -20,6 +20,7 @@ dependencies:
 - postgresql-binary
 - system-filepath
 - text
+- time
 - turtle
 
 executables:
