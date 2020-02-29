@@ -13,6 +13,8 @@ import System.Exit
 import qualified Data.Text as Text
 
 import Config
+import RecordScanner
+
 import qualified Statement
 
 acquireFromConfig :: PsqlConfig -> IO Connection
@@ -32,12 +34,24 @@ acquireFromConfig (PsqlConfig hst pt u pw db) =
         (encodeUtf8 pw)
         (encodeUtf8 db)
 
+{-
+  TODO: workflow:
+
+  - scan and collect filenames from poi battle directory.
+  - query database to see which of them are new records.
+  - insert records into the database.
+
+ -}
+
 main :: IO ()
 main = getArgs >>= \case
   [configPath] -> do
     pConf@ProgConfig
       { pcSqlConfig = sqlConfig
+      , pcBattleDataPath = fp
       } <- inputFile auto configPath
+    -- fetch battle records
+    getBattleRecordIds fp >>= print . take 10
     conn <- acquireFromConfig sqlConfig
     putStrLn "connection acquired successfully."
     -- create the table

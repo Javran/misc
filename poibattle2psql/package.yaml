@@ -12,11 +12,15 @@ dependencies:
 - aeson
 - base
 - bytestring
+- containers
 - dhall
+- foldl
 - hasql
 - mtl
 - postgresql-binary
+- system-filepath
 - text
+- turtle
 
 executables:
   pb2psql:
