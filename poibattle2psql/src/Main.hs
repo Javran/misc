@@ -51,16 +51,25 @@ main = getArgs >>= \case
       , pcBattleDataPath = fp
       } <- inputFile auto configPath
     -- fetch battle records
-    getBattleRecordIds fp >>= print . take 10
+    records <- getBattleRecordIds fp
     conn <- acquireFromConfig sqlConfig
     putStrLn "connection acquired successfully."
     -- create the table
-    let sess = statement () $ Statement.createTable (pcTableName pConf)
-    run sess conn >>= \case
-      Left qe -> do
-        putStrLn "query error"
-        print qe
-      Right rs -> print rs
+    do
+      let sess = statement () $ Statement.createTable (pcTableName pConf)
+      run sess conn >>= \case
+        Left qe -> do
+          putStrLn "query error"
+          print qe
+        Right _ -> pure ()
+    do
+      putStrLn $ "record count: " <> show (length records)
+      let sess = statement (fst <$> records) $ Statement.queryMissingRecords (pcTableName pConf)
+      run sess conn >>= \case
+        Left qe -> do
+          putStrLn "query error"
+          print qe
+        Right rs -> putStrLn $ "missing records count: " <> show (length rs)
     putStrLn "releasing connection ..."
     release conn
   _ -> do
