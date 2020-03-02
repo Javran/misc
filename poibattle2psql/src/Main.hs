@@ -3,6 +3,7 @@ module Main
   ( main
   ) where
 
+import Control.Monad
 import Data.Text.Encoding (encodeUtf8)
 import Dhall
 import Hasql.Connection
@@ -69,7 +70,13 @@ main = getArgs >>= \case
         Left qe -> do
           putStrLn "query error"
           print qe
-        Right rs -> putStrLn $ "missing records count: " <> show (length rs)
+        Right rsPre -> do
+          putStrLn $ "missing records count: " <> show (length rsPre)
+          -- importing all at once sounds like a terrible idea for testing,
+          -- so instead let's just import a small bit and ramp it up if all goes well.
+          let (rs, dropped) = splitAt 128 rsPre
+          unless (null dropped) $
+            putStrLn $ "keeping only first " <> show (length rs) <> " records."
     putStrLn "releasing connection ..."
     release conn
   _ -> do

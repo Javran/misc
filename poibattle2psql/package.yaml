@@ -17,6 +17,7 @@ dependencies:
 - dhall
 - foldl
 - hasql
+- hasql-th
 - mtl
 - postgresql-binary
 - safe-exceptions
