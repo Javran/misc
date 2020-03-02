@@ -1,6 +1,5 @@
 {-# LANGUAGE
     OverloadedStrings
-  , TypeApplications
   , NumericUnderscores
   , ScopedTypeVariables
   , DeriveGeneric
@@ -8,8 +7,9 @@
 module RecordScanner where
 
 import GHC.Generics
+import GHC.Stack (emptyCallStack)
 import Control.DeepSeq
-import Control.Exception
+import Control.Exception.Safe
 import Data.Aeson
 import Data.Int
 import Data.String
@@ -24,6 +24,7 @@ import Turtle.Shell
 
 import qualified Codec.Compression.GZip as GZ
 import qualified Control.Foldl as Foldl
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Text as T
 import qualified Prelude (FilePath)
@@ -72,18 +73,27 @@ instance FromJSON BattleRecord where
       <*> obj .: "fleet"
       <*> obj .: "packet"
 
-loadAndDecompress' :: Prelude.FilePath -> IO BSL.ByteString
+loadAndDecompress' :: Prelude.FilePath -> IO BS.ByteString
 loadAndDecompress' fp = do
   h <- openFile fp ReadMode
   raw <- BSL.hGetContents h
   -- data for a record is relatively tiny, I'm fine with decompressing it all in-memory.
   let x = BSL.toStrict $ GZ.decompress raw
   x `seq` hClose h
-  pure $ BSL.fromStrict x
+  pure x
 
-loadAndDecompress :: Prelude.FilePath -> IO (Either SomeException BSL.ByteString)
+loadAndDecompress :: Prelude.FilePath -> IO (Either SomeException BS.ByteString)
 loadAndDecompress fp =
-  catch @SomeException (Right <$> loadAndDecompress' fp) (pure . Left)
+  catchAny (Right <$> loadAndDecompress' fp) (pure . Left)
 
 loadBattleRecord :: FilePath -> IO (Either SomeException BattleRecord)
-loadBattleRecord fp = error "TODO"
+loadBattleRecord fp = do
+  mRaw <- loadAndDecompress (encodeString fp)
+  case mRaw of
+    Left e -> pure (Left e)
+    Right raw ->
+      catchAny
+        (case eitherDecode' (BSL.fromStrict raw) of
+            Left e -> pure (Left (toException $ StringException e emptyCallStack))
+            Right r -> pure (Right r))
+        (pure . Left)

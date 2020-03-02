@@ -19,6 +19,7 @@ dependencies:
 - hasql
 - mtl
 - postgresql-binary
+- safe-exceptions
 - system-filepath
 - text
 - time
