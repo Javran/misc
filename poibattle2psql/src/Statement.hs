@@ -1,14 +1,17 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Statement where
 
+import Data.Functor.Contravariant
+import Data.Int
 import Data.Text.Encoding (encodeUtf8)
 import Hasql.Statement
-import Data.Int
 
 import qualified Data.ByteString as BS
 import qualified Data.Text as T
 import qualified Hasql.Decoders as Decoders
 import qualified Hasql.Encoders as Encoders
+
+import RecordScanner
 
 {-
   TODO: Hasql.TH.
@@ -54,3 +57,25 @@ queryMissingRecords tblName =
       \  ) AS tmp\
       \  ON rs.id = tmp.id \
       \  WHERE rs.id IS NULL"
+
+-- TODO: test.
+insertBattleRecord :: T.Text -> Statement BattleRecord ()
+insertBattleRecord tblName =
+    Statement sql encoder decoder False
+  where
+    nNulParam = Encoders.param . Encoders.nonNullable
+    encoder =
+      (brId >$< nNulParam Encoders.int8)
+      <> (brVersion >$< nNulParam Encoders.text)
+      <> (brType >$< nNulParam Encoders.text)
+      <> (brMap >$< nNulParam (Encoders.foldableArray (Encoders.nonNullable Encoders.int2)))
+      <> (brDesc >$< Encoders.param (Encoders.nullable Encoders.text))
+      <> (brTime >$< nNulParam Encoders.timestamptz)
+      <> (brFleet >$< nNulParam Encoders.jsonb)
+      <> (brPacket >$< nNulParam (Encoders.foldableArray (Encoders.nonNullable Encoders.jsonb)))
+    decoder = Decoders.noResult
+    sql =
+      "INSERT INTO " <> encodeUtf8 tblName <>
+      " (id, version, type, map, description, time, fleet, packet)\
+      \ VALUES ($1, $2, $3, $4, $5, $6, $7, $8)\
+      \ ON CONFLICT DO NOTHING"
