@@ -2,6 +2,7 @@
 module RecordScanner where
 
 import Control.Exception
+import Data.Aeson
 import Data.Int
 import Data.String
 import Filesystem.Path.CurrentOS
@@ -14,7 +15,6 @@ import Turtle.Shell
 
 import qualified Codec.Compression.GZip as GZ
 import qualified Control.Foldl as Foldl
-import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Text as T
 import qualified Prelude (FilePath)
@@ -38,9 +38,21 @@ data BattleRecord
   , brMap :: [Int16]
   , brDesc :: Maybe T.Text
   , brTime :: UTCTime
-  , brFleet :: Aeson.Value
-  , brPacket :: [Aeson.Value]
+  , brFleet :: Value
+  , brPacket :: [Value]
   }
+
+instance FromJSON BattleRecord where
+  parseJSON = withObject "BattleRecord" $ \obj ->
+    BattleRecord
+      <$> obj .: "time"
+      <*> obj .: "version"
+      <*> obj .: "type"
+      <*> obj .: "map"
+      <*> obj .: "desc"
+      <*> error "TODO" -- TODO: proper conversion
+      <*> obj .: "fleet"
+      <*> obj .: "packet"
 
 loadAndDecompress' :: Prelude.FilePath -> IO BSL.ByteString
 loadAndDecompress' fp = do
