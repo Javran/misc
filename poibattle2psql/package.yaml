@@ -13,6 +13,7 @@ dependencies:
 - base
 - bytestring
 - containers
+- deepseq
 - dhall
 - foldl
 - hasql

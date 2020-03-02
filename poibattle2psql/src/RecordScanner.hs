@@ -1,10 +1,19 @@
-{-# LANGUAGE OverloadedStrings, TypeApplications #-}
+{-# LANGUAGE
+    OverloadedStrings
+  , TypeApplications
+  , NumericUnderscores
+  , ScopedTypeVariables
+  , DeriveGeneric
+  #-}
 module RecordScanner where
 
+import GHC.Generics
+import Control.DeepSeq
 import Control.Exception
 import Data.Aeson
 import Data.Int
 import Data.String
+import Data.Time.Clock.System
 import Filesystem.Path.CurrentOS
 import PostgreSQL.Binary.Data
 import Prelude hiding (FilePath)
@@ -30,6 +39,12 @@ getBattleRecordIds fpRaw =
     [battleId] <- pure $ match (decimal <* ".json.gz") fName
     pure (battleId, fp)
 
+epochMillisecondsToUTCTime :: Int64 -> UTCTime
+epochMillisecondsToUTCTime ms = systemToUTCTime st
+  where
+    (seconds, mills) = ms `quotRem` 1000
+    st = MkSystemTime seconds (fromIntegral mills * 1_000_000)
+
 data BattleRecord
   = BattleRecord
   { brId :: Int64
@@ -40,17 +55,20 @@ data BattleRecord
   , brTime :: UTCTime
   , brFleet :: Value
   , brPacket :: [Value]
-  }
+  } deriving (Generic)
+
+instance NFData BattleRecord
 
 instance FromJSON BattleRecord where
-  parseJSON = withObject "BattleRecord" $ \obj ->
+  parseJSON = withObject "BattleRecord" $ \obj -> do
+    (t :: Int64) <- obj .: "time"
     BattleRecord
-      <$> obj .: "time"
+      <$> pure t
       <*> obj .: "version"
       <*> obj .: "type"
       <*> obj .: "map"
       <*> obj .: "desc"
-      <*> error "TODO" -- TODO: proper conversion
+      <*> pure (epochMillisecondsToUTCTime t)
       <*> obj .: "fleet"
       <*> obj .: "packet"
 
