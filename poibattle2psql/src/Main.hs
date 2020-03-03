@@ -4,6 +4,7 @@ module Main
   ) where
 
 import Control.Monad
+import Control.Exception.Safe (displayException)
 import Data.Text.Encoding (encodeUtf8)
 import Dhall
 import Hasql.Connection
@@ -11,6 +12,8 @@ import Hasql.Session
 import System.Environment
 import System.Exit
 
+import qualified Data.Map.Strict as M
+import qualified Data.Set as S
 import qualified Data.Text as Text
 
 import Config
@@ -52,31 +55,45 @@ main = getArgs >>= \case
       , pcBattleDataPath = fp
       } <- inputFile auto configPath
     -- fetch battle records
-    records <- getBattleRecordIds fp
+    recordsPre <- getBattleRecordIds fp
+    let records = M.fromList recordsPre
     conn <- acquireFromConfig sqlConfig
     putStrLn "connection acquired successfully."
     -- create the table
     do
-      let sess = statement () $ Statement.createTable
+      let sess = statement () Statement.createTable
       run sess conn >>= \case
         Left qe -> do
           putStrLn "query error"
           print qe
         Right _ -> pure ()
     do
-      putStrLn $ "record count: " <> show (length records)
-      let sess = statement (fst <$> records) Statement.queryMissingRecords
+      putStrLn $ "record count: " <> show (length recordsPre)
+      let sess = statement (fst <$> recordsPre) Statement.queryMissingRecords
       run sess conn >>= \case
         Left qe -> do
           putStrLn "query error"
           print qe
-        Right rsPre -> do
-          putStrLn $ "missing records count: " <> show (length rsPre)
+        Right rIdsPre -> do
+          putStrLn $ "missing records count: " <> show (length rIdsPre)
           -- importing all at once sounds like a terrible idea for testing,
           -- so instead let's just import a small bit and ramp it up if all goes well.
-          let (rs, dropped) = splitAt 128 rsPre
+          let (rIds, dropped) = splitAt 128 rIdsPre
           unless (null dropped) $
-            putStrLn $ "keeping only first " <> show (length rs) <> " records."
+            putStrLn $ "keeping only first " <> show (length rIds) <> " records."
+          let missingRecords = M.restrictKeys records (S.fromList rIds)
+          forM_ (M.toList missingRecords) $ \(rId, rPath) ->
+            loadBattleRecord rPath >>= \case
+              Left e -> do
+                putStrLn $ "Failed to load " <> show rPath
+                putStrLn $ "Exception: " <> displayException e
+              Right record -> do
+                let insertSess = statement record Statement.insertBattleRecord
+                run insertSess conn >>= \case
+                  Left se -> do
+                    putStrLn "insertion error"
+                    print se
+                  Right () -> pure ()
     putStrLn "releasing connection ..."
     release conn
   _ -> do
