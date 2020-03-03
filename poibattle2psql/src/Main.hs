@@ -6,7 +6,7 @@ module Main
 import Control.Exception.Safe (displayException)
 import Control.Monad
 import Data.Text.Encoding (encodeUtf8)
-import Dhall
+import Dhall hiding (record)
 import Hasql.Connection
 import Hasql.Session
 import System.Environment
@@ -14,7 +14,6 @@ import System.Exit
 
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
-import qualified Data.Text as T
 import qualified Data.Vector as Vec
 
 import Config
@@ -51,7 +50,7 @@ acquireFromConfig (PsqlConfig hst pt u pw db) =
 main :: IO ()
 main = getArgs >>= \case
   [configPath] -> do
-    pConf@ProgConfig
+    ProgConfig
       { pcSqlConfig = sqlConfig
       , pcBattleDataPath = fp
       } <- inputFile auto configPath
@@ -70,7 +69,10 @@ main = getArgs >>= \case
         Right _ -> pure ()
     do
       putStrLn $ "record count: " <> show (length recordsPre)
-      let sess = statement (Vec.fromList $ fst <$> recordsPre) Statement.queryMissingRecords
+      let sess =
+            statement
+              (Vec.fromList $ fst <$> recordsPre)
+              Statement.queryMissingRecords
       run sess conn >>= \case
         Left qe -> do
           putStrLn "query error"
@@ -83,7 +85,7 @@ main = getArgs >>= \case
           unless (null dropped) $
             putStrLn $ "inserting only first " <> show (length rIds) <> " records."
           let missingRecords = M.restrictKeys records (S.fromList rIds)
-          forM_ (M.toList missingRecords) $ \(rId, rPath) ->
+          forM_ (M.toList missingRecords) $ \(_rId, rPath) ->
             loadBattleRecord rPath >>= \case
               Left e -> do
                 putStrLn $ "Failed to load " <> show rPath

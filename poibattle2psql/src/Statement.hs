@@ -5,16 +5,12 @@
   #-}
 module Statement where
 
-import Data.Functor.Contravariant
 import Data.Int
 import Data.Profunctor
-import Data.Text.Encoding (encodeUtf8)
 import Hasql.Statement
 import Hasql.TH
 import PostgreSQL.Binary.Data
 
-import qualified Data.ByteString as BS
-import qualified Data.Text as T
 import qualified Data.Vector as Vec
 import qualified Hasql.Decoders as Decoders
 import qualified Hasql.Encoders as Encoders
