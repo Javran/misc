@@ -80,7 +80,7 @@ main = getArgs >>= \case
           -- so instead let's just import a small bit and ramp it up if all goes well.
           let (rIds, dropped) = splitAt 128 rIdsPre
           unless (null dropped) $
-            putStrLn $ "keeping only first " <> show (length rIds) <> " records."
+            putStrLn $ "inserting only first " <> show (length rIds) <> " records."
           let missingRecords = M.restrictKeys records (S.fromList rIds)
           forM_ (M.toList missingRecords) $ \(rId, rPath) ->
             loadBattleRecord rPath >>= \case
