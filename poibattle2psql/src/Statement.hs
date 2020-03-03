@@ -38,7 +38,7 @@ createTable =
       \  version text NOT NULL,\
       \  type text NOT NULL,\
       \  map int2 ARRAY NOT NULL,\
-      \  desciption text,\
+      \  description text,\
       \  time timestamptz NOT NULL,\
       \  fleet jsonb NOT NULL,\
       \  packet jsonb ARRAY NOT NULL\
