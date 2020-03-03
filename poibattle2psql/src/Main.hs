@@ -81,7 +81,7 @@ main = getArgs >>= \case
           putStrLn $ "missing records count: " <> show (length rIdsPre)
           -- importing all at once sounds like a terrible idea for testing,
           -- so instead let's just import a small bit and ramp it up if all goes well.
-          let (rIds, dropped) = splitAt 128 (Vec.toList rIdsPre)
+          let (rIds, dropped) = splitAt 20000 (Vec.toList rIdsPre)
           unless (null dropped) $
             putStrLn $ "inserting only first " <> show (length rIds) <> " records."
           let missingRecords = M.restrictKeys records (S.fromList rIds)
