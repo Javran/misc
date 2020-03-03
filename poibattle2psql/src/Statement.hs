@@ -1,13 +1,21 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE
+    OverloadedStrings
+  , TemplateHaskell
+  , QuasiQuotes
+  #-}
 module Statement where
 
 import Data.Functor.Contravariant
 import Data.Int
+import Data.Profunctor
 import Data.Text.Encoding (encodeUtf8)
 import Hasql.Statement
+import Hasql.TH
+import PostgreSQL.Binary.Data
 
 import qualified Data.ByteString as BS
 import qualified Data.Text as T
+import qualified Data.Vector as Vec
 import qualified Hasql.Decoders as Decoders
 import qualified Hasql.Encoders as Encoders
 
@@ -44,38 +52,41 @@ createTable =
       \  packet jsonb ARRAY NOT NULL\
       \)"
 
-queryMissingRecords :: Statement [Int64] [Int64]
+queryMissingRecords :: Statement (Vector Int64) (Vector Int64)
 queryMissingRecords =
-    Statement sql encoder decoder False
-  where
-    encoder = Encoders.param . Encoders.nonNullable . Encoders.foldableArray $ Encoders.nonNullable Encoders.int8
-    decoder = Decoders.rowList . Decoders.column . Decoders.nonNullable $ Decoders.int8
-    sql =
-      "SELECT tmp.id FROM poi_battle_records AS rs\
-      \  RIGHT JOIN (\
-      \    SELECT * FROM UNNEST($1) AS id\
-      \  ) AS tmp\
-      \  ON rs.id = tmp.id \
-      \  WHERE rs.id IS NULL"
+  [vectorStatement|
+    SELECT tmp.id :: int8 FROM poi_battle_records AS rs
+      RIGHT JOIN (
+        SELECT * FROM UNNEST($1 :: int8[]) AS id
+      ) AS tmp
+      ON rs.id = tmp.id
+      WHERE rs.id IS NULL
+      |]
 
--- TODO: test.
 insertBattleRecord :: Statement BattleRecord ()
-insertBattleRecord =
-    Statement sql encoder decoder False
+insertBattleRecord = lmap brToRows
+  [resultlessStatement|
+    INSERT INTO poi_battle_records
+      (id, version, type, map, description, time, fleet, packet)
+      VALUES
+        ( $1 :: int8
+        , $2 :: text
+        , $3 :: text
+        , $4 :: int2[]
+        , $5 :: text?
+        , $6 :: timestamptz
+        , $7 :: jsonb
+        , $8 :: jsonb[]
+        ) ON CONFLICT DO NOTHING
+        |]
   where
-    nNulParam = Encoders.param . Encoders.nonNullable
-    encoder =
-      (brId >$< nNulParam Encoders.int8)
-      <> (brVersion >$< nNulParam Encoders.text)
-      <> (brType >$< nNulParam Encoders.text)
-      <> (brMap >$< nNulParam (Encoders.foldableArray (Encoders.nonNullable Encoders.int2)))
-      <> (brDesc >$< Encoders.param (Encoders.nullable Encoders.text))
-      <> (brTime >$< nNulParam Encoders.timestamptz)
-      <> (brFleet >$< nNulParam Encoders.jsonb)
-      <> (brPacket >$< nNulParam (Encoders.foldableArray (Encoders.nonNullable Encoders.jsonb)))
-    decoder = Decoders.noResult
-    sql =
-      "INSERT INTO poi_battle_records\
-      \  (id, version, type, map, description, time, fleet, packet)\
-      \  VALUES ($1, $2, $3, $4, $5, $6, $7, $8)\
-      \  ON CONFLICT DO NOTHING"
+    brToRows br =
+      ( brId br
+      , brVersion br
+      , brType br
+      , Vec.fromList $ brMap br
+      , brDesc br
+      , brTime br
+      , brFleet br
+      , Vec.fromList $ brPacket br
+      )

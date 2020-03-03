@@ -20,11 +20,13 @@ dependencies:
 - hasql-th
 - mtl
 - postgresql-binary
+- profunctors
 - safe-exceptions
 - system-filepath
 - text
 - time
 - turtle
+- vector
 - zlib
 
 executables:
@@ -32,6 +34,7 @@ executables:
     main:                Main.hs
     source-dirs:         src
     ghc-options:
+    - -Wall
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
