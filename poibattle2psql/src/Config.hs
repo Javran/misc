@@ -21,7 +21,6 @@ data ProgConfig
   = ProgConfig
   { pcSqlConfig :: PsqlConfig
   , pcBattleDataPath :: FilePath
-  , pcTableName :: Text
   } deriving (Generic)
 
 instance FromDhall ProgConfig

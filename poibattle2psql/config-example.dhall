@@ -7,6 +7,5 @@ let sqlConfig =
       }
 in  { pcSqlConfig = sqlConfig
     , pcBattleDataPath = "/home/ywwuyi/.config/poi/battle-detail"
-    , pcTableName = "battle_data"
     }
 

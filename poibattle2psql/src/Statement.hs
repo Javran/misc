@@ -28,12 +28,12 @@ import RecordScanner
   packet: array of jsonb
  -}
 
-createTable :: T.Text -> Statement () ()
-createTable tblName =
+createTable :: Statement () ()
+createTable =
     Statement sql Encoders.noParams Decoders.noResult False
   where
     sql =
-      "CREATE TABLE IF NOT EXISTS " <> encodeUtf8 tblName <> "(\
+      "CREATE TABLE IF NOT EXISTS poi_battle_records (\
       \  id int8 PRIMARY KEY NOT NULL,\
       \  version text NOT NULL,\
       \  type text NOT NULL,\
@@ -44,14 +44,14 @@ createTable tblName =
       \  packet jsonb ARRAY NOT NULL\
       \)"
 
-queryMissingRecords :: T.Text ->  Statement [Int64] [Int64]
-queryMissingRecords tblName =
+queryMissingRecords :: Statement [Int64] [Int64]
+queryMissingRecords =
     Statement sql encoder decoder False
   where
     encoder = Encoders.param . Encoders.nonNullable . Encoders.foldableArray $ Encoders.nonNullable Encoders.int8
     decoder = Decoders.rowList . Decoders.column . Decoders.nonNullable $ Decoders.int8
     sql =
-      "SELECT tmp.id FROM " <> encodeUtf8 tblName <> " AS rs\
+      "SELECT tmp.id FROM poi_battle_records AS rs\
       \  RIGHT JOIN (\
       \    SELECT * FROM UNNEST($1) AS id\
       \  ) AS tmp\
@@ -59,8 +59,8 @@ queryMissingRecords tblName =
       \  WHERE rs.id IS NULL"
 
 -- TODO: test.
-insertBattleRecord :: T.Text -> Statement BattleRecord ()
-insertBattleRecord tblName =
+insertBattleRecord :: Statement BattleRecord ()
+insertBattleRecord =
     Statement sql encoder decoder False
   where
     nNulParam = Encoders.param . Encoders.nonNullable
@@ -75,7 +75,7 @@ insertBattleRecord tblName =
       <> (brPacket >$< nNulParam (Encoders.foldableArray (Encoders.nonNullable Encoders.jsonb)))
     decoder = Decoders.noResult
     sql =
-      "INSERT INTO " <> encodeUtf8 tblName <>
-      " (id, version, type, map, description, time, fleet, packet)\
-      \ VALUES ($1, $2, $3, $4, $5, $6, $7, $8)\
-      \ ON CONFLICT DO NOTHING"
+      "INSERT INTO poi_battle_records\
+      \  (id, version, type, map, description, time, fleet, packet)\
+      \  VALUES ($1, $2, $3, $4, $5, $6, $7, $8)\
+      \  ON CONFLICT DO NOTHING"

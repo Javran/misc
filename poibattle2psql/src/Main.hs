@@ -57,7 +57,7 @@ main = getArgs >>= \case
     putStrLn "connection acquired successfully."
     -- create the table
     do
-      let sess = statement () $ Statement.createTable (pcTableName pConf)
+      let sess = statement () $ Statement.createTable
       run sess conn >>= \case
         Left qe -> do
           putStrLn "query error"
@@ -65,7 +65,7 @@ main = getArgs >>= \case
         Right _ -> pure ()
     do
       putStrLn $ "record count: " <> show (length records)
-      let sess = statement (fst <$> records) $ Statement.queryMissingRecords (pcTableName pConf)
+      let sess = statement (fst <$> records) Statement.queryMissingRecords
       run sess conn >>= \case
         Left qe -> do
           putStrLn "query error"
