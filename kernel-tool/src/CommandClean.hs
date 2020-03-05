@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, TupleSections #-}
+{-# LANGUAGE OverloadedStrings, TupleSections, LambdaCase #-}
 module CommandClean
   ( cmdClean
   ) where
@@ -10,6 +10,7 @@ import Control.Monad
 import Data.Char
 import Data.List
 import Data.Ord
+import System.Exit
 import Turtle.Pattern
 import Turtle.Prelude
 import Turtle.Shell
@@ -19,6 +20,7 @@ import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Filesystem.Path.CurrentOS as FP
 
+import Common
 import CommandInstall
 
 {-
@@ -59,6 +61,11 @@ scanKernelFiles prefixes bootDir =
         patTests = [ r | pat <- patterns, r <- match pat fpText ]
     initial = M.empty
 
+cmdClean :: IO ()
+cmdClean = determineBootloader >>= \case
+  Grub1 -> cmdCleanGrub1
+  Grub2 -> cmdCleanGrub2
+
 {-
   environment variables:
 
@@ -67,14 +74,13 @@ scanKernelFiles prefixes bootDir =
   - KERNEL_TOOL_CLEAN_BACKUP_DIR: backup directory.
     default=/boot/backup
  -}
-
 {-
   `clean` command scans /boot, detects kernel files,
   and limit the number of vaild kernels present to KERNEL_TOOL_CLEAN_LIMIT
   by moving old kernels into KERNEL_TOOL_BACKUP_DIR.
  -}
-cmdClean :: IO ()
-cmdClean = do
+cmdCleanGrub1 :: IO ()
+cmdCleanGrub1 = do
   curEnv <- env
   let kernelNumLimit :: Int
       kernelNumLimit =
@@ -123,3 +129,9 @@ cmdClean = do
           fList = foldMap (M.elems . snd . fst) mToBeMovedSorted
       sh $ forM_ fList $ \fp -> mv fp (backupDir FP.</> FP.filename fp)
       updateGrubConf
+
+cmdCleanGrub2 :: IO ()
+cmdCleanGrub2 = do
+  -- TODO
+  putStrLn "clean is not yet supported for grub2."
+  exitFailure
