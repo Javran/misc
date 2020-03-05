@@ -33,6 +33,7 @@ executables:
     - CommandInstall
     - CommandClean
     ghc-options:
+    - -Wall
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
