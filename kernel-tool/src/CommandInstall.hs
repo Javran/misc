@@ -40,6 +40,18 @@ cmdInstall =  sh $ do
     ExitFailure ec  -> liftIO $
       putStrLn $ "Exitcode=" <> show ec <> " (allowed to fail)"
 
+data Bootloader = Grub1 | Grub2
+
+determineBootloader :: IO Bootloader
+determineBootloader = do
+  mBl <- fmap (T.toLower . T.strip) . lookup "BOOTLOADER" <$> env
+  case mBl of
+    Just "grub1" -> pure Grub1
+    Just "grub2" -> pure Grub2
+    _ -> do
+      putStrLn "BOOTLOADER is not set, it must be either 'grub1' or 'grub2'."
+      exitFailure
+
 {-
   Recognize existing kernels and update grub.conf using a template.
 
