@@ -1,4 +1,9 @@
-{-# LANGUAGE OverloadedStrings, TypeApplications, LambdaCase #-}
+{-# LANGUAGE
+    OverloadedStrings
+  , TypeApplications
+  , LambdaCase
+  , NoMonomorphismRestriction
+  #-}
 module CommandInstall
   ( cmdInstall
   , updateGrubConf
@@ -40,6 +45,14 @@ cmdInstall =  sh $ do
     ExitFailure ec  -> liftIO $
       putStrLn $ "Exitcode=" <> show ec <> " (allowed to fail)"
 
+updateGrubConf :: IO ()
+updateGrubConf =
+    determineBootloader >>= getUpdateAction
+  where
+    getUpdateAction :: Bootloader -> IO ()
+    getUpdateAction = \case
+        Grub1 -> updateGrub1Conf
+        Grub2 -> updateGrub2Conf
 
 {-
   Recognize existing kernels and update grub.conf using a template.
@@ -49,8 +62,8 @@ cmdInstall =  sh $ do
   with XXX being exactly the same.
 
  -}
-updateGrubConf :: IO ()
-updateGrubConf = do
+updateGrub1Conf :: IO ()
+updateGrub1Conf = do
   -- get potential options for vmlinuz-* files.
   kernelSets <- fmap (Data.List.sortOn (Down . sortKey)) $ reduce Foldl.list $
     ls "/boot/" >>= \fp -> do
@@ -60,7 +73,7 @@ updateGrubConf = do
       guard $ vmlzMagic `isPrefixOf` fName
       -- we say "X.Y.Z-gentoo" is a KernelSet,
       -- if all of vmlinuz, System.map and config exists
-      let kernelSet = T.pack $ drop (length vmlzMagic) fName
+      let kernelSet = T.pack $ drop (T.length vmlzMagic) fName
       True <- testfile ("/boot" FP.</> FP.fromText ("System.map-" <> kernelSet))
       True <- testfile ("/boot" FP.</> FP.fromText ("config-" <> kernelSet))
       pure kernelSet
@@ -76,3 +89,6 @@ updateGrubConf = do
   let grubConfContent = renderMustache tmpl context
   putStrLn "Writing to grub.conf ..."
   T.writeFile "/boot/grub/grub.conf" $ TL.toStrict grubConfContent
+
+updateGrub2Conf :: IO ()
+updateGrub2Conf = error "TODO"
