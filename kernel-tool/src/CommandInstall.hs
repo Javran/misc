@@ -91,4 +91,7 @@ updateGrub1Conf = do
   T.writeFile "/boot/grub/grub.conf" $ TL.toStrict grubConfContent
 
 updateGrub2Conf :: IO ()
-updateGrub2Conf = error "TODO"
+updateGrub2Conf = do
+  (ExitSuccess, _) <-
+    procStrict "/usr/sbin/grub-mkconfig" ["-o", "/boot/grub/grub.cfg"] ""
+  pure ()
