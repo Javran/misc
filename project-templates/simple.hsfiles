@@ -13,10 +13,11 @@ dependencies:
 - base
 
 executables:
-  {{name}}:
+  demo:
     main:                Main.hs
     source-dirs:         src
     ghc-options:
+    - Wall
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
@@ -35,7 +36,7 @@ main = pure ()
 *~
 
 {-# START_FILE stack.yaml #-}
-resolver: lts-13.21
+resolver: lts-14.27
 packages:
 - .
 
