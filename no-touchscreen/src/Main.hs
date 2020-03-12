@@ -3,12 +3,12 @@ module Main
   ( main
   ) where
 
-import Turtle.Prelude
-import Turtle.Pattern
-import System.Exit
 import Control.Applicative
 import Control.Monad
 import Data.Char
+import System.Exit
+import Turtle.Pattern
+import Turtle.Prelude
 
 import qualified Data.Text as T
 
@@ -40,5 +40,5 @@ main = do
   forM_ touchscreenDevs $ \(devName, devId) -> do
     putStr $ "Disabling " <> T.unpack devName <> " ("
       <> show devId <> ") ... "
-    (ec, _) <- procStrict "echo" ["disable", T.pack (show devId)] ""
+    (ec, _) <- procStrict "xinput" ["disable", T.pack (show devId)] ""
     print ec
