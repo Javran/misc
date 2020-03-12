@@ -37,5 +37,8 @@ main = do
         d@(devName,_):_ <- [match patDevice rawLine]
         guard $ "touchscreen" `T.isInfixOf` T.toLower devName
         pure d
-
-  mapM_ print touchscreenDevs
+  forM_ touchscreenDevs $ \(devName, devId) -> do
+    putStr $ "Disabling " <> T.unpack devName <> " ("
+      <> show devId <> ") ... "
+    (ec, _) <- procStrict "echo" ["disable", T.pack (show devId)] ""
+    print ec
