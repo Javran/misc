@@ -14,11 +14,18 @@ import Dhall
 import System.Exit
 import System.Environment
 
-import qualified Data.IntMap.Strict as IM
-import qualified Data.Text as T
-
 import qualified Config
 
+{-
+  Example resource:
+  - /kcs2/img/common/common_itemicons.json?version=4.5.3.0
+  - /kcs2/img/common/common_itemicons.png?version=4.5.3.0
+
+  somehow we need an path for output and we can download all stuff to there.
+
+  also need a dedicate module for https://github.com/twolfson/spritesmith,
+  I think we can write one just for PNG format.
+ -}
 
 main :: IO ()
 main = do
