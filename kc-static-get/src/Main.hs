@@ -1,3 +1,7 @@
+{-
+  Get static resources from kc servers. perferably with
+  requests spreaded so we don't hammer a specific one.
+ -}
 {-# LANGUAGE
     OverloadedStrings
   #-}
@@ -8,16 +12,8 @@ module Main
 import qualified Data.IntMap.Strict as IM
 import qualified Data.Text as T
 
+gadgetUrl :: T.Text
 gadgetUrl = "http://203.104.209.7/gadget_html5/js/kcs_const.js"
-
-{-
-  This project is an experiment to see,
-  when given a large list of resource paths,
-  can we spawn multiple threads and fetch them
-  from different servers simultaneously.
-
-  Some stuff will be from WhaleChan as the initial starting point.
- -}
 
 -- known server names
 serverNamesTable :: IM.IntMap T.Text

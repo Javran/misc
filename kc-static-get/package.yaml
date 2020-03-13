@@ -14,10 +14,11 @@ dependencies:
 - text
 
 executables:
-  kc-static-get:
+  demo:
     main:                Main.hs
     source-dirs:         src
     ghc-options:
+    - -Wall
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
