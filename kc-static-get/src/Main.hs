@@ -6,6 +6,7 @@
     OverloadedStrings
   , TypeApplications
   , DeriveGeneric
+  , ScopedTypeVariables
   #-}
 module Main
   ( main
@@ -15,8 +16,12 @@ import Dhall
 import System.Exit
 import System.Environment
 import Data.Aeson
+import Data.Aeson.Types
+import Control.Monad.Fail
+import Control.Monad
 
 import qualified Data.HashMap.Strict as HM
+import qualified Data.Map.Strict as M
 
 import qualified Config
 
@@ -24,13 +29,28 @@ data FrameInfo
   = FrameInfo
   { fiCoord :: (Int, Int) -- (x,y)
   , fiSize :: (Int, Int) -- (w,h)
-  } deriving (Generic)
+  } deriving (Generic, Show)
 
-instance FromJSON FrameInfo
+instance FromJSON FrameInfo where
+  parseJSON = withObject "FrameInfo" $ \v -> do
+    rotated <- v .: "rotated"
+    when rotated $
+      Control.Monad.Fail.fail "rotated shouldn't be False"
+    trimmed <- v .: "trimmed"
+    when trimmed $
+      Control.Monad.Fail.fail "trimmed shouldn't be False"
+    (frame :: Object) <- v .: "frame"
+    let parseFrame vf = do
+          x <- vf .: "x"
+          y <- vf .: "y"
+          w <- vf .: "w"
+          h <- vf .: "h"
+          pure $ FrameInfo (x,y) (w,h)
+    withObject "FrameInfo.frame" parseFrame (Object frame)
 
 newtype SpriteFrames
-  = SpriteFrames (HM.HashMap Text FrameInfo)
-    deriving (Generic)
+  = SpriteFrames (M.Map Text FrameInfo)
+    deriving (Generic, Show)
 
 instance FromJSON SpriteFrames
 
@@ -63,6 +83,10 @@ main = do
     [configPath, jsonFile, pngFile] -> do
       cfg <- inputFile @Config.Config auto configPath
       print cfg
+      Right (Object hm) <- eitherDecodeFileStrict @Value jsonFile
+      let frames = hm HM.! "frames"
+          Success (SpriteFrames result) = parse @_ parseJSON frames
+      mapM_ print (M.toAscList result)
     _ -> do
       putStrLn "<prog> <config path> <json file path> <png file path>"
       exitFailure
