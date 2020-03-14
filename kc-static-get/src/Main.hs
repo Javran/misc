@@ -25,15 +25,26 @@ import qualified Config
 
   also need a dedicate module for https://github.com/twolfson/spritesmith,
   I think we can write one just for PNG format.
+
+  structure of this json file:
+
+  - frames: an object
+    - keys are file names, values are objects
+      - frame:
+        - x,y,w,h
+        - rotated: false
+        - trimmed: false
+        - spriteSourceSize: {x,y,w,h}
+        - sourceSize: {w,h}
  -}
 
 main :: IO ()
 main = do
   args <- getArgs
   case args of
-    [configPath] -> do
+    [configPath, jsonFile, pngFile] -> do
       cfg <- inputFile @Config.Config auto configPath
       print cfg
     _ -> do
-      putStrLn "<prog> <config path>"
+      putStrLn "<prog> <config path> <json file path> <png file path>"
       exitFailure
