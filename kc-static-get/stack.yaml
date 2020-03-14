@@ -5,3 +5,5 @@ packages:
 extra-deps:
 - dhall-1.30.0
 - prettyprinter-1.6.1
+- hip-1.5.5.0
+- JuicyPixels-3.3.5

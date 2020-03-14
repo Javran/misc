@@ -12,6 +12,9 @@ module Main
   ( main
   ) where
 
+import Graphics.Image
+import Graphics.Image.IO
+import Graphics.Image.Interface hiding (mapM_)
 import Dhall
 import System.Exit
 import System.Environment
@@ -87,6 +90,12 @@ main = do
       let frames = hm HM.! "frames"
           Success (SpriteFrames result) = parse @_ parseJSON frames
       mapM_ print (M.toAscList result)
+      img <- readImageRGBA VU pngFile
+      print (dims img)
+      displayImage img
+      -- following are just to prevent exiting program too early.
+      z <- getLine
+      print z
     _ -> do
       putStrLn "<prog> <config path> <json file path> <png file path>"
       exitFailure
