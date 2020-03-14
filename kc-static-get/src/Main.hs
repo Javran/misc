@@ -5,6 +5,7 @@
 {-# LANGUAGE
     OverloadedStrings
   , TypeApplications
+  , DeriveGeneric
   #-}
 module Main
   ( main
@@ -13,8 +14,25 @@ module Main
 import Dhall
 import System.Exit
 import System.Environment
+import Data.Aeson
+
+import qualified Data.HashMap.Strict as HM
 
 import qualified Config
+
+data FrameInfo
+  = FrameInfo
+  { fiCoord :: (Int, Int) -- (x,y)
+  , fiSize :: (Int, Int) -- (w,h)
+  } deriving (Generic)
+
+instance FromJSON FrameInfo
+
+newtype SpriteFrames
+  = SpriteFrames (HM.HashMap Text FrameInfo)
+    deriving (Generic)
+
+instance FromJSON SpriteFrames
 
 {-
   Example resource:

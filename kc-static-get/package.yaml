@@ -14,6 +14,7 @@ dependencies:
 - containers
 - dhall
 - text
+- unordered-containers
 
 executables:
   demo:
