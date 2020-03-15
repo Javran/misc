@@ -99,6 +99,11 @@ instance FromJSON FileInfo where
         - trimmed: false
         - spriteSourceSize: {x,y,w,h}
         - sourceSize: {w,h}
+
+  example:
+  - "common_itemicons_id_75",FrameInfo {fiCoord = (480,80), fiSize = (75,75)}
+  - item: 新型砲熕兵装資材
+  - examined by gimp (top-left corner is (1,1)), the corresponding icon goes from (481,81) to (555,155).
  -}
 
 main :: IO ()
@@ -108,11 +113,15 @@ main = do
     [configPath, jsonFile, pngFile] -> do
       cfg <- inputFile @Config.Config auto configPath
       print cfg
-      Right fi <- eitherDecodeFileStrict @FileInfo jsonFile
-      print fi
+      Right (fi@(FileInfo (SpriteFrames sf, FileMeta sz))) <- eitherDecodeFileStrict @FileInfo jsonFile
+      mapM_ print (M.toAscList sf)
       img <- readImageRGBA VU pngFile
       -- note that here hip dimension is represented as (h,w), rather than (w,h).
-      print (dims img)
+      let (imgH, imgW) = dims img
+      when (sz /= (imgW, imgH)) $ do
+        putStrLn $ "image size mismatch: " <> show (sz, (imgW, imgH))
+        exitFailure
+      putStrLn $ "width: " <> show imgW <> ", height: " <> show imgH
       displayImage img
       -- following are just to prevent exiting program too early.
       z <- getLine
