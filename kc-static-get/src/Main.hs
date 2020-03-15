@@ -13,18 +13,15 @@ module Main
   ) where
 
 import Graphics.Image
-import Graphics.Image.IO
-import Graphics.Image.Interface hiding (mapM_)
 import Dhall
 import System.Exit
-import System.Environment
-import Data.Aeson
-import Data.Aeson.Types
-import Control.Monad.Fail
 import Control.Monad
+import Control.Monad.Fail
+import Data.Aeson
+import System.Environment
 
-import qualified Data.HashMap.Strict as HM
 import qualified Data.Map.Strict as M
+import qualified Data.Text as T
 
 import qualified Config
 
@@ -57,6 +54,31 @@ newtype SpriteFrames
 
 instance FromJSON SpriteFrames
 
+data FileMeta
+  = FileMeta
+  { fmSize :: (Int, Int) -- (w,h)
+  } deriving (Show)
+
+instance FromJSON FileMeta where
+  parseJSON = withObject "FileMeta" $ \v -> do
+    (format :: Text) <- v .: "format"
+    when (format /= "RGBA8888") $
+      Control.Monad.Fail.fail $ "unexpected format: " <> T.unpack format
+    (sizeObj :: Object) <- v .: "size"
+    w <- sizeObj .: "w"
+    h <- sizeObj .: "h"
+    pure $ FileMeta (w,h)
+
+newtype FileInfo
+  = FileInfo (SpriteFrames, FileMeta)
+  deriving (Show)
+
+instance FromJSON FileInfo where
+  parseJSON = withObject "FileInfo" $ \v -> do
+    sf <- v .: "frames"
+    fm <- v .: "meta"
+    pure $ FileInfo (sf, fm)
+
 {-
   Example resource:
   - /kcs2/img/common/common_itemicons.json?version=4.5.3.0
@@ -86,11 +108,10 @@ main = do
     [configPath, jsonFile, pngFile] -> do
       cfg <- inputFile @Config.Config auto configPath
       print cfg
-      Right (Object hm) <- eitherDecodeFileStrict @Value jsonFile
-      let frames = hm HM.! "frames"
-          Success (SpriteFrames result) = parse @_ parseJSON frames
-      mapM_ print (M.toAscList result)
+      Right fi <- eitherDecodeFileStrict @FileInfo jsonFile
+      print fi
       img <- readImageRGBA VU pngFile
+      -- note that here hip dimension is represented as (h,w), rather than (w,h).
       print (dims img)
       displayImage img
       -- following are just to prevent exiting program too early.
