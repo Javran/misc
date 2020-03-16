@@ -3,13 +3,15 @@
   , TypeApplications
   , DeriveGeneric
   , ScopedTypeVariables
+  , NamedFieldPuns
   #-}
 module Spritesmith where
 
-import Data.Aeson
-import GHC.Generics
 import Control.Monad
 import Control.Monad.Fail
+import Data.Aeson
+import Data.Tuple
+import GHC.Generics
 
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
@@ -69,7 +71,12 @@ instance FromJSON FileInfo where
     fm <- v .: "meta"
     pure $ FileInfo (sf, fm)
 
-loadSpritesmith :: FilePath -> FilePath -> IO (FileInfo, Img.Image Img.VS Img.RGBA Img.Word8)
+extractImage :: Image -> FrameInfo -> Image
+extractImage img FrameInfo{fiCoord, fiSize} = Img.crop (swap fiCoord) (swap fiSize) img
+
+type Image = Img.Image Img.VS Img.RGBA Img.Word8
+
+loadSpritesmith :: FilePath -> FilePath -> IO (FileInfo, Image)
 loadSpritesmith jsonFile pngFile = do
   Right fi@(FileInfo (SpriteFrames sf, FileMeta sz)) <- eitherDecodeFileStrict @FileInfo jsonFile
   mapM_ print (M.toAscList sf)
@@ -80,8 +87,13 @@ loadSpritesmith jsonFile pngFile = do
   when (sz /= (imgW, imgH)) $
     error $ "image size mismatch: " <> show (sz, (imgW, imgH))
   putStrLn $ "width: " <> show imgW <> ", height: " <> show imgH
-  Img.displayImage img
-  -- following are just to prevent exiting program too early.
-  z <- getLine
-  print z
+  let images :: M.Map T.Text Image
+      images = M.map (extractImage img) sf
+  case images M.!? "common_itemicons_id_75" of
+    Just curImg -> do
+      Img.displayImage curImg
+      -- following are just to prevent exiting program too early.
+      z <- getLine
+      length z `seq` pure ()
+    Nothing -> pure ()
   pure (fi, img)
