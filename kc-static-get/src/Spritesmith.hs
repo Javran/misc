@@ -1,3 +1,6 @@
+{-
+  This module deals with cropping individual images from spritesmith.
+ -}
 {-# LANGUAGE
     OverloadedStrings
   , TypeApplications
@@ -18,6 +21,33 @@ import System.FilePath
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Graphics.Image as Img
+
+{-
+  Example resource:
+  - /kcs2/img/common/common_itemicons.json?version=4.5.3.0
+  - /kcs2/img/common/common_itemicons.png?version=4.5.3.0
+
+  somehow we need an path for output and we can download all stuff to there.
+
+  also need a dedicate module for https://github.com/twolfson/spritesmith,
+  I think we can write one just for PNG format.
+
+  structure of this json file:
+
+  - frames: an object
+    - keys are file names, values are objects
+      - frame:
+        - x,y,w,h
+        - rotated: false
+        - trimmed: false
+        - spriteSourceSize: {x,y,w,h}
+        - sourceSize: {w,h}
+
+  example:
+  - "common_itemicons_id_75",FrameInfo {fiCoord = (480,80), fiSize = (75,75)}
+  - item: 新型砲熕兵装資材
+  - examined by gimp (top-left corner is (1,1)), the corresponding icon goes from (481,81) to (555,155).
+ -}
 
 data FrameInfo
   = FrameInfo
@@ -74,13 +104,15 @@ instance FromJSON FileInfo where
     pure $ FileInfo (sf, fm)
 
 extractImage :: Image -> FrameInfo -> Image
-extractImage img FrameInfo{fiCoord, fiSize} = Img.crop (swap fiCoord) (swap fiSize) img
+extractImage img FrameInfo{fiCoord, fiSize} =
+  Img.crop (swap fiCoord) (swap fiSize) img
 
 type Image = Img.Image Img.VS Img.RGBA Img.Word8
 
 loadSpritesmith :: FilePath -> FilePath -> IO (M.Map T.Text Image)
 loadSpritesmith jsonFile pngFile = do
-  Right fi@(FileInfo (SpriteFrames sf, FileMeta sz)) <- eitherDecodeFileStrict @FileInfo jsonFile
+  Right (FileInfo (SpriteFrames sf, FileMeta sz)) <-
+    eitherDecodeFileStrict @FileInfo jsonFile
   mapM_ print (M.toAscList sf)
   img <- Img.readImageExact' Img.PNG pngFile
   -- img <- Img.readImageRGBA Img.VU pngFile
