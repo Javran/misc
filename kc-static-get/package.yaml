@@ -13,6 +13,7 @@ dependencies:
 - base
 - containers
 - dhall
+- filepath
 - hip
 - text
 - unordered-containers

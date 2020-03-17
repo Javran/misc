@@ -51,11 +51,10 @@ main :: IO ()
 main = do
   args <- getArgs
   case args of
-    [configPath, jsonFile, pngFile] -> do
+    [configPath, jsonFile, pngFile, outputDir] -> do
       cfg <- inputFile @Config.Config auto configPath
       print cfg
-      _ <- loadSpritesmith jsonFile pngFile
-      pure ()
+      loadSpritesmith jsonFile pngFile >>= outputImages outputDir
     _ -> do
-      putStrLn "<prog> <config path> <json file path> <png file path>"
+      putStrLn "<prog> <config path> <json file path> <png file path> <output dir>"
       exitFailure
