@@ -12,4 +12,10 @@ data ServerInfo
 
 instance FromDhall ServerInfo
 
-type Config = Vector ServerInfo
+data Config
+  = Config
+  { serverList :: Vector ServerInfo
+  , baseOutputPath :: Text
+  } deriving (Show, Generic)
+
+instance FromDhall Config

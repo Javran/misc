@@ -21,4 +21,6 @@ let serverList =
       , { id = 20, name = "柱島泊地", address = "http://203.104.209.102/" }
       ]
 
-in  serverList
+let baseOutputPath = "/user/kc-static-get/output"
+
+in  { serverList = serverList, baseOutputPath = baseOutputPath }
