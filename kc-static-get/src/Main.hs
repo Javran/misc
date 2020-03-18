@@ -21,12 +21,13 @@ import qualified Config
 
 {-
   TODO:
-  - Include a base output directory in the config file.
 
-  - After we have the base output directory in config file,
-    the binary simply accepts two args: <path to config> <resource>.
+  Turns out the plan does not work: version are sometimes versions in
+  an inconsistent way (e.g. ship resources use only version numbers),
+  instead of dealing with that mess I've decided to scrap this plan
+  and this binary might be turned into just a spritesmith resource extractor
+  or something of that description.
 
-    where <resource> can be a url with version number, or a local file.
  -}
 
 main :: IO ()
