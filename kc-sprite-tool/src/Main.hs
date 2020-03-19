@@ -4,29 +4,28 @@
  -}
 {-# LANGUAGE
     OverloadedStrings
-  , TypeApplications
-  , ScopedTypeVariables
   #-}
 module Main
   ( main
   ) where
 
-import Dhall
 import System.Exit
 import System.Environment
 
 import Spritesmith
 
-import qualified Config
-
 {-
   TODO:
 
-  Turns out the plan does not work: version are sometimes versions in
-  an inconsistent way (e.g. ship resources use only version numbers),
-  instead of dealing with that mess I've decided to scrap this plan
-  and this binary might be turned into just a spritesmith resource extractor
-  or something of that description.
+  Redo command line options:
+
+  kc-sprite-tool <source> <target>
+
+  source: if begin with "http://", treat it as online resource,
+  otherwise try to read from filesystem.
+  the extension name of source is ignroed, both json and png file should be available.
+
+  target: must be an existing directory.
 
  -}
 
@@ -34,10 +33,8 @@ main :: IO ()
 main = do
   args <- getArgs
   case args of
-    [configPath, jsonFile, pngFile, outputDir] -> do
-      cfg <- inputFile @Config.Config auto configPath
-      print cfg
+    [jsonFile, pngFile, outputDir] ->
       loadSpritesmith jsonFile pngFile >>= outputImages outputDir
     _ -> do
-      putStrLn "<prog> <config path> <json file path> <png file path> <output dir>"
+      putStrLn "<prog> <json file path> <png file path> <output dir>"
       exitFailure
