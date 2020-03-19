@@ -11,6 +11,8 @@ module Main
 
 import System.Exit
 import System.Environment
+import Text.ParserCombinators.ReadP hiding (optional)
+import Control.Applicative
 
 import Spritesmith
 
@@ -29,12 +31,39 @@ import Spritesmith
 
  -}
 
+data ResourcePath
+  = UrlPath
+    { rpSourcePath :: String
+    , rpVersion :: Maybe String
+    }
+  | LocalPath
+    { rpSourcePath :: String }
+  deriving Show
+
+resourcePath :: ReadP ResourcePath
+resourcePath = urlPath <++ localPath
+  where
+    urlPath, localPath :: ReadP ResourcePath
+    urlPath = do
+      http <- string "http://"
+      part0 <- many1 get
+      _ <- optional (string ".json" <|> string ".png")
+      ver <- option Nothing $ do
+        _ <- string "?version="
+        Just <$> many1 get
+      pure $ UrlPath (http <> part0) ver
+    localPath = do
+      part0 <- many1 get
+      _ <- optional (string ".json" <|> string ".png")
+      pure $ LocalPath part0
+
 main :: IO ()
 main = do
   args <- getArgs
   case args of
-    [jsonFile, pngFile, outputDir] ->
-      loadSpritesmith jsonFile pngFile >>= outputImages outputDir
+    [srcPath, tgtPath] -> do
+      print $ readP_to_S (resourcePath <* eof) srcPath
+      -- loadSpritesmith jsonFile pngFile >>= outputImages outputDir
     _ -> do
-      putStrLn "<prog> <json file path> <png file path> <output dir>"
+      putStrLn "<prog> <source> <target dir>"
       exitFailure
