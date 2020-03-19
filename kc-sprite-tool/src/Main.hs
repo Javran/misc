@@ -43,18 +43,19 @@ data ResourcePath
 resourcePath :: ReadP ResourcePath
 resourcePath = urlPath <++ localPath
   where
+    consumeExtension = optional (string ".json" <|> string ".png")
     urlPath, localPath :: ReadP ResourcePath
     urlPath = do
       http <- string "http://"
-      part0 <- many1 get
-      _ <- optional (string ".json" <|> string ".png")
+      part0 <- munch1 (`notElem` ['.','?'])
+      _ <- consumeExtension
       ver <- option Nothing $ do
         _ <- string "?version="
-        Just <$> many1 get
+        Just <$> munch1 (const True)
       pure $ UrlPath (http <> part0) ver
     localPath = do
-      part0 <- many1 get
-      _ <- optional (string ".json" <|> string ".png")
+      part0 <- munch1 (/= '.')
+      _ <- consumeExtension
       pure $ LocalPath part0
 
 main :: IO ()
