@@ -1,6 +1,6 @@
-name:                kc-static-get
+name:                kc-sprite-tool
 version:             0.1.0.0
-github:              "Javran/kc-static-get"
+github:              "Javran/kc-sprite-tool"
 license:             BSD3
 author:              "Javran Cheng"
 maintainer:          "javran.c@gmail.com"
