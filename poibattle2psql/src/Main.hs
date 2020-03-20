@@ -39,12 +39,11 @@ acquireFromConfig (PsqlConfig hst pt u pw db) =
         (encodeUtf8 db)
 
 {-
-  TODO: workflow:
+  workflow:
 
   - scan and collect filenames from poi battle directory.
   - query database to see which of them are new records.
   - insert records into the database.
-
  -}
 
 main :: IO ()
