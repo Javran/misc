@@ -15,6 +15,7 @@ dependencies:
 - http-client
 - http-client-tls
 - http-types
+- text
 
 executables:
   demo:
