@@ -9,6 +9,7 @@ copyright:           "Copyright: (c) 2019 Javran Cheng"
 description:         description
 
 dependencies:
+- attoparsec
 - base
 - base64-bytestring
 - bytestring
