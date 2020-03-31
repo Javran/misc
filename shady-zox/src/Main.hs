@@ -16,9 +16,8 @@ import System.Environment
 import qualified Data.Attoparsec.ByteString.Char8 as Atto
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base64.URL as B64
-import qualified Data.ByteString.Base64.URL.Lazy as B64L
+import qualified Data.ByteString.Char8 as BSC
 import qualified Data.ByteString.Lazy as BSL
-import qualified Data.ByteString.Lazy.Char8 as BSLC
 import qualified Data.Text as T
 
 data SsrRecord
@@ -48,12 +47,12 @@ ssrRecordP = do
   srParams <- paramPairP `Atto.sepBy'` "&"
   pure SsrRecord {..}
 
-processRawSsrLines :: BSL.ByteString -> Either String SsrRecord
+processRawSsrLines :: BS.ByteString -> Either String SsrRecord
 processRawSsrLines raw = do
-  let (hd, tl) = BSLC.splitAt 6 raw
+  let (hd, tl) = BSC.splitAt 6 raw
   unless (hd == "ssr://") $
     Left "Unexpected prefix."
-  Atto.parseOnly ssrRecordP (BSL.toStrict . B64L.decodeLenient $ tl)
+  Atto.parseOnly ssrRecordP (B64.decodeLenient tl)
 
 main :: IO ()
 main = do
@@ -62,11 +61,11 @@ main = do
   req <- parseRequest addr
   resp <- httpLbs req mgr
 
-  let raw = responseBody resp
+  let raw = BSL.toStrict $ responseBody resp
       rawSsrLines =
-        BSLC.lines
+        BSC.lines
         -- lenient mode adds padding for us so we don't have to deal with it.
-        . B64L.decodeLenient
+        . B64.decodeLenient
         $ raw
       (errs, records) = partitionEithers $ fmap processRawSsrLines rawSsrLines
   putStrLn $ "processed: " <> show (length errs + length records)
