@@ -6,18 +6,20 @@ module Main
   ( main
   ) where
 
+import Control.Monad
+import Data.Text.Encoding (decodeUtf8)
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import System.Environment
-import Data.Text.Encoding (decodeUtf8)
 
 import qualified Data.Attoparsec.ByteString.Char8 as Atto
-import qualified Data.ByteString.Lazy.Char8 as BSLC
-import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString as BS
-import qualified Data.ByteString.Base64.URL.Lazy as B64L
 import qualified Data.ByteString.Base64.URL as B64
-import qualified Data.Text as T
+import qualified Data.ByteString.Base64.URL.Lazy as B64L
+import qualified Data.ByteString.Char8 as BSC
+import qualified Data.ByteString.Lazy as BSL
+import qualified Data.ByteString.Lazy.Char8 as BSLC
+import qualified Data.Text.IO as T
 
 data SsrRecord
   = SsrRecord
@@ -29,7 +31,6 @@ data SsrRecord
   , srPassword :: BS.ByteString
   , srParams :: [] (BS.ByteString, BS.ByteString)
   } deriving Show
--- ssr://server:port:protocol:method:obfs:password_base64/?params_base64
 
 ssrRecordP :: Atto.Parser SsrRecord
 ssrRecordP = do
@@ -47,17 +48,15 @@ ssrRecordP = do
   srParams <- paramPairP `Atto.sepBy'` "&"
   pure SsrRecord {..}
 
-altDecode :: BSL.ByteString -> BSL.ByteString
-altDecode = B64L.decodeLenient
-
 processRawSsrLines :: BSL.ByteString -> IO ()
 processRawSsrLines raw = do
   putStrLn "++++"
-  print raw
-  let g@[host,port,protocol,method,obfs,left] =
-        BSLC.split ':' . altDecode . BSLC.drop 6 $ raw
-  print g
-  print (Atto.parseOnly ssrRecordP (BSL.toStrict . altDecode . BSLC.drop 6 $ raw))
+  let Right record =
+        Atto.parseOnly ssrRecordP (BSL.toStrict . B64L.decodeLenient . BSLC.drop 6 $ raw)
+  print record
+  forM_ (srParams record) $ \(k,v) -> do
+    putStrLn (BSC.unpack k)
+    T.putStrLn (decodeUtf8 v)
   putStrLn "----"
 
 main :: IO ()
@@ -71,6 +70,6 @@ main = do
       rawSsrLines =
         BSLC.lines
         -- lenient mode adds padding for us so we don't have to deal with it.
-        . altDecode
+        . B64L.decodeLenient
         $ raw
   mapM_ processRawSsrLines rawSsrLines
