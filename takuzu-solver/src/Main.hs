@@ -11,13 +11,18 @@
   e.g. "101 " will result in the exact same input representation as "rbr ".
  -}
 {-# LANGUAGE
-    RoleAnnotations
+    PartialTypeSignatures
+  , RecordWildCards
   #-}
 module Main
   ( main
   ) where
 
+import Control.Monad.Primitive
+
 import qualified Data.Vector.Unboxed as VU
+import qualified Data.Vector as V
+import qualified Data.Vector.Mutable as VM
 import qualified Data.Set as S
 
 exampleRaw :: [] ([] Char)
@@ -47,6 +52,35 @@ cBlue, cRed :: Cell
 -- by preprocessing a large table.
 -- but for now let's focus on correctness first.
 type CompleteLine = VU.Vector Cell
+
+type Coord = (Int, Int) -- (row, col), 0-based
+
+data Board vec
+  = Board
+  { bdHalfLen :: Int -- n, half of the total length of the board.
+  , bdTodos :: S.Set Coord -- coords of those not yet filled cells.
+  , bdCells :: vec (Maybe Cell) -- vector of size n * n, use Data.Ix for indexing.
+    -- candidates that can be filled to that row, size=n
+  , bdRowCandidates :: vec (S.Set CompleteLine)
+    -- same as bdRowCandidates but for columns.
+  , bdColCandidates :: vec (S.Set CompleteLine)
+  }
+
+mkBoard :: PrimMonad m => Int -> [[Maybe Cell]] -> m (Board _)
+mkBoard n rawMatPre = do
+  let bdHalfLen = n
+      -- making it n x n, filling in Nothing.
+      rawMat =
+        take n $
+          fmap (take n . (<> repeat Nothing)) rawMatPre
+          <> repeat (replicate n Nothing)
+      bdCellsPre = V.fromListN (n*n) (concat rawMat)
+      bdTodos = S.fromList $ do
+        let coords = [(r,c) | r <- [0..n], c <- [0..n]]
+        (coord, Nothing) <- zip coords (concat rawMat)
+        pure coord
+  bdCells <- V.unsafeThaw bdCellsPre
+  pure Board {..}
 
 {-
   Total number of valid cell placements in a single line
