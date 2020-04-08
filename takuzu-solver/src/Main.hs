@@ -68,9 +68,21 @@ type CompleteLine = VU.Vector Cell
 
 type Coord = (Int, Int) -- (row, col), 0-based
 
+{-
+  TODO: bdXXXCandidates should be updated appropriately whenever a cell is set.
+  summarizeLines might not have any effect on the row/col executing it, but
+  as the cell narrows down to a fixed value, that col/row might start to have fewer candidates.
+  meaning that we should have a primitive for updating a single cell to a fixed value (i.e. from Nothing to Just _)
+  also we should also update bdXXXCandidates when a line is fully completed - candidates other that that row/col
+  now needs to exclude that specific CompleteLine following game rule.
+
+  TODO: perhaps a simpler approach is to just have a updateCell primitive, use that for both
+  board construction (on top of an empty board) and board updates.
+ -}
 data Board vec
   = Board
-  { bdHalfLen :: Int -- n, half of the total length of the board.
+  { bdLen :: Int -- n, total length of the board.
+  , bdToFlatInd :: Coord -> Int -- convert to linear index
   , bdTodos :: S.Set Coord -- coords of those not yet filled cells.
   , bdCells :: vec (Maybe Cell) -- vector of size n * n, use Data.Ix for indexing.
     -- candidates that can be filled to that row, size=n
@@ -79,15 +91,11 @@ data Board vec
   , bdColCandidates :: vec (S.Set CompleteLine)
   }
 
-deriving instance
-  ( forall a. Show a => Show (vec a)
-  ) => Show (Board vec)
-
 mkBoard :: [] CompleteLine -> Int -> [[Maybe Cell]] -> Board V.Vector
 mkBoard tbl n rawMatPre = Board {..}
   where
-    bdHalfLen = n
-    toFlatInd = index ((0,0), (n-1,n-1))
+    bdLen = n
+    bdToFlatInd = index ((0,0), (n-1,n-1))
     indexes = [0..n-1]
     -- making it n x n, filling in Nothing.
     rawMat =
@@ -101,12 +109,43 @@ mkBoard tbl n rawMatPre = Board {..}
         pure coord
     bdRowCandidates = V.fromListN n $ do
         r <- indexes
-        let curRow = (\c -> bdCells V.! toFlatInd (r,c)) <$> indexes
+        let curRow = (\c -> bdCells V.! bdToFlatInd (r,c)) <$> indexes
         pure $ S.fromList (filter (flip matchLine curRow) tbl)
     bdColCandidates = V.fromListN n $ do
         c <- indexes
-        let curCol = (\r -> bdCells V.! toFlatInd (r,c)) <$> indexes
+        let curCol = (\r -> bdCells V.! bdToFlatInd (r,c)) <$> indexes
         pure $ S.fromList (filter (flip matchLine curCol) tbl)
+
+-- try to update one line of the board,
+-- Left i ==> row i
+-- Right i ==> col i
+-- returns Nothing if no update is possible on that line.
+updateLine :: Board V.Vector -> Either Int Int -> Maybe (Board V.Vector)
+updateLine bd@Board{..} rowOrCol = do
+  let (candidates, coords) =
+        case rowOrCol of
+          Left r ->
+            -- row r
+            ( bdRowCandidates V.! r
+            , [(r,c) | c <- [0..bdLen-1]]
+            )
+          Right c ->
+            -- col c
+            ( bdColCandidates V.! c
+            , [(r,c) | r <- [0..bdLen-1]]
+            )
+      updates =
+        filter (\(coord, val) -> S.size val == 1 && coord `S.member` bdTodos)
+        $ zip
+          coords
+          (summarizeLines (S.toList candidates))
+  _:_ <- pure updates -- to ensure that we have some updates to do.
+  pure $ bd
+    { bdTodos = foldr S.delete bdTodos (fst <$> updates)
+    , bdCells =
+        bdCells V.//
+          fmap (\(coord, val) -> (bdToFlatInd coord, Just (head (S.toList val)))) updates
+    }
 
 {-
   Total number of valid cell placements in a single line
@@ -133,7 +172,7 @@ genLineAux rCount bCount xs = case xs of
       genLineAux (rCount-1) bCount (cBlue : xs)
 
 mkTable :: Int -> [] CompleteLine
-mkTable n = VU.fromListN (n+n)  <$> genLineAux n n []
+mkTable n = VU.fromListN (n+n) <$> genLineAux n n []
 
 -- match a complete line against a partial line.
 matchLine :: CompleteLine -> [Maybe Cell] -> Bool
@@ -153,5 +192,5 @@ summarizeLines ls = extractInd <$> [0 .. size-1]
 
 main :: IO ()
 main = do
-  let tbl = mkTable 6
-  print (mkBoard tbl 6 example)
+  let _tbl = mkTable 6
+  pure ()
