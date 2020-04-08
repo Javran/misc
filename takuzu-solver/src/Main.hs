@@ -13,11 +13,16 @@
 {-# LANGUAGE
     PartialTypeSignatures
   , RecordWildCards
+  , StandaloneDeriving
+  , UndecidableInstances
+  , RankNTypes
+  , QuantifiedConstraints
   #-}
 module Main
   ( main
   ) where
 
+import Data.Ix
 import Control.Monad.Primitive
 
 import qualified Data.Vector.Unboxed as VU
@@ -40,6 +45,14 @@ exampleRaw =
   , "      r   rb"
   , "  r  r      "
   ]
+
+example :: [[Maybe Cell]]
+example = (fmap . fmap) tr exampleRaw
+  where
+    tr ' ' = Nothing
+    tr 'r' = Just cRed
+    tr 'b' = Just cBlue
+    tr _ = undefined
 
 type Cell = Bool
 
@@ -66,21 +79,34 @@ data Board vec
   , bdColCandidates :: vec (S.Set CompleteLine)
   }
 
-mkBoard :: PrimMonad m => Int -> [[Maybe Cell]] -> m (Board _)
-mkBoard n rawMatPre = do
-  let bdHalfLen = n
-      -- making it n x n, filling in Nothing.
-      rawMat =
-        take n $
-          fmap (take n . (<> repeat Nothing)) rawMatPre
-          <> repeat (replicate n Nothing)
-      bdCellsPre = V.fromListN (n*n) (concat rawMat)
-      bdTodos = S.fromList $ do
-        let coords = [(r,c) | r <- [0..n], c <- [0..n]]
+deriving instance
+  ( forall a. Show a => Show (vec a)
+  ) => Show (Board vec)
+
+mkBoard :: [] CompleteLine -> Int -> [[Maybe Cell]] -> Board V.Vector
+mkBoard tbl n rawMatPre = Board {..}
+  where
+    bdHalfLen = n
+    toFlatInd = index ((0,0), (n-1,n-1))
+    indexes = [0..n-1]
+    -- making it n x n, filling in Nothing.
+    rawMat =
+      take n $
+        fmap (take n . (<> repeat Nothing)) rawMatPre
+        <> repeat (replicate n Nothing)
+    bdCells = V.fromListN (n*n) (concat rawMat)
+    bdTodos = S.fromList $ do
+        let coords = [(r,c) | r <- indexes, c <- indexes]
         (coord, Nothing) <- zip coords (concat rawMat)
         pure coord
-  bdCells <- V.unsafeThaw bdCellsPre
-  pure Board {..}
+    bdRowCandidates = V.fromListN n $ do
+        r <- indexes
+        let curRow = (\c -> bdCells V.! toFlatInd (r,c)) <$> indexes
+        pure $ S.fromList (filter (flip matchLine curRow) tbl)
+    bdColCandidates = V.fromListN n $ do
+        c <- indexes
+        let curCol = (\r -> bdCells V.! toFlatInd (r,c)) <$> indexes
+        pure $ S.fromList (filter (flip matchLine curCol) tbl)
 
 {-
   Total number of valid cell placements in a single line
@@ -127,9 +153,5 @@ summarizeLines ls = extractInd <$> [0 .. size-1]
 
 main :: IO ()
 main = do
-  let tbl = mkTable 2
-      ln = [Just cBlue, Just cRed, Nothing, Nothing]
-      r0 = filter (flip matchLine ln) tbl
-      r1 = summarizeLines r0
-  print r0
-  print r1
+  let tbl = mkTable 6
+  print (mkBoard tbl 6 example)
