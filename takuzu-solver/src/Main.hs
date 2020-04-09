@@ -25,6 +25,7 @@ module Main
 import Data.Ix
 import Control.Monad
 import Data.Maybe
+import Data.Monoid
 import Control.Monad.Primitive
 
 import qualified Data.Vector.Unboxed as VU
@@ -208,6 +209,26 @@ improveColAux col bd@Board{..} = bd'
           | [val] <- S.elems cs = fromMaybe curBd (updateCell coord val curBd)
           | otherwise = curBd
 
+-- as the candidate can only be eliminated but never added, we can tell whether
+-- a Board is actually be updated by looking at whether candidateCount changes.
+candidateCount :: Board V.Vector -> Int
+candidateCount Board{..} =
+    getSum $ collect bdRowCandidates <> collect bdColCandidates
+  where
+    collect :: V.Vector (S.Set CompleteLine) -> Sum Int
+    collect = foldMap (Sum . S.size)
+
+tryImprove :: Board V.Vector -> Maybe (Board V.Vector)
+tryImprove bd@Board{..} = do
+  let todoRows = S.toList $ S.map fst bdTodos
+      todoCols = S.toList $ S.map snd bdTodos
+      bd' =
+        foldr improveColAux
+          (foldr improveRowAux bd todoRows)
+          todoCols
+  guard $ candidateCount bd /= candidateCount bd'
+  pure bd'
+
 {-
   Total number of valid cell placements in a single line
   can be calculated following https://oeis.org/A177790
@@ -255,3 +276,6 @@ main :: IO ()
 main = do
   let Just bd = mkBoard 6 example
   pprBoard bd
+  case tryImprove bd of
+    Nothing -> pure ()
+    Just bd' -> pprBoard bd'
