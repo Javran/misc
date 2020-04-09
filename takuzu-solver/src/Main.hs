@@ -21,6 +21,7 @@ import Control.Monad
 import Data.Ix
 import Data.Maybe
 import Data.Monoid
+import System.Console.Terminfo
 
 import qualified Data.Vector.Unboxed as VU
 import qualified Data.Vector as V
@@ -82,19 +83,26 @@ data Board vec
   , bdColCandidates :: vec (S.Set CompleteLine) -- | same as bdRowCandidates but for columns.
   }
 
-pprBoard :: Board V.Vector -> IO ()
-pprBoard Board{..} = do
+pprBoard :: Terminal -> Board V.Vector -> IO ()
+pprBoard term Board{..} = do
   putStrLn $ "Side length: " <> show bdLen
   putStrLn $ "Pending cells: " <> show (S.size bdTodos)
   putStrLn $ "Row candidate counts: " <> show (V.map S.size bdRowCandidates)
   putStrLn $ "Col candidate counts: " <> show (V.map S.size bdColCandidates)
   putStrLn "++++ Board Begin ++++"
-  forM_ [0..bdLen-1] $ \r ->
-    let tr c = case bdCells V.! bdToFlatInd (r,c) of
-          Nothing -> ' '
-          Just False -> '0'
-          Just True -> '1'
-    in putStrLn $ fmap tr [0..bdLen-1]
+  forM_ [0..bdLen-1] $ \r -> do
+    forM_ [0..bdLen-1] $ \c -> do
+      let cell = bdCells V.! bdToFlatInd (r,c)
+      case cell of
+        Nothing -> putStr " "
+        Just b ->
+          case getCapability term withForegroundColor of
+            Nothing -> putStr $ if b then "1" else "0"
+            Just useColor ->
+              let color = if b then Red else Blue
+                  rendered = termText "█"
+              in runTermOutput term (useColor color rendered)
+    putStrLn ""
   putStrLn "---- Board End ----"
 
 mkEmptyBoard :: Int -> Board V.Vector
@@ -269,6 +277,7 @@ summarizeLines ls = extractInd <$> [0 .. size-1]
 
 main :: IO ()
 main = do
+  term <- setupTermFromEnv
   let Just bd = mkBoard 6 example
-  pprBoard bd
-  pprBoard $ trySolve bd
+  pprBoard term bd
+  pprBoard term $ trySolve bd
