@@ -3,3 +3,4 @@
 - ignore: {name: Use camelCase}
 - ignore: {name: Use section}
 - ignore: {name: Use newtype instead of data}
+- ignore: {name: Reduce duplication}

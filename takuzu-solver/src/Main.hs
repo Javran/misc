@@ -11,26 +11,19 @@
   e.g. "101 " will result in the exact same input representation as "rbr ".
  -}
 {-# LANGUAGE
-    PartialTypeSignatures
-  , RecordWildCards
-  , StandaloneDeriving
-  , UndecidableInstances
-  , RankNTypes
-  , QuantifiedConstraints
+    RecordWildCards
   #-}
 module Main
   ( main
   ) where
 
-import Data.Ix
 import Control.Monad
+import Data.Ix
 import Data.Maybe
 import Data.Monoid
-import Control.Monad.Primitive
 
 import qualified Data.Vector.Unboxed as VU
 import qualified Data.Vector as V
-import qualified Data.Vector.Mutable as VM
 import qualified Data.Set as S
 
 exampleRaw :: [] ([] Char)
@@ -72,15 +65,12 @@ type CompleteLine = VU.Vector Cell
 type Coord = (Int, Int) -- (row, col), 0-based
 
 {-
-  TODO: bdXXXCandidates should be updated appropriately whenever a cell is set.
+  bdXXXCandidates should be updated appropriately whenever a cell is set.
   summarizeLines might not have any effect on the row/col executing it, but
   as the cell narrows down to a fixed value, that col/row might start to have fewer candidates.
   meaning that we should have a primitive for updating a single cell to a fixed value (i.e. from Nothing to Just _)
   also we should also update bdXXXCandidates when a line is fully completed - candidates other that that row/col
   now needs to exclude that specific CompleteLine following game rule.
-
-  TODO: perhaps a simpler approach is to just have a updateCell primitive, use that for both
-  board construction (on top of an empty board) and board updates.
  -}
 data Board vec
   = Board
@@ -118,6 +108,8 @@ mkEmptyBoard halfN = Board {..}
     tbl = S.fromList (mkTable halfN)
     bdRowCandidates = V.fromListN bdLen (repeat tbl)
     bdColCandidates = V.fromListN bdLen (repeat tbl)
+
+-- TODO: reduce duplication
 
 -- Update a unknown cell in the board while still keep board fields valid.
 updateCell :: Coord -> Cell -> Board V.Vector -> Maybe (Board V.Vector)
@@ -218,6 +210,10 @@ candidateCount Board{..} =
     collect :: V.Vector (S.Set CompleteLine) -> Sum Int
     collect = foldMap (Sum . S.size)
 
+-- Extract all incomplete rows and cols, and try update lines in that order.
+-- for now update order is not very specific and only guarantees completeness.
+-- in other words, if there's a line that can be updated, a single round of tryImprove
+-- should at least reduce the amount of candidates.
 tryImprove :: Board V.Vector -> Maybe (Board V.Vector)
 tryImprove bd@Board{..} = do
   let todoRows = S.toList $ S.map fst bdTodos
@@ -229,6 +225,9 @@ tryImprove bd@Board{..} = do
   guard $ candidateCount bd /= candidateCount bd'
   pure bd'
 
+-- improve a Board repeated until it cannot be improved further
+-- For a board that has single solution, we should be able to find the solution this way,
+-- if not, there might be some bug in the algorithm.
 trySolve :: Board V.Vector -> Board V.Vector
 trySolve bd = maybe bd trySolve (tryImprove bd)
 
@@ -258,13 +257,6 @@ genLineAux rCount bCount xs = case xs of
 
 mkTable :: Int -> [] CompleteLine
 mkTable n = VU.fromListN (n+n) <$> genLineAux n n []
-
--- match a complete line against a partial line.
-matchLine :: CompleteLine -> [Maybe Cell] -> Bool
-matchLine cl inp = and $ zipWith matches (VU.toList cl) inp
-  where
-    matches _ Nothing = True
-    matches b0 (Just b1) = b0 == b1
 
 -- extra common features from lines.
 -- input must be non-empty, and all elements are assumed to have the same length.
