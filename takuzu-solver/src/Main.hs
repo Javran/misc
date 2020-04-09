@@ -90,6 +90,19 @@ data Board vec
   , bdColCandidates :: vec (S.Set CompleteLine) -- | same as bdRowCandidates but for columns.
   }
 
+mkEmptyBoard :: Int -> Board V.Vector
+mkEmptyBoard halfN = Board {..}
+  where
+    bdLen = halfN * 2
+    bdToFlatInd = index ((0,0), (bdLen-1,bdLen-1))
+    indexes = [0..bdLen-1]
+    bdTodos = S.fromList [(r,c) | r <- indexes, c <- indexes]
+    bdCells = V.fromListN (bdLen * bdLen) (repeat Nothing)
+    tbl = S.fromList (mkTable halfN)
+    bdRowCandidates = V.fromListN bdLen (repeat tbl)
+    bdColCandidates = V.fromListN bdLen (repeat tbl)
+
+
 -- Update a unknown cell in the board while still keep board fields valid.
 updateCell :: Coord -> Cell -> Board V.Vector -> Maybe (Board V.Vector)
 updateCell coord@(row,col) cVal bd@Board{..} = do
@@ -133,30 +146,20 @@ updateCell coord@(row,col) cVal bd@Board{..} = do
     , bdColCandidates = bdColCandidates'
     }
 
-mkBoard :: [] CompleteLine -> Int -> [[Maybe Cell]] -> Board V.Vector
-mkBoard tbl n rawMatPre = Board {..}
+mkBoard :: Int -> [[Maybe Cell]] -> Maybe (Board V.Vector)
+mkBoard halfN rawMatPre =
+    foldM go (mkEmptyBoard halfN) (zip [(r,c) | r <- indexes, c <- indexes] (concat rawMat))
   where
-    bdLen = n
-    bdToFlatInd = index ((0,0), (n-1,n-1))
+    n = halfN * 2
+    go bd (coord, mCell) = case mCell of
+      Nothing -> pure bd
+      Just cVal -> updateCell coord cVal bd
     indexes = [0..n-1]
     -- making it n x n, filling in Nothing.
     rawMat =
       take n $
         fmap (take n . (<> repeat Nothing)) rawMatPre
         <> repeat (replicate n Nothing)
-    bdCells = V.fromListN (n*n) (concat rawMat)
-    bdTodos = S.fromList $ do
-        let coords = [(r,c) | r <- indexes, c <- indexes]
-        (coord, Nothing) <- zip coords (concat rawMat)
-        pure coord
-    bdRowCandidates = V.fromListN n $ do
-        r <- indexes
-        let curRow = (\c -> bdCells V.! bdToFlatInd (r,c)) <$> indexes
-        pure $ S.fromList (filter (flip matchLine curRow) tbl)
-    bdColCandidates = V.fromListN n $ do
-        c <- indexes
-        let curCol = (\r -> bdCells V.! bdToFlatInd (r,c)) <$> indexes
-        pure $ S.fromList (filter (flip matchLine curCol) tbl)
 
 -- try to update one line of the board,
 -- Left i ==> row i
