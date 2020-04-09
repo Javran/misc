@@ -119,7 +119,6 @@ mkEmptyBoard halfN = Board {..}
     bdRowCandidates = V.fromListN bdLen (repeat tbl)
     bdColCandidates = V.fromListN bdLen (repeat tbl)
 
-
 -- Update a unknown cell in the board while still keep board fields valid.
 updateCell :: Coord -> Cell -> Board V.Vector -> Maybe (Board V.Vector)
 updateCell coord@(row,col) cVal bd@Board{..} = do
@@ -127,13 +126,14 @@ updateCell coord@(row,col) cVal bd@Board{..} = do
       indexes = [0 .. bdLen-1]
       rowCoords = [(row,c) | c <- indexes]
       colCoords = [(r,col) | r <- indexes]
+      bdCells' = bdCells V.// [(ind, Just cVal)]
       getCompleteLine :: [Maybe Cell] -> Maybe CompleteLine
       getCompleteLine = fmap (VU.fromListN bdLen) . sequence
       -- eliminate candidate of the current line.
       rowCandidate = S.filter (\ln -> ln VU.! col == cVal) (bdRowCandidates V.! row)
       colCandidate = S.filter (\ln -> ln VU.! row == cVal) (bdColCandidates V.! col)
-      rowComplete = getCompleteLine (fmap ((bdCells V.!) . bdToFlatInd) rowCoords)
-      colComplete = getCompleteLine (fmap ((bdCells V.!) . bdToFlatInd) colCoords)
+      rowComplete = getCompleteLine (fmap ((bdCells' V.!) . bdToFlatInd) rowCoords)
+      colComplete = getCompleteLine (fmap ((bdCells' V.!) . bdToFlatInd) colCoords)
       bdRowCandidates' = V.imap upd bdRowCandidates
         where
           upd r cs =
@@ -158,7 +158,7 @@ updateCell coord@(row,col) cVal bd@Board{..} = do
   guard $ V.all (not . S.null) bdColCandidates'
   pure bd
     { bdTodos = S.delete coord bdTodos
-    , bdCells = bdCells V.// [(ind, Just cVal)]
+    , bdCells = bdCells'
     , bdRowCandidates = bdRowCandidates'
     , bdColCandidates = bdColCandidates'
     }
