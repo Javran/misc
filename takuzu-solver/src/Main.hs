@@ -23,6 +23,7 @@ module Main
   ) where
 
 import Data.Ix
+import Control.Monad
 import Control.Monad.Primitive
 
 import qualified Data.Vector.Unboxed as VU
@@ -81,15 +82,56 @@ type Coord = (Int, Int) -- (row, col), 0-based
  -}
 data Board vec
   = Board
-  { bdLen :: Int -- n, total length of the board.
-  , bdToFlatInd :: Coord -> Int -- convert to linear index
-  , bdTodos :: S.Set Coord -- coords of those not yet filled cells.
-  , bdCells :: vec (Maybe Cell) -- vector of size n * n, use Data.Ix for indexing.
-    -- candidates that can be filled to that row, size=n
-  , bdRowCandidates :: vec (S.Set CompleteLine)
-    -- same as bdRowCandidates but for columns.
-  , bdColCandidates :: vec (S.Set CompleteLine)
+  { bdLen :: Int -- | n, total length of the board.
+  , bdToFlatInd :: Coord -> Int -- | function to convert from coordinate to to linear index
+  , bdTodos :: S.Set Coord -- | coords of those not yet filled cells.
+  , bdCells :: vec (Maybe Cell) -- | vector of size n * n, use Data.Ix for indexing.
+  , bdRowCandidates :: vec (S.Set CompleteLine) -- | candidates that can be filled to that row, size=n
+  , bdColCandidates :: vec (S.Set CompleteLine) -- | same as bdRowCandidates but for columns.
   }
+
+-- Update a unknown cell in the board while still keep board fields valid.
+updateCell :: Coord -> Cell -> Board V.Vector -> Maybe (Board V.Vector)
+updateCell coord@(row,col) cVal bd@Board{..} = do
+  let ind = bdToFlatInd coord
+      indexes = [0 .. bdLen-1]
+      rowCoords = [(row,c) | c <- indexes]
+      colCoords = [(r,col) | r <- indexes]
+      getCompleteLine :: [Maybe Cell] -> Maybe CompleteLine
+      getCompleteLine = fmap (VU.fromListN bdLen) . sequence
+      -- eliminate candidate of the current line.
+      rowCandidate = S.filter (\ln -> ln VU.! col == cVal) (bdRowCandidates V.! row)
+      colCandidate = S.filter (\ln -> ln VU.! row == cVal) (bdColCandidates V.! col)
+      rowComplete = getCompleteLine (fmap ((bdCells V.!) . bdToFlatInd) rowCoords)
+      colComplete = getCompleteLine (fmap ((bdCells V.!) . bdToFlatInd) colCoords)
+      bdRowCandidates' = V.imap upd bdRowCandidates
+        where
+          upd r cs =
+            if r == row
+              then rowCandidate
+              else
+                -- other lines: eliminate current line if current line is complete
+                case rowComplete of
+                  Nothing -> cs
+                  Just cl -> S.delete cl cs
+      bdColCandidates' = V.imap upd bdColCandidates
+        where
+          upd c cs =
+            if c == col
+              then colCandidate
+              else
+                case colComplete of
+                  Nothing -> cs
+                  Just cl -> S.delete cl cs
+  guard $ coord `S.member` bdTodos
+  guard $ V.all (not . S.null) bdRowCandidates'
+  guard $ V.all (not . S.null) bdColCandidates'
+  pure bd
+    { bdTodos = S.delete coord bdTodos
+    , bdCells = bdCells V.// [(ind, Just cVal)]
+    , bdRowCandidates = bdRowCandidates'
+    , bdColCandidates = bdColCandidates'
+    }
 
 mkBoard :: [] CompleteLine -> Int -> [[Maybe Cell]] -> Board V.Vector
 mkBoard tbl n rawMatPre = Board {..}
