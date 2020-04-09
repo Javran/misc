@@ -102,8 +102,8 @@ pprBoard Board{..} = do
   forM_ [0..bdLen-1] $ \r ->
     let tr c = case bdCells V.! bdToFlatInd (r,c) of
           Nothing -> ' '
-          Just False -> 'B'
-          Just True -> 'R'
+          Just False -> '0'
+          Just True -> '1'
     in putStrLn $ fmap tr [0..bdLen-1]
   putStrLn "---- Board End ----"
 
@@ -229,6 +229,9 @@ tryImprove bd@Board{..} = do
   guard $ candidateCount bd /= candidateCount bd'
   pure bd'
 
+trySolve :: Board V.Vector -> Board V.Vector
+trySolve bd = maybe bd trySolve (tryImprove bd)
+
 {-
   Total number of valid cell placements in a single line
   can be calculated following https://oeis.org/A177790
@@ -276,6 +279,4 @@ main :: IO ()
 main = do
   let Just bd = mkBoard 6 example
   pprBoard bd
-  case tryImprove bd of
-    Nothing -> pure ()
-    Just bd' -> pprBoard bd'
+  pprBoard $ trySolve bd
