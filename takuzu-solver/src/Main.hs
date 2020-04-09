@@ -24,6 +24,7 @@ module Main
 
 import Data.Ix
 import Control.Monad
+import Data.Maybe
 import Control.Monad.Primitive
 
 import qualified Data.Vector.Unboxed as VU
@@ -89,6 +90,21 @@ data Board vec
   , bdRowCandidates :: vec (S.Set CompleteLine) -- | candidates that can be filled to that row, size=n
   , bdColCandidates :: vec (S.Set CompleteLine) -- | same as bdRowCandidates but for columns.
   }
+
+pprBoard :: Board V.Vector -> IO ()
+pprBoard Board{..} = do
+  putStrLn $ "Side length: " <> show bdLen
+  putStrLn $ "Pending cells: " <> show (S.size bdTodos)
+  putStrLn $ "Row candidate counts: " <> show (V.map S.size bdRowCandidates)
+  putStrLn $ "Col candidate counts: " <> show (V.map S.size bdColCandidates)
+  putStrLn "++++ Board Begin ++++"
+  forM_ [0..bdLen-1] $ \r ->
+    let tr c = case bdCells V.! bdToFlatInd (r,c) of
+          Nothing -> ' '
+          Just False -> 'B'
+          Just True -> 'R'
+    in putStrLn $ fmap tr [0..bdLen-1]
+  putStrLn "---- Board End ----"
 
 mkEmptyBoard :: Int -> Board V.Vector
 mkEmptyBoard halfN = Board {..}
@@ -161,36 +177,36 @@ mkBoard halfN rawMatPre =
         fmap (take n . (<> repeat Nothing)) rawMatPre
         <> repeat (replicate n Nothing)
 
--- try to update one line of the board,
--- Left i ==> row i
--- Right i ==> col i
--- returns Nothing if no update is possible on that line.
-updateLine :: Board V.Vector -> Either Int Int -> Maybe (Board V.Vector)
-updateLine bd@Board{..} rowOrCol = do
-  let (candidates, coords) =
-        case rowOrCol of
-          Left r ->
-            -- row r
-            ( bdRowCandidates V.! r
-            , [(r,c) | c <- [0..bdLen-1]]
-            )
-          Right c ->
-            -- col c
-            ( bdColCandidates V.! c
-            , [(r,c) | r <- [0..bdLen-1]]
-            )
-      updates =
-        filter (\(coord, val) -> S.size val == 1 && coord `S.member` bdTodos)
-        $ zip
-          coords
-          (summarizeLines (S.toList candidates))
-  _:_ <- pure updates -- to ensure that we have some updates to do.
-  pure $ bd
-    { bdTodos = foldr S.delete bdTodos (fst <$> updates)
-    , bdCells =
-        bdCells V.//
-          fmap (\(coord, val) -> (bdToFlatInd coord, Just (head (S.toList val)))) updates
-    }
+-- improve a specific row by applying summarizeLines on it.
+improveRowAux :: Int -> Board V.Vector -> Board V.Vector
+improveRowAux row bd@Board{..} = bd'
+  where
+    summarized :: [] (Coord, S.Set Cell)
+    summarized =
+        zip
+          [(row, c) | c <- [0..bdLen-1]] $
+          summarizeLines $ S.toList $ bdRowCandidates V.! row
+    bd' = foldl go bd summarized
+      where
+        go :: Board V.Vector -> (Coord, S.Set Cell) -> Board V.Vector
+        go curBd (coord, cs)
+          | [val] <- S.elems cs = fromMaybe curBd (updateCell coord val curBd)
+          | otherwise = curBd
+
+improveColAux :: Int -> Board V.Vector -> Board V.Vector
+improveColAux col bd@Board{..} = bd'
+  where
+    summarized :: [] (Coord, S.Set Cell)
+    summarized =
+        zip
+          [(r, col) | r <- [0..bdLen-1]] $
+          summarizeLines $ S.toList $ bdColCandidates V.! col
+    bd' = foldl go bd summarized
+      where
+        go :: Board V.Vector -> (Coord, S.Set Cell) -> Board V.Vector
+        go curBd (coord, cs)
+          | [val] <- S.elems cs = fromMaybe curBd (updateCell coord val curBd)
+          | otherwise = curBd
 
 {-
   Total number of valid cell placements in a single line
@@ -237,5 +253,5 @@ summarizeLines ls = extractInd <$> [0 .. size-1]
 
 main :: IO ()
 main = do
-  let _tbl = mkTable 6
-  pure ()
+  let Just bd = mkBoard 6 example
+  pprBoard bd
