@@ -9,6 +9,7 @@ import Data.Maybe
 import System.Console.Terminfo
 import Control.Monad
 import Control.Concurrent
+import System.Random.Shuffle
 
 import qualified Data.Map.Strict as M
 import qualified Graphics.Image as HIP
@@ -90,10 +91,9 @@ solveIt term tblRaw = do
   Solver.pprBoard term bd
   Solver.pprBoard term bdAfter
   let moves = Solver.genMoves bd bdAfter
-  phs <- fmap concat . forM moves $ \(coord,m) ->
-    if m
-      then (:[]) <$> screenTap coord
-      else sequence [screenTap coord, screenTap coord]
+      taps = concatMap (\(coord,m) -> if m then [coord] else [coord,coord]) moves
+  randomTaps <- shuffleM taps
+  phs <- mapM screenTap randomTaps
   mapM_ waitForProcess phs
   pure ()
 
