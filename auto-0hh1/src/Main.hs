@@ -7,7 +7,10 @@ import System.Process
 import System.Exit
 import Data.Maybe
 import System.Console.Terminfo
+import Control.Monad
+import Control.Concurrent
 
+import qualified Data.Map.Strict as M
 import qualified Graphics.Image as HIP
 import qualified Data.ByteString as BS
 
@@ -59,7 +62,7 @@ imageToCharTable img =
 screenCapture :: IO Image
 screenCapture = do
   let cp =
-        (proc "/usr/bin/adb" ["exec-out", "screencap -p"])
+        (proc "/usr/bin/adb" ["exec-out", "screencap", "-p"])
           { std_out = CreatePipe
           }
   (_, Just hOut, _, ph) <- createProcess cp
@@ -68,11 +71,31 @@ screenCapture = do
   let Right img = HIP.decode HIP.PNG imgRaw
   pure img
 
+screenTap :: (Int, Int) -> IO ProcessHandle
+screenTap (r,c) = do
+    let (screenR, screenC) = tapMap M.! (r,c)
+        cp =
+          proc "/usr/bin/adb" ["exec-out", "input", "tap", show screenC, show screenR]
+    (_, _, _, ph) <- createProcess cp
+    threadDelay $ 1000 * 200
+    pure ph
+  where
+    tapMap :: M.Map (Int,Int) (Int,Int)
+    tapMap = M.fromList $ zip [(r',c') | r' <- [0..11], c' <- [0..11]] (concat coords)
+
 solveIt :: Terminal -> [[Char]] -> IO ()
 solveIt term tblRaw = do
   let Just bd = Solver.mkBoard 6 (Solver.translateRaw tblRaw)
+      bdAfter = Solver.trySolve bd
   Solver.pprBoard term bd
-  Solver.pprBoard term $ Solver.trySolve bd
+  Solver.pprBoard term bdAfter
+  let moves = Solver.genMoves bd bdAfter
+  phs <- fmap concat . forM moves $ \(coord,m) ->
+    if m
+      then (:[]) <$> screenTap coord
+      else sequence [screenTap coord, screenTap coord]
+  mapM_ waitForProcess phs
+  pure ()
 
 main :: IO ()
 main = do

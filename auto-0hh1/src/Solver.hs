@@ -242,6 +242,18 @@ tryImprove bd@Board{..} = do
 trySolve :: Board V.Vector -> Board V.Vector
 trySolve bd = maybe bd trySolve (tryImprove bd)
 
+genMoves :: Board V.Vector -> Board V.Vector -> [(Coord, Cell)]
+genMoves bdOrig bdAfter = concatMap toMove [(r,c) | r <- [0..l-1], c <- [0..l-1]]
+  where
+    l = bdLen bdOrig
+    toFlatInd = bdToFlatInd bdOrig
+    getCell coord =
+      (bdCells bdOrig V.! toFlatInd coord, bdCells bdAfter V.! toFlatInd coord)
+    toMove coord = case getCell coord of
+      (Just _, _) -> []
+      (Nothing, Just b) -> [(coord, b)]
+      _ -> []
+
 {-
   Total number of valid cell placements in a single line
   can be calculated following https://oeis.org/A177790
