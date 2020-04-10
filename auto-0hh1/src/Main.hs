@@ -5,15 +5,20 @@ module Main
 
 import System.Process
 import System.Exit
+import Data.Maybe
+import System.Console.Terminfo
 
 import qualified Graphics.Image as HIP
 import qualified Data.ByteString as BS
+
+import qualified Solver
 
 -- https://stackoverflow.com/a/13587203/315302
 -- adb exec-out "screencap -p"
 -- https://stackoverflow.com/a/5392547/315302
 -- adb shell input tap x y
 
+type Pixel = HIP.Pixel HIP.RGBA HIP.Word8
 type Image = HIP.Image HIP.VS HIP.RGBA HIP.Word8
 
 coords :: [[(Int, Int)]]
@@ -21,8 +26,35 @@ coords = do
   r <- take 12 $ iterate (+87) 446
   pure [(r,c) | c <- take 12 $ iterate (+88) 51]
 
-extractCellValues :: Image -> [[HIP.Pixel HIP.RGBA HIP.Word8]]
+extractCellValues :: Image -> [[Pixel]]
 extractCellValues img = (fmap.fmap) (HIP.index img) coords
+
+pixelToChar :: Pixel -> Maybe Char
+pixelToChar p =
+    fmap snd . listToMaybe $ filter (HIP.eqTolPx 2 p . fst) table
+  where
+    rgb r g b = HIP.PixelRGBA r g b 255
+    table =
+      [ (rgb 42 42 42, ' ')
+      , (rgb 213 83 54, 'r')
+      , (rgb 194 75 49, 'r')
+      , (rgb 48 167 194, 'b')
+      , (rgb 53 184 213, 'b')
+      ]
+
+imageToCharTable :: Image -> Maybe [[Char]]
+imageToCharTable img =
+    (mapM . mapM) pixelToChar pixels
+  where
+    pixels = extractCellValues img
+
+{-
+  Known colors:
+
+  grey: 42,42,42
+  red: 194,75,49 or 213,83,54
+  blue: 48,167,194 or 53,184,213
+ -}
 
 screenCapture :: IO Image
 screenCapture = do
@@ -36,15 +68,17 @@ screenCapture = do
   let Right img = HIP.decode HIP.PNG imgRaw
   pure img
 
+solveIt :: Terminal -> [[Char]] -> IO ()
+solveIt term tblRaw = do
+  let Just bd = Solver.mkBoard 6 (Solver.translateRaw tblRaw)
+  Solver.pprBoard term bd
+  Solver.pprBoard term $ Solver.trySolve bd
+
 main :: IO ()
 main = do
+  term <- setupTermFromEnv
   img <- screenCapture
-  let ps = extractCellValues img
-      pixels =
-        foldr1 HIP.topToBottom
-        . fmap (foldr1 HIP.leftToRight)
-        . (fmap . fmap)
-          (\c -> HIP.makeImage (50,50) (const c) :: Image)
-        $ ps
-  mapM_ print ps
-  pure ()
+  let mCharTable = imageToCharTable img
+  case mCharTable of
+    Just tbl -> solveIt term tbl
+    _ -> pure ()

@@ -13,6 +13,9 @@ dependencies:
 - bytestring
 - process
 - hip
+- containers
+- terminfo
+- vector
 
 executables:
   demo:
