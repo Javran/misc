@@ -1,7 +1,7 @@
 {-
   Solver for https://en.wikipedia.org/wiki/Takuzu
 
-  Credit to game "0h h1" by Q42 for introducting me to this game.
+  Credit to game "0h h1" by Q42 for introducing me to this game.
   If you see a lot of mention of color blue and red instead
   of 0 and 1, that's why.
 
@@ -132,6 +132,7 @@ updateCell coord@(row,col) cVal bd@Board{..} = do
       -- eliminate candidate of the current line.
       rowCandidate = S.filter (\ln -> ln VU.! col == cVal) (bdRowCandidates V.! row)
       colCandidate = S.filter (\ln -> ln VU.! row == cVal) (bdColCandidates V.! col)
+      -- TODO: we can totally avoid vector creation by extracting CompleteLine from candidate.
       rowComplete = getCompleteLine (fmap ((bdCells' V.!) . bdToFlatInd) rowCoords)
       colComplete = getCompleteLine (fmap ((bdCells' V.!) . bdToFlatInd) colCoords)
       bdRowCandidates' = V.imap upd bdRowCandidates
@@ -140,7 +141,7 @@ updateCell coord@(row,col) cVal bd@Board{..} = do
             if r == row
               then rowCandidate
               else
-                -- other lines: eliminate current line if current line is complete
+                -- Eliminate current line from other lines if current line is complete
                 case rowComplete of
                   Nothing -> cs
                   Just cl -> S.delete cl cs
@@ -178,7 +179,7 @@ mkBoard halfN rawMatPre =
         fmap (take n . (<> repeat Nothing)) rawMatPre
         <> repeat (replicate n Nothing)
 
--- improve a specific row by applying summarizeLines on it.
+-- Improve a specific row by applying summarizeLines on it.
 improveRowAux :: Int -> Board V.Vector -> Board V.Vector
 improveRowAux row bd@Board{..} = bd'
   where
@@ -266,7 +267,7 @@ genLineAux rCount bCount xs = case xs of
 mkTable :: Int -> [] CompleteLine
 mkTable n = VU.fromListN (n+n) <$> genLineAux n n []
 
--- extra common features from lines.
+-- extract common features from lines.
 -- input must be non-empty, and all elements are assumed to have the same length.
 summarizeLines :: [] CompleteLine -> [] (S.Set Cell)
 summarizeLines ls = extractInd <$> [0 .. size-1]
