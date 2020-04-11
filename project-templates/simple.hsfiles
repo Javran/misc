@@ -1,26 +1,26 @@
 {-# START_FILE package.yaml #-}
-name:                {{name}}
-version:             0.1.0.0
-github:              "{{github-username}}{{^github-username}}githubuser{{/github-username}}/{{name}}"
-license:             BSD3
-author:              "{{author-name}}{{^author-name}}Author name here{{/author-name}}"
-maintainer:          "{{author-email}}{{^author-email}}example@example.com{{/author-email}}"
-copyright:           "{{copyright}}{{^copyright}}{{year}}{{^year}}2019{{/year}} {{author-name}}{{^author-name}}Author name here{{/author-name}}{{/copyright}}"
+name: {{name}}
+version: 0.1.0.0
+github: {{github-username}}{{^github-username}}githubuser{{/github-username}}/{{name}}
+license: BSD3
+author: {{author-name}}{{^author-name}}Author name here{{/author-name}}
+maintainer: {{author-email}}{{^author-email}}example@example.com{{/author-email}}
+copyright: "{{copyright}}{{^copyright}}{{year}}{{^year}}2020{{/year}} {{author-name}}{{^author-name}}Author name here{{/author-name}}{{/copyright}}"
 
-description:         description
+description: description
 
 dependencies:
 - base
 
 executables:
   demo:
-    main:                Main.hs
-    source-dirs:         src
+    main: Main.hs
+    source-dirs: src
     ghc-options:
-    - -Wall
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
+      - -Wall
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
 
 {-# START_FILE src/Main.hs #-}
 module Main
@@ -33,6 +33,7 @@ main = pure ()
 {-# START_FILE .gitignore #-}
 .stack-work/
 {{name}}.cabal
+stack.yaml.lock
 *~
 
 {-# START_FILE stack.yaml #-}
