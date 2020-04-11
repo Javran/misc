@@ -16,6 +16,7 @@
  -}
 {-# LANGUAGE
     RecordWildCards
+  , NamedFieldPuns
   #-}
 module Solver where
 
@@ -289,6 +290,17 @@ summarizeLines ls = extractInd <$> [0 .. size-1]
     extractInd :: Int -> S.Set Cell
     extractInd i = S.fromList ((VU.! i) <$> ls)
     size = VU.length (head ls)
+
+boardToInput :: Board V.Vector -> [String]
+boardToInput Board{bdToFlatInd, bdCells} =
+    "br 12" : bdLines
+  where
+    -- since we are only dealing with 12x12 puzzles.
+    bdLines = map mkBdLine [0..11]
+    mkBdLine row = map (\col -> tr $ bdCells V.! bdToFlatInd (row,col)) [0..11]
+      where
+        tr Nothing = ' '
+        tr (Just b) = if b == cRed then 'r' else 'b'
 
 solverMain :: IO ()
 solverMain = do

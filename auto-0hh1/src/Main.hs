@@ -88,6 +88,7 @@ solveIt :: Terminal -> [[Char]] -> IO ()
 solveIt term tblRaw = do
   let Just bd = Solver.mkBoard 6 (Solver.translateRaw tblRaw)
       bdAfter = Solver.trySolve bd
+  appendFile "puzzles.txt" $ unlines (Solver.boardToInput bd <> ["===="])
   Solver.pprBoard term bd
   Solver.pprBoard term bdAfter
   let moves = Solver.genMoves bd bdAfter
@@ -103,6 +104,7 @@ main = do
     img <- screenCapture
     let mCharTable = imageToCharTable img
     case mCharTable of
-      Just tbl -> solveIt term tbl
+      Just tbl ->
+        solveIt term tbl
       _ -> pure ()
     threadDelay $ 1000 * 5000
