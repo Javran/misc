@@ -1,4 +1,7 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE
+    OverloadedStrings
+  , ScopedTypeVariables
+  #-}
 module Main
   ( main
   ) where
@@ -14,6 +17,7 @@ import System.Random.Shuffle
 import qualified Data.Map.Strict as M
 import qualified Graphics.Image as HIP
 import qualified Data.ByteString as BS
+import qualified Graphics.Image.Processing.Binary as HIP
 
 import qualified Solver
 
@@ -100,11 +104,22 @@ solveIt term tblRaw = do
 main :: IO ()
 main = do
   term <- setupTermFromEnv
+  Right (btn12 :: Image) <- HIP.readImageExact HIP.PNG "sample.png"
   forever $ do
+    putStrLn "New round started."
     img <- screenCapture
     let mCharTable = imageToCharTable img
     case mCharTable of
       Just tbl ->
         solveIt term tbl
-      _ -> pure ()
-    threadDelay $ 1000 * 5000
+      _ -> do
+        -- see if we can find this "12" button
+        let btn12Sample = HIP.crop (986,500) (72,81) img :: Image
+        when (HIP.eqTol 2 btn12 btn12Sample) $ do
+          putStrLn "Tapping '12'."
+          let cp = proc "/usr/bin/adb" ["exec-out", "input", "tap", "540", "1030"]
+          (_, _, _, ph) <- createProcess cp
+          _ <- waitForProcess ph
+          pure ()
+    putStrLn "Current round done."
+    threadDelay $ 1000 * 3000
