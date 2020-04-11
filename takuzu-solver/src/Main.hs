@@ -27,8 +27,8 @@ import qualified Data.Vector.Unboxed as VU
 import qualified Data.Vector as V
 import qualified Data.Set as S
 
-exampleRaw :: [] ([] Char)
-exampleRaw =
+exampleRaw0 :: [] ([] Char)
+exampleRaw0 =
   [ "    rr  br  "
   , "      r  b b"
   , "  br    r  b"
@@ -41,6 +41,22 @@ exampleRaw =
   , "  r     b   "
   , "      r   rb"
   , "  r  r      "
+  ]
+
+exampleRaw :: [] ([] Char)
+exampleRaw =
+  [ "  b b b     "
+  , "b  r   r   b"
+  , "     b     r"
+  , " b     r  b "
+  , "  bb   rr b "
+  , "        r   "
+  , " b  r      r"
+  , "     b    r "
+  , "bb  rb  b   "
+  , "   r     r  "
+  , "r r    rb  b"
+  , "r   b     r "
   ]
 
 example :: [[Maybe Cell]]
@@ -224,14 +240,14 @@ candidateCount Board{..} =
 -- in other words, if there's a line that can be updated, a single round of tryImprove
 -- should at least reduce the amount of candidates.
 tryImprove :: Board V.Vector -> Maybe (Board V.Vector)
-tryImprove bd@Board{..} = do
-  let todoRows = S.toList $ S.map fst bdTodos
-      todoCols = S.toList $ S.map snd bdTodos
+tryImprove bd = do
+  let todoRows = S.toList $ S.map fst (bdTodos bd)
+      todoCols = S.toList $ S.map snd (bdTodos bd)
       bd' =
         foldr improveColAux
           (foldr improveRowAux bd todoRows)
           todoCols
-  guard $ candidateCount bd /= candidateCount bd'
+  guard $ candidateCount bd /= candidateCount bd' || bdTodos bd /= bdTodos bd'
   pure bd'
 
 -- improve a Board repeated until it cannot be improved further

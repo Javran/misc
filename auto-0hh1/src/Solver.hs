@@ -226,14 +226,14 @@ candidateCount Board{..} =
 -- in other words, if there's a line that can be updated, a single round of tryImprove
 -- should at least reduce the amount of candidates.
 tryImprove :: Board V.Vector -> Maybe (Board V.Vector)
-tryImprove bd@Board{..} = do
-  let todoRows = S.toList $ S.map fst bdTodos
-      todoCols = S.toList $ S.map snd bdTodos
+tryImprove bd = do
+  let todoRows = S.toList $ S.map fst (bdTodos bd)
+      todoCols = S.toList $ S.map snd (bdTodos bd)
       bd' =
         foldr improveColAux
           (foldr improveRowAux bd todoRows)
           todoCols
-  guard $ candidateCount bd /= candidateCount bd'
+  guard $ candidateCount bd /= candidateCount bd' || bdTodos bd /= bdTodos bd'
   pure bd'
 
 -- improve a Board repeated until it cannot be improved further
