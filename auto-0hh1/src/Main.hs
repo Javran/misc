@@ -3,12 +3,12 @@ module Main
   ( main
   ) where
 
-import System.Process
-import System.Exit
+import Control.Concurrent
+import Control.Monad
 import Data.Maybe
 import System.Console.Terminfo
-import Control.Monad
-import Control.Concurrent
+import System.Exit
+import System.Process
 import System.Random.Shuffle
 
 import qualified Data.Map.Strict as M
@@ -78,7 +78,7 @@ screenTap (r,c) = do
         cp =
           proc "/usr/bin/adb" ["exec-out", "input", "tap", show screenC, show screenR]
     (_, _, _, ph) <- createProcess cp
-    threadDelay $ 1000 * 200
+    threadDelay $ 1000 * 300
     pure ph
   where
     tapMap :: M.Map (Int,Int) (Int,Int)
@@ -95,13 +95,14 @@ solveIt term tblRaw = do
   randomTaps <- shuffleM taps
   phs <- mapM screenTap randomTaps
   mapM_ waitForProcess phs
-  pure ()
 
 main :: IO ()
 main = do
   term <- setupTermFromEnv
-  img <- screenCapture
-  let mCharTable = imageToCharTable img
-  case mCharTable of
-    Just tbl -> solveIt term tbl
-    _ -> pure ()
+  forever $ do
+    img <- screenCapture
+    let mCharTable = imageToCharTable img
+    case mCharTable of
+      Just tbl -> solveIt term tbl
+      _ -> pure ()
+    threadDelay $ 1000 * 5000
