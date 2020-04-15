@@ -165,8 +165,8 @@ pprBoard Board{bdDims, bdTodos, bdCandidates} = do
   putStrLn "Candidates:"
   forM_ (M.toAscList bdCandidates) $ \(coord, xs) -> do
     putStrLn $ "- " <> show coord <> ": " <> show (length xs)
-    forM_ xs $ \cs ->
-      pprCandidate "  " cs
+    -- the following output is noisy. only enable when debugging.
+    -- forM_ xs $ \cs -> pprCandidate "  " cs
 
 pprCandidate :: String -> Candidate -> IO ()
 pprCandidate padding cs =
@@ -187,3 +187,21 @@ main :: IO ()
 main = do
   let bd = mkBoard (9,9) (snd example)
   pprBoard bd
+
+{-
+  We need 2 basic operations here:
+
+  - updateCell:
+
+    + update a cell with red/blue
+    + remove its coordinate from todo list,
+    + eliminate conflicting candidates
+    + remove the cell itself from candidate maps (so that we don't need to check for that repeatedly)
+
+  - improveCell:
+
+    + look at one particular (coord, candidates) pair
+    + find what's common in all candidates (a list of (coord, cell)s)
+    + updateCell to make those finding concrete.
+
+ -}
