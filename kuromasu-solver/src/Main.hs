@@ -3,13 +3,16 @@ module Main
   ( main
   ) where
 
+import Control.Applicative
 import Control.Monad
 import Data.Maybe
 import Data.List
 import Data.Char
+import Data.Semigroup
 
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
+import qualified Data.List.NonEmpty as NE
 
 -- TODO: specify rows and cols, and colors
 exampleRaw :: [String]
@@ -48,6 +51,8 @@ cBlue, cRed :: Cell
 [cBlue, cRed] = [False, True]
 
 type Coord = (Int, Int) -- (<row>, <col>), 0-based.
+
+type Candidate = M.Map Coord Cell
 
 data Board
   = Board
@@ -105,7 +110,7 @@ gen (rows, cols) mods todoCount cur = do
 mkBoard :: (Int, Int) -> [(Coord, Int)] -> Board
 mkBoard bdDims@(rows, cols) clues = Board
     { bdDims
-    , bdTodos = S.fromList [(r,c) | r <- [0..rows], c <- [0..cols]]
+    , bdTodos = S.fromList [(r,c) | r <- [0..rows-1], c <- [0..cols-1]]
     , bdCells = M.empty
     , bdCandidates = M.fromList $ uncurry mkCandidate <$> clues
     }
@@ -133,8 +138,8 @@ mkBoard bdDims@(rows, cols) clues = Board
                 | c <-
                     [ (row-u-1, col)
                     , (row, col+r+1)
-                    , (row+u+1, col)
-                    , (row, col-r-1)
+                    , (row+d+1, col)
+                    , (row, col-l-1)
                     ]
                 ]
               pairs = centerPair : concat [pUpCells, pRightCells, pDownCells, pLeftCells, pRedCells]
@@ -150,7 +155,35 @@ mods =
   , \(Placement u r d l) -> Placement u r d (l+1)
   ]
 
+pprBoard :: Board -> IO ()
+pprBoard Board{bdDims, bdTodos, bdCandidates} = do
+  putStrLn $ "Board dimensions: " <> show bdDims
+  putStrLn "++++ Board Begin"
+  putStrLn "TODO"
+  putStrLn "---- Board End"
+  putStrLn $ "Todos: " <> show (length bdTodos)
+  putStrLn "Candidates:"
+  forM_ (M.toAscList bdCandidates) $ \(coord, xs) -> do
+    putStrLn $ "- " <> show coord <> ": " <> show (length xs)
+    forM_ xs $ \cs ->
+      pprCandidate "  " cs
+
+pprCandidate :: String -> Candidate -> IO ()
+pprCandidate padding cs =
+  case NE.nonEmpty (M.keys cs) of
+    Nothing -> putStrLn $ padding <> "<empty>"
+    Just cs' -> do
+      let getMinMax getter = sconcat $ fmap (((,) <$> Min <*> Max) . getter) cs'
+          (Min rMin, Max rMax) = getMinMax fst
+          (Min cMin, Max cMax) = getMinMax snd
+          cGet coord = case cs M.!? coord of
+            Nothing -> ' '
+            Just c -> if c == cBlue then 'B' else 'R'
+      putStrLn $ padding <> "Range: " <> show (rMin, cMin) <> " - " <> show (rMax, cMax)
+      forM_ [rMin .. rMax] $ \r ->
+        putStrLn $ padding <> [ cGet (r,c) | c <- [cMin..cMax] ]
+
 main :: IO ()
 main = do
   let bd = mkBoard (9,9) (snd example)
-  print bd
+  pprBoard bd
