@@ -6,6 +6,7 @@ module Main
 import Control.Monad
 import Data.Maybe
 import Data.List
+import Data.Char
 
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
@@ -23,6 +24,23 @@ exampleRaw =
   , "? r 5 ? r ? 4 r 1"
   , "? ? ? 3 ? 5 ? 3 ?"
   ]
+
+example :: ([(Coord, Cell)], [(Coord, Int)])
+example =
+    ( mapMaybe validCellOnly rawWithCoords
+    , mapMaybe validHintOnly rawWithCoords
+    )
+  where
+    coords = [(r,c) | r <- [0..8], c <- [0..8]]
+    rawWithCoords = zip coords (concatMap words exampleRaw)
+    validCellOnly (_, "?") = Nothing
+    validCellOnly (_, "r") = Nothing
+    validCellOnly (coord, xs)
+      | all isDigit xs = Just (coord, cBlue)
+      | otherwise = error "unreachable (for now)"
+    validHintOnly (coord, xs)
+      | all isDigit xs = Just (coord, read xs)
+      | otherwise = Nothing
 
 type Cell = Bool
 
