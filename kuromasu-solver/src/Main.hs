@@ -1,8 +1,10 @@
+{-# LANGUAGE NamedFieldPuns #-}
 module Main
   ( main
   ) where
 
 import Control.Monad
+import Data.Maybe
 import Data.List
 
 import qualified Data.Map.Strict as M
@@ -72,19 +74,64 @@ data Placement =
 pickInOrder' :: [a] -> [] (a,[a])
 pickInOrder' = fmap (\(x:xs) -> (x,x:xs)) . init . tails
 
-gen _ _ 0 cur = pure [cur]
+gen _ _ 0 cur = [cur]
 gen (rows, cols) mods todoCount cur = do
   (f, mods') <- pickInOrder' mods
   let cur'@(Placement u r d l) = f cur
   guard $ u + d < rows && l + r < cols
   gen (rows, cols) mods' (todoCount-1) cur'
 
+{-
+  Create an empty board with candidates populate by clues.
+ -}
+mkBoard :: (Int, Int) -> [(Coord, Int)] -> Board
+mkBoard bdDims@(rows, cols) clues = Board
+    { bdDims
+    , bdTodos = S.fromList [(r,c) | r <- [0..rows], c <- [0..cols]]
+    , bdCells = M.empty
+    , bdCandidates = M.fromList $ uncurry mkCandidate <$> clues
+    }
+  where
+    mkCandidate :: Coord -> Int -> (Coord, [M.Map Coord Cell])
+    mkCandidate cCoord@(row,col) count =
+        (cCoord, mapMaybe placementToCandidate ps)
+      where
+        -- generate initial possible placements
+        -- without knowing the location of the center coord
+        ps = gen bdDims mods count (Placement 0 0 0 0)
+        placementToCandidate :: Placement -> Maybe (M.Map Coord Cell)
+        placementToCandidate (Placement u r d l) = do
+          let centerPair = (cCoord, cBlue)
+              pUpCells =
+                [ ((row-df, col), cBlue) | df <- [1..u]]
+              pRightCells =
+                [ ((row, col+df), cBlue) | df <- [1..r]]
+              pDownCells =
+                [ ((row+df, col), cBlue) | df <- [1..d]]
+              pLeftCells =
+                [ ((row, col-df), cBlue) | df <- [1..l]]
+              pRedCells =
+                [ (c, cRed)
+                | c <-
+                    [ (row-u-1, col)
+                    , (row, col+r+1)
+                    , (row+u+1, col)
+                    , (row, col-r-1)
+                    ]
+                ]
+              pairs = centerPair : concat [pUpCells, pRightCells, pDownCells, pLeftCells, pRedCells]
+          let checkPair ((r',c'), color) =
+                color == cRed || (r' >= 0 && r' < rows && c' >= 0 && c' < cols)
+          guard $ all checkPair pairs
+          pure $ M.fromList pairs
+
+mods =
+  [ \(Placement u r d l) -> Placement (u+1) r d l
+  , \(Placement u r d l) -> Placement u (r+1) d l
+  , \(Placement u r d l) -> Placement u r (d+1) l
+  , \(Placement u r d l) -> Placement u r d (l+1)
+  ]
+
 main :: IO ()
 main = do
-  let mods =
-        [ \(Placement u r d l) -> Placement (u+1) r d l
-        , \(Placement u r d l) -> Placement u (r+1) d l
-        , \(Placement u r d l) -> Placement u r (d+1) l
-        , \(Placement u r d l) -> Placement u r d (l+1)
-        ]
   mapM_ print $ gen (9,9) mods 16 (Placement 0 0 0 0)
