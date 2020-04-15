@@ -60,7 +60,7 @@ data Board
       -- - answer the question of what's common in all possible candidates
       -- - eliminate candidates that are not possible.
     , bdCandidates :: M.Map Coord [M.Map Coord Cell]
-    }
+    } deriving Show
 
 {-
   The following type defines a building block for building "blueprint"s given a number
@@ -152,4 +152,5 @@ mods =
 
 main :: IO ()
 main = do
-  mapM_ print $ gen (9,9) mods 16 (Placement 0 0 0 0)
+  let bd = mkBoard (9,9) (snd example)
+  print bd
