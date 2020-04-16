@@ -143,10 +143,11 @@ mkBoard bdDims@(rows, cols) clues = Board
                     ]
                 ]
               pairs = centerPair : concat [pUpCells, pRightCells, pDownCells, pLeftCells, pRedCells]
-          let checkPair ((r',c'), color) =
-                color == cRed || (r' >= 0 && r' < rows && c' >= 0 && c' < cols)
+          let isInRange (r',c') = r' >= 0 && r' < rows && c' >= 0 && c' < cols
+              checkPair (coord', color) =
+                color == cRed || isInRange coord'
           guard $ all checkPair pairs
-          pure $ M.fromList pairs
+          pure $ M.fromList (filter (isInRange . fst) pairs)
 
 mods =
   [ \(Placement u r d l) -> Placement (u+1) r d l
