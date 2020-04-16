@@ -37,7 +37,7 @@ example =
     coords = [(r,c) | r <- [0..8], c <- [0..8]]
     rawWithCoords = zip coords (concatMap words exampleRaw)
     validCellOnly (_, "?") = Nothing
-    validCellOnly (_, "r") = Nothing
+    validCellOnly (coord, "r") = Just (coord, cRed)
     validCellOnly (coord, xs)
       | all isDigit xs = Just (coord, cBlue)
       | otherwise = error "unreachable (for now)"
