@@ -65,7 +65,7 @@ data Board
       -- - answer the question of what's common in all possible candidates
       -- - eliminate candidates that are not possible.
     , bdCandidates :: M.Map Coord [M.Map Coord Cell]
-    } deriving Show
+    } deriving (Show, Eq)
 
 {-
   The following type defines a building block for building "blueprint"s given a number
@@ -190,16 +190,24 @@ pprCandidate padding cs =
       forM_ [rMin .. rMax] $ \r ->
         putStrLn $ padding <> [ cGet (r,c) | c <- [cMin..cMax] ]
 
+{-
+  Basic operation on a board that fills one cell,
+  simplifies candidates, and remove contradiction candidates.
+ -}
 updateCell :: Coord -> Cell -> Board -> Maybe Board
 updateCell coord color Board{bdDims, bdTodos, bdCells, bdCandidates} = do
   guard $ coord `S.member` bdTodos
   let bdTodos' = S.delete coord bdTodos
       bdCells' = M.insert coord color bdCells
+      -- check current candidate, simplify or remove it
       checkAndElim :: Candidate -> Maybe Candidate
       checkAndElim cs = case cs M.!? coord of
-        Nothing -> Just cs
+        Nothing -> Just cs -- coord have nothing to do with this candidate, move on.
         Just c -> do
+          -- color must not contradict.
           guard $ c == color
+          -- remove this coord from candidate list.
+          -- this removal is not necessary but it reduces the amount of cells we need to visit for each update.
           pure $ M.delete coord cs
       bdCandidates' = M.map (mapMaybe checkAndElim) bdCandidates
   guard $ all (not . null) bdCandidates'
@@ -210,25 +218,50 @@ updateCell coord color Board{bdDims, bdTodos, bdCells, bdCandidates} = do
     , bdCandidates = bdCandidates'
     }
 
+improve :: Coord -> Board -> Maybe Board
+improve coord bd@Board{bdCandidates} = do
+  cs <- bdCandidates M.!? coord
+  let commons =
+        concatMap (\(k, mv) -> case mv of
+                      Nothing -> []
+                      Just v -> [(k,v)]
+                  )
+        . M.toList
+        . M.unionsWith compareMerge
+        . (fmap . M.map) Just
+        $ cs
+        where
+          compareMerge lm rm = do
+            l <- lm
+            r <- rm
+            guard $ l == r
+            lm
+  guard $ not . null $ commons
+  Just $ foldl (\curBd (coord',cell) -> fromMaybe curBd $ updateCell coord' cell curBd) bd commons
+
+improveStep :: Board -> Maybe Board
+improveStep bd@Board{bdCandidates} = do
+  let bd' = foldl (\curBd c -> fromMaybe curBd $ improve c curBd) bd $ M.keys bdCandidates
+  pure bd'
+
+solve :: Board -> Board
+solve bd = case improveStep bd of
+  Just bd' -> if bd == bd' then bd else solve bd'
+  Nothing -> bd
+
 main :: IO ()
 main = do
   let bd = mkBoard (9,9) (snd example)
       Just bd' =
         foldM (\curBd (coord, cell) -> updateCell coord cell curBd) bd (fst example)
-  pprBoard bd
   pprBoard bd'
+  pprBoard (solve bd')
 
 {-
   We need 2 basic operations here:
 
   - updateCell:
-
-    + update a cell with red/blue
-    + remove its coordinate from todo list,
-    + eliminate conflicting candidates
-    + remove the cell itself from candidate maps (so that we don't need to check for that repeatedly)
-
-  - improveCell:
+  - improveBoard:
 
     + look at one particular (coord, candidates) pair
     + find what's common in all candidates (a list of (coord, cell)s)
