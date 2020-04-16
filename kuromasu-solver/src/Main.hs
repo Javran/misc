@@ -209,7 +209,10 @@ updateCell coord color Board{bdDims, bdTodos, bdCells, bdCandidates} = do
           -- remove this coord from candidate list.
           -- this removal is not necessary but it reduces the amount of cells we need to visit for each update.
           pure $ M.delete coord cs
-      bdCandidates' = M.map (mapMaybe checkAndElim) bdCandidates
+      bdCandidates' =
+        M.filter (not . all M.null)
+        . M.map (mapMaybe checkAndElim)
+        $ bdCandidates
   guard $ all (not . null) bdCandidates'
   pure Board
     { bdDims
