@@ -183,6 +183,26 @@ pprCandidate padding cs =
       forM_ [rMin .. rMax] $ \r ->
         putStrLn $ padding <> [ cGet (r,c) | c <- [cMin..cMax] ]
 
+updateCell :: Coord -> Cell -> Board -> Maybe Board
+updateCell coord color Board{bdDims, bdTodos, bdCells, bdCandidates} = do
+  guard $ coord `S.member` bdTodos
+  let bdTodos' = S.delete coord bdTodos
+      bdCells' = M.insert coord color bdCells
+      checkAndElim :: Candidate -> Maybe Candidate
+      checkAndElim cs = case cs M.!? coord of
+        Nothing -> Just cs
+        Just c -> do
+          guard $ c == color
+          pure $ M.delete coord cs
+      bdCandidates' = M.map (mapMaybe checkAndElim) bdCandidates
+  guard $ all (not . null) bdCandidates'
+  pure Board
+    { bdDims
+    , bdTodos = bdTodos'
+    , bdCells = bdCells'
+    , bdCandidates = bdCandidates'
+    }
+
 main :: IO ()
 main = do
   let bd = mkBoard (9,9) (snd example)
