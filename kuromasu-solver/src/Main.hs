@@ -15,8 +15,8 @@ import qualified Data.Set as S
 import qualified Data.List.NonEmpty as NE
 
 -- TODO: specify rows and cols, and colors
-exampleRaw :: [String]
-exampleRaw =
+exampleRaw1 :: [String]
+exampleRaw1 =
   [ "? ? 3 2 ? ? r 1 1"
   , "r 4 ? r ? ? ? ? ?"
   , "? ? ? ? ? ? 7 ? ?"
@@ -27,6 +27,20 @@ exampleRaw =
   , "? r 5 ? r ? 4 r 1"
   , "? ? ? 3 ? 5 ? 3 ?"
   ]
+
+exampleRaw :: [String]
+exampleRaw =
+  [ "1 ? 3 ? ? ? ? 3 ?"
+  , "? ? ? ? 4 4 ? ? r"
+  , "? 9 8 ? 8 ? ? ? ?"
+  , "2 ? ? ? ? ? ? ? 2"
+  , "? ? ? ? 2 ? ? 6 4"
+  , "? r ? 8 ? ? 8 ? 7"
+  , "2 ? ? ? ? r ? 4 ?"
+  , "? ? 5 ? ? ? ? ? 3"
+  , "? ? 7 ? ? ? r ? r"
+  ]
+
 
 example :: ([(Coord, Cell)], [(Coord, Int)])
 example =
@@ -231,7 +245,10 @@ improve coord bd@Board{bdCandidates} = do
                       Just v -> [(k,v)]
                   )
         . M.toList
-        . M.unionsWith compareMerge
+        -- note that cs shouldn't be empty if the result comes from "updateCell",
+        -- therefore the use of foldl1 is safe.
+        -- TODO: good time to explore Data.Map.Merge
+        . foldl1 (M.intersectionWith compareMerge)
         . (fmap . M.map) Just
         $ cs
         where
@@ -241,11 +258,13 @@ improve coord bd@Board{bdCandidates} = do
             guard $ l == r
             lm
   guard $ not . null $ commons
-  Just $ foldl (\curBd (coord',cell) -> fromMaybe curBd $ updateCell coord' cell curBd) bd commons
+  foldM (\curBd (coord',cell) -> updateCell coord' cell curBd) bd commons
 
 improveStep :: Board -> Maybe Board
 improveStep bd@Board{bdCandidates} = do
-  let bd' = foldl (\curBd c -> fromMaybe curBd $ improve c curBd) bd $ M.keys bdCandidates
+  let bds = mapMaybe (\c -> improve c bd) $ M.keys bdCandidates
+  -- choose first successful improvement
+  (bd':_) <- pure bds
   pure bd'
 
 solve :: Board -> Board
