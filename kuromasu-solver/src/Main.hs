@@ -184,11 +184,12 @@ pprBoard Board{bdDims, bdTodos, bdCells, bdCandidates} = do
     putStrLn "|"
   putStrLn "---- Board End"
   putStrLn $ "Todos: " <> show (length bdTodos)
-  putStrLn "Candidates:"
-  forM_ (M.toAscList bdCandidates) $ \(coord, xs) -> do
-    putStrLn $ "- " <> show coord <> ": " <> show (length xs)
-    -- the following output is noisy. only enable when debugging.
-    -- forM_ xs $ \cs -> pprCandidate "  " cs
+  unless (M.null bdCandidates) $ do
+    putStrLn "Candidates:"
+    forM_ (M.toAscList bdCandidates) $ \(coord, xs) -> do
+      putStrLn $ "- " <> show coord <> ": " <> show (length xs)
+      -- the following output is noisy. only enable when debugging.
+      -- forM_ xs $ \cs -> pprCandidate "  " cs
 
 pprCandidate :: String -> Candidate -> IO ()
 pprCandidate padding cs =
