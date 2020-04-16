@@ -213,10 +213,8 @@ updateCell coord color Board{bdDims, bdTodos, bdCells, bdCandidates} = do
 main :: IO ()
 main = do
   let bd = mkBoard (9,9) (snd example)
-      bd' = foldl go bd (fst example)
-        where
-          -- TODO: we should probably not recover from Nothing.
-          go curBd (coord,cell) = fromMaybe curBd (updateCell coord cell curBd)
+      Just bd' =
+        foldM (\curBd (coord, cell) -> updateCell coord cell curBd) bd (fst example)
   pprBoard bd
   pprBoard bd'
 
