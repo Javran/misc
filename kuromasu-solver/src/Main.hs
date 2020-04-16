@@ -156,10 +156,17 @@ mods =
   ]
 
 pprBoard :: Board -> IO ()
-pprBoard Board{bdDims, bdTodos, bdCandidates} = do
+pprBoard Board{bdDims, bdTodos, bdCells, bdCandidates} = do
   putStrLn $ "Board dimensions: " <> show bdDims
   putStrLn "++++ Board Begin"
-  putStrLn "TODO"
+  let (rows, cols) = bdDims
+  forM_ [0..rows-1] $ \r -> do
+    putStr "|"
+    let coordToChar coord = case bdCells M.!? coord of
+          Nothing -> ' '
+          Just c -> if c == cBlue then 'B' else 'R'
+    putStr ((\c -> coordToChar (r,c)) <$> [0..cols-1])
+    putStrLn "|"
   putStrLn "---- Board End"
   putStrLn $ "Todos: " <> show (length bdTodos)
   putStrLn "Candidates:"
@@ -206,7 +213,12 @@ updateCell coord color Board{bdDims, bdTodos, bdCells, bdCandidates} = do
 main :: IO ()
 main = do
   let bd = mkBoard (9,9) (snd example)
+      bd' = foldl go bd (fst example)
+        where
+          -- TODO: we should probably not recover from Nothing.
+          go curBd (coord,cell) = fromMaybe curBd (updateCell coord cell curBd)
   pprBoard bd
+  pprBoard bd'
 
 {-
   We need 2 basic operations here:
