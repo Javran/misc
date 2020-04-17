@@ -8,8 +8,10 @@ module Main
 
 import Control.Concurrent
 import Control.Monad
+import Data.List
 import Data.Maybe
 import System.Console.Terminfo
+import System.Directory
 import System.Exit
 import System.Process
 import System.Random.Shuffle
@@ -35,8 +37,8 @@ screenCapture = do
   let Right img = HIP.decode HIP.PNG imgRaw
   pure img
 
-main :: IO ()
-main = do
+collectSample :: IO ()
+collectSample = do
   imgFull <- screenCapture
   let samples :: [((Int, Int), Image)]
       samples =
@@ -46,5 +48,34 @@ main = do
   forM_ samples $ \((r,c), img) ->
     let fName = "samples/sample_" <> show r <> "_" <> show c <> ".png"
     in HIP.writeImageExact HIP.PNG [] fName img
-  -- _ <- getLine
   pure ()
+
+getSampleName :: String -> Maybe (String, String)
+getSampleName fName = do
+  let tag = takeWhile (/= '_') fName
+  guard $ tag /= "sample"
+  guard $ ".png" `isSuffixOf` fName
+  pure (fName, tag)
+
+loadSamples :: IO (M.Map String [Image])
+loadSamples = do
+  fs <- mapMaybe getSampleName <$> listDirectory "samples"
+  pairs <- forM fs $ \(fName, tag) -> do
+    Right img <- HIP.readImageExact HIP.PNG ("samples/" <> fName)
+    pure (tag, [img])
+  pure $ M.fromListWith (<>) pairs
+
+main :: IO ()
+main = do
+  samples <- loadSamples
+  let sampleList = M.toList samples
+  let thres = 200
+  forM_ sampleList $ \(k, imgs) -> do
+    let l = length imgs
+    putStrLn $ "Tag: " <> k
+    forM_ [0..l-1] $ \i -> do
+      putStrLn [ if HIP.eqTol thres (imgs!!i) (imgs!!j) then 'T' else ' ' | j <- [0..l-1]]
+  let allSamples = concatMap snd sampleList
+  let l = length allSamples
+  forM_ [0..l-1] $ \i -> do
+    putStrLn [ if HIP.eqTol thres (allSamples!!i) (allSamples!!j) then 'T' else ' ' | j <- [0..l-1]]
