@@ -18,6 +18,7 @@ dependencies:
 - terminfo
 - MonadRandom
 - random-shuffle
+- uuid
 - vector
 
 executables:
