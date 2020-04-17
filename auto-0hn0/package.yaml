@@ -1,0 +1,30 @@
+name: auto-0hn0
+version: 0.1.0.0
+github: Javran/auto-0hn0
+license: BSD3
+author: Javran Cheng
+maintainer: javran.c@gmail.com
+copyright: "Copyright: (c) 2019 Javran Cheng"
+
+description: description
+
+dependencies:
+- base
+- bytestring
+- process
+- hip
+- containers
+- terminfo
+- MonadRandom
+- random-shuffle
+- vector
+
+executables:
+  demo:
+    main: Main.hs
+    source-dirs: src
+    ghc-options:
+      - -Wall
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
