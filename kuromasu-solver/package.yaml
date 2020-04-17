@@ -11,6 +11,7 @@ description: description
 dependencies:
 - base
 - containers
+- terminfo
 
 executables:
   demo:

@@ -3,6 +3,8 @@ module Main
   ( main
   ) where
 
+import System.Console.Terminfo
+
 import Solver
 
 -- TODO: specify rows and cols, and colors
@@ -33,5 +35,6 @@ exampleRaw =
   ]
 
 main :: IO ()
-main =
-  solveAndShow exampleRaw1
+main = do
+  term <- setupTermFromEnv
+  solveAndShow term exampleRaw1

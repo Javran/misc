@@ -1,4 +1,4 @@
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NamedFieldPuns, TypeApplications #-}
 module Solver where
 
 import Control.Applicative
@@ -7,6 +7,7 @@ import Data.Maybe
 import Data.List
 import Data.Char
 import Data.Semigroup
+import System.Console.Terminfo
 
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
@@ -122,18 +123,41 @@ mods =
   , \(Placement u r d l) -> Placement u r d (l+1)
   ]
 
-pprBoard :: Board -> IO ()
-pprBoard Board{bdDims, bdTodos, bdCells, bdCandidates} = do
+pprBoard :: Terminal -> [(Coord, Int)] -> Board -> IO ()
+pprBoard term hints Board{bdDims, bdTodos, bdCells, bdCandidates} = do
   putStrLn $ "Board dimensions: " <> show bdDims
   putStrLn "++++ Board Begin"
-  let (rows, cols) = bdDims
-  forM_ [0..rows-1] $ \r -> do
-    putStr "|"
-    let coordToChar coord = case bdCells M.!? coord of
-          Nothing -> ' '
-          Just c -> if c == cBlue then 'B' else 'R'
-    putStr ((\c -> coordToChar (r,c)) <$> [0..cols-1])
-    putStrLn "|"
+  let mRenderFs :: TermStr s => Maybe (Color -> s -> s, Color -> s -> s)
+      mRenderFs = (,)
+        <$> getCapability term withForegroundColor
+        <*> getCapability term withBackgroundColor
+      (rows, cols) = bdDims
+  case mRenderFs @TermOutput of
+    Nothing ->
+      forM_ [0..rows-1] $ \r -> do
+        let coordToChar coord = case bdCells M.!? coord of
+              Nothing -> ' '
+              Just c -> if c == cBlue then 'B' else 'R'
+        putStr ((\c -> coordToChar (r,c)) <$> [0..cols-1])
+    Just (fg, bg) ->
+      forM_ [0..rows-1] $ \r -> do
+        let ln = foldMap render [0..cols-1]
+            sp = termText " "
+            render :: Int -> TermOutput
+            render c = case bdCells M.!? coord of
+                Nothing -> sp
+                Just color ->
+                  if color == cRed
+                    then bg Red sp
+                    else bg Blue $ case lookup coord hints of
+                      Nothing -> sp
+                      Just v -> fg White $
+                        if v > 9
+                          then termText "."
+                          else termText (show v)
+              where
+                coord = (r,c)
+        runTermOutput term $ ln <> termText "\n"
   putStrLn "---- Board End"
   putStrLn $ "Todos: " <> show (length bdTodos)
   unless (M.null bdCandidates) $ do
@@ -242,11 +266,12 @@ loadExample exampleRaw =
       | all isDigit xs = Just (coord, read xs)
       | otherwise = Nothing
 
-solveAndShow :: [String] -> IO ()
-solveAndShow exampleRaw = do
+solveAndShow :: Terminal -> [String] -> IO ()
+solveAndShow term exampleRaw = do
   let example = loadExample exampleRaw
-      bd = mkBoard (9,9) (snd example)
+      hints = snd example
+      bd = mkBoard (9,9) hints
       Just bd' =
         foldM (\curBd (coord, cell) -> updateCell coord cell curBd) bd (fst example)
-  pprBoard bd'
-  pprBoard (solve bd')
+  pprBoard term hints bd'
+  pprBoard term hints (solve bd')

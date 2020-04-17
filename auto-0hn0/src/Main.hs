@@ -20,6 +20,8 @@ import System.Random.Shuffle
 import Data.UUID.V1
 import Data.Function
 
+import System.Console.Terminfo
+
 import qualified Data.Map.Strict as M
 import qualified Graphics.Image as HIP
 import qualified Graphics.Image.IO as HIP
@@ -77,21 +79,13 @@ loadSamples = do
     pure (tag, [img])
   pure $ M.fromListWith (<>) pairs
 
-recognizeOrRecord :: RevSamples -> Image -> IO (Either FilePath String)
+recognizeOrRecord :: RevSamples -> Image -> IO (Either Image String)
 recognizeOrRecord rs img = do
-  let threshold = 10
+  let threshold = 40
       matched = filter (\(patImg, _tag) -> HIP.eqTol threshold patImg img) rs
-      recordSample = do
-        sampleId <- fix $ \loop -> do
-          v <- nextUUID
-          maybe loop pure v
-        let fName = "samples/sample_" <> show sampleId <> ".png"
-        pure (Left fName)
   case matched of
     (_, tag):_ -> pure (Right tag)
-    [] -> do
-      putStrLn "Match not found."
-      recordSample
+    [] -> pure (Left img)
 
 captureSamples :: IO [[Image]]
 captureSamples = do
@@ -118,11 +112,12 @@ _analysisSamples = do
 
 main :: IO ()
 main = do
+  term <- setupTermFromEnv
   samples <- loadSamples
   let revSamples :: RevSamples
       revSamples = concatMap (\(tag, imgs) -> (,tag) <$> imgs) . M.toList $ samples
   sps <- captureSamples
-  (matchResults :: [[Either FilePath String]]) <-
+  (matchResults :: [[Either Image String]]) <-
     (mapM . mapM) (recognizeOrRecord revSamples) sps
   let tr "grey" = "?"
       tr "red" = "r"
@@ -130,6 +125,16 @@ main = do
   case partitionEithers (concat matchResults) of
     ([], _) -> do
       let ls = (fmap . fmap) (\(Right r) -> tr r) matchResults
-      solveAndShow $ unwords <$> ls
-    (ls, _) -> putStrLn $ "Failed to match " <> show (length ls) <> " items."
+          input = unwords <$> ls
+      appendFile "puzzles.txt" (unlines $ input <> ["===="])
+      solveAndShow term $ input
+    (ls, _) -> do
+      putStrLn $ "Failed to match " <> show (length ls) <> " items."
+      when (length ls /= 9 * 9) $
+        forM_ ls $ \img -> do
+          sampleId <- fix $ \loop -> do
+            v <- nextUUID
+            maybe loop pure v
+          let fName = "samples/sample_" <> show sampleId <> ".png"
+          HIP.writeImageExact HIP.PNG [] fName img
   pure ()
