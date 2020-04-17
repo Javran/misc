@@ -26,6 +26,8 @@ import qualified Graphics.Image.IO as HIP
 import qualified Data.ByteString as BS
 import qualified Graphics.Image.Processing.Binary as HIP
 
+import Solver
+
 type Pixel = HIP.Pixel HIP.RGBA HIP.Word8
 type Image = HIP.Image HIP.VS HIP.RGBA HIP.Word8
 
@@ -77,7 +79,7 @@ loadSamples = do
 
 recognizeOrRecord :: RevSamples -> Image -> IO (Either FilePath String)
 recognizeOrRecord rs img = do
-  let threshold = 200
+  let threshold = 10
       matched = filter (\(patImg, _tag) -> HIP.eqTol threshold patImg img) rs
       recordSample = do
         sampleId <- fix $ \loop -> do
@@ -128,6 +130,6 @@ main = do
   case partitionEithers (concat matchResults) of
     ([], _) -> do
       let ls = (fmap . fmap) (\(Right r) -> tr r) matchResults
-      mapM_ (putStrLn . unwords) ls
+      solveAndShow $ unwords <$> ls
     (ls, _) -> putStrLn $ "Failed to match " <> show (length ls) <> " items."
   pure ()
