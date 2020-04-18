@@ -8,6 +8,7 @@ import Data.List
 import Data.Char
 import Data.Semigroup
 import System.Console.Terminfo
+import Data.Ix
 
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
@@ -110,7 +111,7 @@ mkBoard bdDims@(rows, cols) clues = Board
                     ]
                 ]
               pairs = centerPair : concat [pUpCells, pRightCells, pDownCells, pLeftCells, pRedCells]
-          let isInRange (r',c') = r' >= 0 && r' < rows && c' >= 0 && c' < cols
+          let isInRange = inRange ((0,0), (rows-1,cols-1))
               checkPair (coord', color) =
                 color == cRed || isInRange coord'
           guard $ all checkPair pairs
@@ -244,10 +245,33 @@ improveStep bd@Board{bdCandidates} = do
   (bd':_) <- pure bds
   pure bd'
 
+bdGet :: Board -> Coord -> Maybe Cell
+bdGet Board{bdCells, bdDims} coord =
+    if inRange ((0,0), (rows-1,cols-1)) coord
+      then bdCells M.!? coord
+      else Just cRed
+  where
+    (rows, cols) = bdDims
+
+{-
+  The final step is to fill in red if that cell is surrounded by red.
+  If the solution is guaranteed to be unique, this step hopefully will fill in all remaining blanks.
+ -}
+finalStep :: Board -> Board
+finalStep bd@Board{bdTodos} =
+    foldr go bd bdTodos
+  where
+    go coord curBd =
+      if surroundedByRed curBd coord
+        then fromMaybe curBd (updateCell coord cRed curBd)
+        else curBd
+    surroundedByRed curBd (r,c) =
+      all (\coord' -> bdGet curBd coord' == Just cRed) [(r-1,c), (r+1,c), (r,c-1), (r,c+1)]
+
 solve :: Board -> Board
 solve bd = case improveStep bd of
-  Just bd' -> if bd == bd' then bd else solve bd'
-  Nothing -> bd
+  Just bd' -> if bd == bd' then finalStep bd else solve bd'
+  Nothing -> finalStep bd
 
 loadExample :: [String] -> ([(Coord, Cell)], [(Coord, Int)])
 loadExample exampleRaw =
