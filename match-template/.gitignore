@@ -9,3 +9,5 @@ bazel-match-template
 .vagrant/
 Vagrantfile
 .idea/
+
+private/

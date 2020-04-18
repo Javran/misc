@@ -9,12 +9,12 @@
 
 namespace mt {
 enum class MatchMode {
-  kSQDIFF,
-  kSQDIFF_NORMED,
-  kCCORR,
-  kCCORR_NORMED,
-  kCCOEFF,
-  kCCOEFF_NORMED,
+  kSQDIFF = cv::TM_SQDIFF,
+  kSQDIFF_NORMED = cv::TM_SQDIFF_NORMED,
+  kCCORR = cv::TM_CCORR,
+  kCCORR_NORMED = cv::TM_CCORR_NORMED,
+  kCCOEFF = cv::TM_CCOEFF,
+  kCCOEFF_NORMED = cv::TM_CCOEFF_NORMED,
 };
 
 bool AbslParseFlag(absl::string_view text,
@@ -64,8 +64,16 @@ ABSL_FLAG(mt::MatchMode, match_mode, mt::MatchMode::kSQDIFF, "Match mode.");
 int main(int argc, char* argv[]) {
   absl::ParseCommandLine(argc, argv);
   cv::Mat image = cv::imread(absl::GetFlag(FLAGS_image_path), 1);
-  cv::namedWindow("Display Image", cv::WINDOW_AUTOSIZE);
-  cv::imshow("Display Image", image);
-  cv::waitKey(0);
+  cv::Mat templ = cv::imread(absl::GetFlag(FLAGS_template_path), 1);
+  int method = static_cast<int>(absl::GetFlag(FLAGS_match_mode));
+
+  cv::Mat result;
+  int result_cols = image.cols - templ.cols + 1;
+  int result_rows = image.rows - templ.rows + 1;
+  result.create(result_rows,result_cols, CV_32FC1);
+  cv::matchTemplate(image, templ, result, method);
+  if (result_cols > 0 && result_rows > 0) {
+    std::cout << std::setprecision(6) << result.at<float>(0,0) << std::endl;
+  }
   return 0;
 }
