@@ -7,3 +7,7 @@ extra-deps:
 - Chart-1.9.1
 - Chart-diagrams-1.9.2
 - SVGFonts-1.7.0.1
+- git: https://github.com/Javran/puzzle-solving-collection.git
+  commit: a1775ad1f33c0a456d3fc5e7e39bbaada5ccfbf7
+  subdirs:
+    - takuzu-solver

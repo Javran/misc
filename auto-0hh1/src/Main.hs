@@ -19,7 +19,7 @@ import qualified Graphics.Image as HIP
 import qualified Data.ByteString as BS
 import qualified Graphics.Image.Processing.Binary as HIP
 
-import qualified Solver
+import qualified Game.Takuzu.Solver as Solver
 
 -- https://stackoverflow.com/a/13587203/315302
 -- adb exec-out "screencap -p"
