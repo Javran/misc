@@ -1,0 +1,4 @@
+.stack-work/
+matchpb.cabal
+stack.yaml.lock
+*~
