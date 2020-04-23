@@ -19,6 +19,16 @@ import qualified Data.ByteString as BS
 import qualified Proto.MatchingAgent as MA
 import qualified Proto.MatchingAgent_Fields as MA
 
+{-
+  TODO:
+  - an unsafe core module
+  - wrap it around and keep a ma_server running at runtime, and serve as
+    IO action.
+  - assumptions:
+    + server doesn't crash (i.e. ProcessHandle is safe to reuse)
+    + sockets however could be timed out so it's lazily created and used.
+ -}
+
 -- keep receiving until get the desired length.
 recvAtLeast :: Socket -> Int -> IO BS.ByteString
 recvAtLeast s todoCount = do
@@ -47,11 +57,9 @@ recvProto sock = do
         fromLittleEndian
         $ r0 .|. (r1 `shiftL` 8) .|. (r2 `shiftL` 16) .|. (r3 `shiftL` 24)
   responseRaw <- recvAtLeast sock (fromIntegral responseSize)
-  let responseM = decodeMessage responseRaw
-  case responseM of
+  case decodeMessage responseRaw of
     Left err -> error $ "decode error: " <> err
-    Right msg ->
-      pure msg
+    Right msg -> pure msg
 
 main :: IO ()
 main = do
