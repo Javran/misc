@@ -28,6 +28,18 @@ recvAtLeast s todoCount = do
     then pure payload
     else (payload <>) <$> recvAtLeast s remaining
 
+sendProto :: Message msg => Socket -> msg -> IO ()
+sendProto sock msg = do
+  let encoded = encodeMessage msg
+      len :: Word32
+      len = toLittleEndian . fromIntegral $ BS.length encoded
+      encodedLen =
+        BS.pack
+        . fmap (fromIntegral @Word32 @Word8 . (.&. 0xFF) )
+        $ [len, len `shiftR` 8, len `shiftR` 16, len `shiftR` 24]
+  sendAll sock encodedLen
+  sendAll sock encoded
+
 main :: IO ()
 main = do
   [fp] <- getArgs
@@ -45,8 +57,7 @@ main = do
   addr:_ <- getAddrInfo (Just hints) (Just "127.0.0.1") (Just "17151")
   sock <- socket (addrFamily addr) (addrSocketType addr) (addrProtocol addr)
   connect sock $ addrAddress addr
-  sendAll sock encodedLen
-  sendAll sock encoded
+  sendProto sock req
   putStrLn $ "Sent raw: " <> show (BS.length raw)
   [r0, r1, r2, r3] <- fmap (fromIntegral @Word8 @Word32) . BS.unpack <$> recvAtLeast sock 4
   let responseSize =
