@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-package matching_agent;
-
-message MatchingResult {
-  int32 rows = 1;
-  int32 cols = 2;
-  repeated float payload = 3;
-}
