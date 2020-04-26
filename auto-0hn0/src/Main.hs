@@ -9,23 +9,25 @@ module Main
 
 import Control.Concurrent
 import Control.Monad
-import Data.List
 import Data.Either
+import Data.Function
+import Data.List
 import Data.Maybe
+import Data.UUID.V1
+import MatchingAgent.Server
 import System.Console.Terminfo
 import System.Directory
+import System.Environment
 import System.Exit
 import System.Process
 import System.Random.Shuffle
-import Data.UUID.V1
-import Data.Function
 
-import System.Console.Terminfo
-
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Map.Strict as M
+import qualified Data.Text as T
 import qualified Graphics.Image as HIP
 import qualified Graphics.Image.IO as HIP
-import qualified Data.ByteString as BS
 import qualified Graphics.Image.Processing.Binary as HIP
 
 import Solver
@@ -110,24 +112,35 @@ _analysisSamples = do
   forM_ [0..l-1] $ \i -> do
     putStrLn [ if HIP.eqTol thres (allSamples!!i) (allSamples!!j) then 'T' else ' ' | j <- [0..l-1]]
 
+findImageTag :: ServerHandle -> Image -> IO (T.Text, Float)
+findImageTag h img = do
+  let encoded :: BS.ByteString
+      encoded = BSL.toStrict $ HIP.encode HIP.PNG [] img
+  findTag h encoded
+
 main :: IO ()
 main = do
   term <- setupTermFromEnv
-  samples <- loadSamples
-  let revSamples :: RevSamples
-      revSamples = concatMap (\(tag, imgs) -> (,tag) <$> imgs) . M.toList $ samples
-  sps <- captureSamples
-  (matchResults :: [[Either Image String]]) <-
-    (mapM . mapM) (recognizeOrRecord revSamples) sps
-  let tr "grey" = "?"
-      tr "red" = "r"
-      tr xs = xs
-  case partitionEithers (concat matchResults) of
-    ([], _) -> do
-      let ls = (fmap . fmap) (\(Right r) -> tr r) matchResults
-          input = unwords <$> ls
-      appendFile "puzzles.txt" (unlines $ input <> ["===="])
-      solveAndShow term $ input
+  serverConfig <-
+    ServerConfig
+      <$> getEnv "MA_SERVER_BIN_PATH"
+      <*> (read <$> getEnv "MA_SERVER_PORT")
+      <*> getEnv "MA_SERVER_PATTERN_BASE"
+  withServer serverConfig $ \h -> do
+    sps <- captureSamples
+    matchResults :: [[(T.Text, Float)]] <- (mapM . mapM) (findImageTag h) sps
+    let tr :: T.Text -> String
+        tr "grey" = "?"
+        tr "red" = "r"
+        tr xs = T.unpack xs
+        isGoodMatch = (> 0.999). snd
+    case partition isGoodMatch (concat matchResults) of
+      (_, []) -> do
+        let ls = (fmap . fmap) (\(r, _) -> tr r) matchResults
+            input = unwords <$> ls
+        appendFile "puzzles.txt" (unlines $ input <> ["===="])
+        solveAndShow term input
+      {-
     (ls, _) -> do
       putStrLn $ "Failed to match " <> show (length ls) <> " items."
       when (length ls /= 9 * 9) $
@@ -137,4 +150,5 @@ main = do
             maybe loop pure v
           let fName = "samples/sample_" <> show sampleId <> ".png"
           HIP.writeImageExact HIP.PNG [] fName img
+   -}
   pure ()

@@ -19,6 +19,7 @@ dependencies:
 - process
 - random-shuffle
 - terminfo
+- text
 - uuid
 - vector
 
