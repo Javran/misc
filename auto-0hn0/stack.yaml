@@ -7,3 +7,5 @@ extra-deps:
 - Chart-1.9.1
 - Chart-diagrams-1.9.2
 - SVGFonts-1.7.0.1
+- git: https://github.com/Javran/matching-agent-client.git
+  commit: 88230ba097d5d930fa6149dd1ded237c8fa46e2f
