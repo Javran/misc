@@ -118,6 +118,28 @@ findImageTag h img = do
       encoded = BSL.toStrict $ HIP.encode HIP.PNG [] img
   findTag h encoded
 
+screenTap :: (Int, Int) -> IO ProcessHandle
+screenTap (screenR, screenC) = do
+    let cp =
+          proc "/usr/bin/adb" ["exec-out", "input", "tap", show screenC, show screenR]
+    (_, _, _, ph) <- createProcess cp
+    threadDelay $ 1000 * 300
+    pure ph
+
+screenTapCell :: (Int, Int) -> IO ProcessHandle
+screenTapCell = screenTap . (tapMap M.!)
+
+-- mapping grid row col to those of screen's
+tapMap :: M.Map (Int, Int) (Int, Int)
+tapMap = M.fromList flatCoords
+  where
+    flatCoords :: [((Int, Int), (Int, Int))]
+    flatCoords =
+      zip
+        [(r',c') | r' <- [0..8], c' <- [0..8]]
+        -- (39, 28) -> (19, 14)
+        ((concatMap . fmap) (\(r',c') -> (r' + 19, c' + 14)) coords)
+
 main :: IO ()
 main = do
   term <- setupTermFromEnv
@@ -136,19 +158,21 @@ main = do
         isGoodMatch = (> 0.999). snd
     case partition isGoodMatch (concat matchResults) of
       (_, []) -> do
+        -- When we have high confidence on all matches.
         let ls = (fmap . fmap) (\(r, _) -> tr r) matchResults
             input = unwords <$> ls
-        appendFile "puzzles.txt" (unlines $ input <> ["===="])
+        appendFile "puzzles.txt" (unlines $ "9 9" : input <> ["===="])
         solveAndShow term input
-      {-
-    (ls, _) -> do
-      putStrLn $ "Failed to match " <> show (length ls) <> " items."
-      when (length ls /= 9 * 9) $
-        forM_ ls $ \img -> do
-          sampleId <- fix $ \loop -> do
-            v <- nextUUID
-            maybe loop pure v
-          let fName = "samples/sample_" <> show sampleId <> ".png"
-          HIP.writeImageExact HIP.PNG [] fName img
-   -}
+      (_, unknowns@(_:_)) -> do
+        putStrLn $ "Failed to match " <> show (length unknowns) <> " items."
+        when (length unknowns /= 9 * 9) $
+          -- TODO: store bad matches
+          pure ()
+          {-
+          forM_ unknowns $ \img -> do
+            sampleId <- fix $ \loop -> do
+              v <- nextUUID
+              maybe loop pure v
+            let fName = "samples/unknown_" <> show sampleId <> ".png"
+            HIP.writeImageExact HIP.PNG [] fName img -}
   pure ()
