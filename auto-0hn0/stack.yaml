@@ -9,3 +9,7 @@ extra-deps:
 - SVGFonts-1.7.0.1
 - git: https://github.com/Javran/matching-agent-client.git
   commit: 88230ba097d5d930fa6149dd1ded237c8fa46e2f
+- git: https://github.com/Javran/puzzle-solving-collection.git
+  commit: eee304014e62dc49c9ded8e6c49163790a1f9a0b
+  subdirs:
+    - kuromasu-solver

@@ -30,7 +30,7 @@ import qualified Graphics.Image as HIP
 import qualified Graphics.Image.IO as HIP
 import qualified Graphics.Image.Processing.Binary as HIP
 
-import Solver
+import Game.Kuromasu.Solver
 
 type Pixel = HIP.Pixel HIP.RGBA HIP.Word8
 type Image = HIP.Image HIP.VS HIP.RGBA HIP.Word8
