@@ -140,6 +140,30 @@ tapMap = M.fromList flatCoords
         -- (39, 28) -> (19, 14)
         ((concatMap . fmap) (\(r',c') -> (r' + 19, c' + 14)) coords)
 
+genSolvingSeq :: Board -> Board -> [(Int, Int)]
+genSolvingSeq bdOrig@Board {bdDims = (rows, cols)} bdFin =
+    concatMap toMoves cs
+  where
+    toMoves :: (Int, Int) -> [(Int, Int)]
+    toMoves coord = case (bdGet bdOrig coord, bdGet bdFin coord) of
+      (Nothing, Just c) ->
+        if c == cBlue then [coord] else [coord, coord]
+      _ -> []
+    cs = [(r,c) | r <- [0 .. rows-1], c <- [0 .. cols -1]]
+
+solveAndAct :: Terminal -> [String] -> IO ()
+solveAndAct term exampleRaw = do
+  let example = loadExample exampleRaw
+      hints = snd example
+      bdEmpty = mkBoard (9,9) hints
+      Just bdBefore =
+        foldM (\curBd (coord, cell) -> updateCell coord cell curBd) bdEmpty (fst example)
+      bdAfter = solve bdBefore
+  pprBoard term hints bdBefore
+  pprBoard term hints bdAfter
+  let moves = genSolvingSeq bdBefore bdAfter
+  mapM screenTapCell moves >>= mapM_ waitForProcess
+
 main :: IO ()
 main = do
   term <- setupTermFromEnv
@@ -162,7 +186,7 @@ main = do
         let ls = (fmap . fmap) (\(r, _) -> tr r) matchResults
             input = unwords <$> ls
         appendFile "puzzles.txt" (unlines $ "9 9" : input <> ["===="])
-        solveAndShow term input
+        solveAndAct term input
       (_, unknowns@(_:_)) -> do
         putStrLn $ "Failed to match " <> show (length unknowns) <> " items."
         when (length unknowns /= 9 * 9) $
