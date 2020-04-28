@@ -168,13 +168,15 @@ solveAndAct term exampleRaw = do
 main :: IO ()
 main = do
   term <- setupTermFromEnv
+  Right (btn9 :: Image) <- HIP.readImageExact HIP.PNG "btn9.png"
   serverConfig <-
     ServerConfig
       <$> getEnv "MA_SERVER_BIN_PATH"
       <*> (read <$> getEnv "MA_SERVER_PORT")
       <*> getEnv "MA_SERVER_PATTERN_BASE"
-  withServer serverConfig $ \h -> do
-    sps <- captureSamples
+  withServer serverConfig $ \h -> forever $ do
+    putStrLn "New round started."
+    (imgFull, sps) <- captureSamples
     matchResults :: [[(T.Text, Float)]] <- (mapM . mapM) (findImageTag h) sps
     let tr :: T.Text -> String
         tr "grey" = "?"
@@ -193,14 +195,15 @@ main = do
         when (length unknowns /= 9 * 9) $
           -- TODO: store bad matches
           pure ()
-          {-
-          forM_ unknowns $ \img -> do
-            sampleId <- fix $ \loop -> do
-              v <- nextUUID
-              maybe loop pure v
-            let fName = "samples/unknown_" <> show sampleId <> ".png"
-            HIP.writeImageExact HIP.PNG [] fName img -}
-  pure ()
+
+        let btn9Sample = HIP.crop (974, 710) (61,41) imgFull :: Image
+        when (HIP.eqTol 2 btn9 btn9Sample) $ do
+          putStrLn "Tapping '9'."
+          _ <- screenTap (1003, 730) >>= waitForProcess
+          pure ()
+    putStrLn "Current round done."
+    threadDelay $ 1000 * 3000
+
 _captureSample :: IO ()
 _captureSample = do
   img <- screenCapture
