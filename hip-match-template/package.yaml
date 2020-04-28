@@ -19,5 +19,6 @@ executables:
     ghc-options:
       - -Wall
       - -threaded
+      - -O2
       - -rtsopts
       - -with-rtsopts=-N
