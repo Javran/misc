@@ -201,3 +201,8 @@ main = do
             let fName = "samples/unknown_" <> show sampleId <> ".png"
             HIP.writeImageExact HIP.PNG [] fName img -}
   pure ()
+_captureSample :: IO ()
+_captureSample = do
+  img <- screenCapture
+  let part = HIP.crop (974, 710) (61,41) img
+  HIP.writeImageExact HIP.PNG [] "btn9.png" part
