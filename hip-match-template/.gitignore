@@ -1,0 +1,6 @@
+.stack-work/
+hip-match-template.cabal
+stack.yaml.lock
+*~
+
+z
