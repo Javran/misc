@@ -89,10 +89,10 @@ recognizeOrRecord rs img = do
     (_, tag):_ -> pure (Right tag)
     [] -> pure (Left img)
 
-captureSamples :: IO [[Image]]
+captureSamples :: IO (Image, [[Image]])
 captureSamples = do
   imgFull <- screenCapture
-  pure $ (fmap . fmap) (\(r,c) -> HIP.crop (r+30, c+37) (39,28) imgFull) coords
+  pure . (imgFull,) $ (fmap . fmap) (\(r,c) -> HIP.crop (r+30, c+37) (39,28) imgFull) coords
 
 {-
   Recognize cells and record sample images for those that we cannot recognize.
@@ -162,7 +162,8 @@ solveAndAct term exampleRaw = do
   pprBoard term hints bdBefore
   pprBoard term hints bdAfter
   let moves = genSolvingSeq bdBefore bdAfter
-  mapM screenTapCell moves >>= mapM_ waitForProcess
+  randomMoves <- shuffleM moves
+  mapM screenTapCell randomMoves >>= mapM_ waitForProcess
 
 main :: IO ()
 main = do
