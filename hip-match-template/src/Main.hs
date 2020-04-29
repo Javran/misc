@@ -8,8 +8,7 @@ module Main
   ) where
 
 import Data.Word
-import Data.Foldable
-import Data.Ord
+import Data.Time.Clock
 
 import qualified Graphics.Image.Interface as HIP
 import qualified Graphics.Image as HIP
@@ -70,10 +69,12 @@ main :: IO ()
 main = do
   Right (sample :: Image) <- HIP.readImageExact HIP.PNG "sample.png"
   Right (templ :: Image) <- HIP.readImageExact HIP.PNG "templ.png"
+  tBefore <- getCurrentTime
   let sampleG = toGrayscale sample
       templG = toGrayscale templ
-      computed = computeCcorr sampleG templG
+      computed = Repa.computeCcorr sampleG templG
       resultDims = HIP.dims computed
+      computed' = HIP.toManifest computed
       {-
       maxVal = maximumBy (comparing snd) $ do
         let (rows, cols) = resultDims
@@ -81,6 +82,8 @@ main = do
         c <- [0 .. cols - 1]
         let v =  HIP.getPxC (HIP.index computed (r, c)) HIP.LumaY
         pure ((r,c), v) -}
-  HIP.displayImage computed
+  tAfter <- HIP.deepSeqImage computed' getCurrentTime
+  putStrLn $ "Total time in seconds: " <> show (realToFrac @_ @Double (diffUTCTime tAfter tBefore))
+  HIP.displayImage computed'
   _ <- getLine
   pure ()

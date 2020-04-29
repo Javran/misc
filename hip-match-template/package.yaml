@@ -12,6 +12,7 @@ dependencies:
 - base
 - hip
 - repa
+- time
 
 executables:
   demo:
