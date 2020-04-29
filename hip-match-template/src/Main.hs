@@ -15,6 +15,8 @@ import qualified Graphics.Image.Interface as HIP
 import qualified Graphics.Image as HIP
 import qualified Graphics.Image.IO as HIP
 
+import qualified Repa
+
 type Pixel = HIP.Pixel HIP.RGBA HIP.Word8
 type Image = HIP.Image HIP.VS HIP.RGBA HIP.Word8
 type ImageGS = HIP.Image HIP.VS HIP.Y Double
@@ -71,17 +73,15 @@ main = do
   Right (templ :: Image) <- HIP.readImageExact HIP.PNG "templ.png"
   let sampleG = toGrayscale sample
       templG = toGrayscale templ
-      computed = computeCcorr sampleG templG
-      computed' :: ImageGS
-      computed' = HIP.makeImage resultDims (\coord -> HIP.PixelY $ HIP.getPxC (HIP.index computed coord) HIP.X)
+      computed = Repa.computeCcorr sampleG templG
       resultDims = HIP.dims computed
+      {-
       maxVal = maximumBy (comparing snd) $ do
         let (rows, cols) = resultDims
         r <- [0 .. rows - 1]
         c <- [0 .. cols - 1]
-        let v =  HIP.getPxC (HIP.index computed (r, c)) HIP.X
-        pure ((r,c), v)
-  HIP.displayImage computed'
-  print maxVal
+        let v =  HIP.getPxC (HIP.index computed (r, c)) HIP.LumaY
+        pure ((r,c), v) -}
+  HIP.displayImage computed
   _ <- getLine
   pure ()

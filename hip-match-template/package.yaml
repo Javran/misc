@@ -11,6 +11,7 @@ description: description
 dependencies:
 - base
 - hip
+- repa
 
 executables:
   demo:
