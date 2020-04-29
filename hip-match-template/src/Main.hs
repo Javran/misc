@@ -41,11 +41,11 @@ toGrayscale img = HIP.makeImage imgDims (cv . HIP.index img)
         g = HIP.getPxC p HIP.GreenRGBA
         b = HIP.getPxC p HIP.BlueRGBA
 
-computeCcorr :: ImageGS -> ImageGS -> HIP.Image HIP.VS HIP.X Double
+computeCcorr :: ImageGS -> ImageGS -> HIP.Image HIP.RPU HIP.Y Double
 computeCcorr img tmpl = HIP.makeImage resultDims computePx
   where
-    computePx :: (Int, Int) -> HIP.Pixel HIP.X Double
-    computePx coord = HIP.PixelX $ computePxNumer coord / sqrt (sumTmpl * sumImg)
+    computePx :: (Int, Int) -> HIP.Pixel HIP.Y Double
+    computePx coord = HIP.PixelY $ computePxNumer coord / sqrt (sumTmpl * sumImg)
       where
         sumTmpl = computeSqSum tmpl (0,0)
         sumImg = computeSqSum img coord
@@ -66,14 +66,13 @@ computeCcorr img tmpl = HIP.makeImage resultDims computePx
       let v = HIP.getPxC (HIP.index imgX (offRow + r, offCol + c)) HIP.LumaY
       pure $ v * v
 
-
 main :: IO ()
 main = do
   Right (sample :: Image) <- HIP.readImageExact HIP.PNG "sample.png"
   Right (templ :: Image) <- HIP.readImageExact HIP.PNG "templ.png"
   let sampleG = toGrayscale sample
       templG = toGrayscale templ
-      computed = Repa.computeCcorr sampleG templG
+      computed = computeCcorr sampleG templG
       resultDims = HIP.dims computed
       {-
       maxVal = maximumBy (comparing snd) $ do
