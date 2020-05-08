@@ -1,6 +1,7 @@
 {-
   An attempt to implement a basic case of Cooley-Tukey FFT algorithm.
  -}
+{-# LANGUAGE ViewPatterns #-}
 module Main
   ( main
   ) where
@@ -15,7 +16,7 @@ import qualified Data.Vector.Mutable as VM
 type Cpx = Complex Double
 
 expAuxCommon :: Int -> Int -> Int -> Cpx
-expAuxCommon c k n =  cos theta :+ sin theta
+expAuxCommon c k n = cos theta :+ sin theta
   where
     theta = pi * fromIntegral (c * k) / fromIntegral n
 
@@ -48,16 +49,14 @@ gDitFft expF = fix $
     in if l <= 1
       then vs
       else V.create $ do
-        let (es, os) = splitByParity vs
-            eResults = impl es
-            oResults = impl os
-            half = l `quot` 2
+        let (impl -> es, impl -> os) = splitByParity vs
+            hf = l `quot` 2
         vec <- VM.unsafeNew l
-        forM_ [0 .. half - 1] $ \k -> do
-          let a = eResults V.! k
-              b = expF k l * oResults V.! k
-          VM.write vec k (a + b)
-          VM.write vec (half+k) (a - b)
+        forM_ [0 .. hf - 1] $ \k -> do
+          let a = es V.! k
+              b = expF k l * os V.! k
+          VM.unsafeWrite vec k (a + b)
+          VM.unsafeWrite vec (hf + k) (a - b)
         pure vec
 
 ditFft :: V.Vector Cpx -> V.Vector Cpx
