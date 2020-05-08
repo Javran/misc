@@ -49,7 +49,33 @@ ditFft vs
       VM.write vec (half+k) (a - b)
     V.unsafeFreeze vec
 
+iditFft' :: V.Vector Cpx -> V.Vector Cpx
+iditFft' vs
+  | V.length vs <= 1 = vs
+  | otherwise = runST $ do
+    let (es, os) = splitByParity vs
+        eResults = iditFft' es
+        oResults = iditFft' os
+        l = V.length vs
+        half = l `quot` 2
+    vec <- VM.unsafeNew l
+    forM_ [0 .. half - 1] $ \k -> do
+      let a = eResults V.! k
+          b = expAux (-k) l * oResults V.! k
+      VM.write vec k (a + b)
+      VM.write vec (half+k) (a - b)
+    V.unsafeFreeze vec
+
+iditFft :: V.Vector Cpx -> V.Vector Cpx
+iditFft vs = V.map (/ fromIntegral l) (iditFft' vs)
+  where
+    l = V.length vs
+
 main :: IO ()
 main = do
   let cs = zipWith (:+) [0..15] [2,4..]
-  print (ditFft (V.fromList cs))
+      vs = V.fromList cs
+      vs1 = ditFft vs
+      vs2 = iditFft vs1
+  print vs1
+  print vs2
