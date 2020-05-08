@@ -14,7 +14,7 @@ steps:
       space_surround: false
 
   - language_pragmas:
-      style: compact
+      style: vertical_compact
       align: true
       remove_redundant: true
   - trailing_whitespace: {}
