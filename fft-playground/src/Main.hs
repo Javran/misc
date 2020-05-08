@@ -6,19 +6,26 @@ module Main
   ) where
 
 import Control.Monad
-import Control.Monad.ST
 import Data.Complex
+import Data.Function
 
 import qualified Data.Vector as V
 import qualified Data.Vector.Mutable as VM
 
 type Cpx = Complex Double
 
--- Computes e^((-2 pi i) * (N / k))
-expAux :: Int -> Int -> Cpx
-expAux k n = cos theta :+ sin theta
+expAuxCommon :: Int -> Int -> Int -> Cpx
+expAuxCommon c k n =  cos theta :+ sin theta
   where
-    theta = -2 * pi * fromIntegral k / fromIntegral n
+    theta = pi * fromIntegral (c * k) / fromIntegral n
+
+-- Computes e^((-2 pi i) * (N / k))
+expFft :: Int -> Int -> Cpx
+expFft = expAuxCommon (-2)
+
+-- Computes e^((2 pi i) * (N / k))
+expIfft :: Int -> Int -> Cpx
+expIfft = expAuxCommon 2
 
 splitByParity :: V.Vector Cpx -> (V.Vector Cpx, V.Vector Cpx)
 splitByParity vs = (evens, odds)
@@ -31,40 +38,33 @@ splitByParity vs = (evens, odds)
     odds =
       V.fromListN oddCount $ (vs V.!) <$> [1,3..]
 
--- Note: looks like vector length must be a power of two.
+-- TODO: For now we assume that vector length is a power of two,
+-- this can be easily extended to any length, by pretending out-of-range
+-- values are 0.
+gDitFft :: (Int -> Int -> Cpx) -> V.Vector Cpx -> V.Vector Cpx
+gDitFft expF = fix $
+  \impl vs ->
+    let l = V.length vs
+    in if l <= 1
+      then vs
+      else V.create $ do
+        let (es, os) = splitByParity vs
+            eResults = impl es
+            oResults = impl os
+            half = l `quot` 2
+        vec <- VM.unsafeNew l
+        forM_ [0 .. half - 1] $ \k -> do
+          let a = eResults V.! k
+              b = expF k l * oResults V.! k
+          VM.write vec k (a + b)
+          VM.write vec (half+k) (a - b)
+        pure vec
+
 ditFft :: V.Vector Cpx -> V.Vector Cpx
-ditFft vs
-  | V.length vs <= 1 = vs
-  | otherwise = runST $ do
-    let (es, os) = splitByParity vs
-        eResults = ditFft es
-        oResults = ditFft os
-        l = V.length vs
-        half = l `quot` 2
-    vec <- VM.unsafeNew l
-    forM_ [0 .. half - 1] $ \k -> do
-      let a = eResults V.! k
-          b = expAux k l * oResults V.! k
-      VM.write vec k (a + b)
-      VM.write vec (half+k) (a - b)
-    V.unsafeFreeze vec
+ditFft = gDitFft expFft
 
 iditFft' :: V.Vector Cpx -> V.Vector Cpx
-iditFft' vs
-  | V.length vs <= 1 = vs
-  | otherwise = runST $ do
-    let (es, os) = splitByParity vs
-        eResults = iditFft' es
-        oResults = iditFft' os
-        l = V.length vs
-        half = l `quot` 2
-    vec <- VM.unsafeNew l
-    forM_ [0 .. half - 1] $ \k -> do
-      let a = eResults V.! k
-          b = expAux (-k) l * oResults V.! k
-      VM.write vec k (a + b)
-      VM.write vec (half+k) (a - b)
-    V.unsafeFreeze vec
+iditFft' = gDitFft expIfft
 
 iditFft :: V.Vector Cpx -> V.Vector Cpx
 iditFft vs = V.map (/ fromIntegral l) (iditFft' vs)
