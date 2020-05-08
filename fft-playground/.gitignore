@@ -1,0 +1,6 @@
+.stack-work/
+fft-playground.cabal
+stack.yaml.lock
+*~
+
+z
