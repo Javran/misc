@@ -7,6 +7,7 @@ module Main
   ) where
 
 import Control.Monad
+import Data.Bits
 import Data.Complex
 import Data.Function
 
@@ -68,6 +69,33 @@ iditFft' = gDitFft expIfft
 
 iditFft :: V.Vector Cpx -> V.Vector Cpx
 iditFft vs = V.map (/ fromIntegral l) (iditFft' vs)
+  where
+    l = V.length vs
+
+isPowerOf2 :: Int -> Bool
+isPowerOf2 v = countLeadingZeros v + countTrailingZeros v + 1 == finiteBitSize v
+{-
+  Find the closest power of two that is greater or equal to input.
+  only works for v >= 1
+ -}
+closestPowOf2Gt :: Int -> Int
+closestPowOf2Gt v =
+    if isPowerOf2 v
+      then v
+      else unsafeShiftL 1 (finiteBitSize v - countLeadingZeros v)
+
+{-
+  right padding zeros in the end of a matrix to make the length of the vector
+  a power of 2.
+
+  special case: returns empty vector when the input is empty.
+ -}
+rightPadZeros :: V.Vector Cpx -> V.Vector Cpx
+rightPadZeros vs
+    | l <= 1 = vs
+    | isPowerOf2 l = vs
+    | otherwise =
+        vs <> V.fromListN (closestPowOf2Gt l - l) (repeat 0)
   where
     l = V.length vs
 
