@@ -15,16 +15,17 @@ import qualified Data.Vector.Mutable as VM
 
 type Cpx = Complex Double
 
+-- e^((c pi i) * (k / N))
 expAuxCommon :: Int -> Int -> Int -> Cpx
 expAuxCommon c k n = cos theta :+ sin theta
   where
     theta = pi * fromIntegral (c * k) / fromIntegral n
 
--- Computes e^((-2 pi i) * (N / k))
+-- Computes e^((-2 pi i) * (k / N))
 expFft :: Int -> Int -> Cpx
 expFft = expAuxCommon (-2)
 
--- Computes e^((2 pi i) * (N / k))
+-- Computes e^((2 pi i) * (k / N))
 expIfft :: Int -> Int -> Cpx
 expIfft = expAuxCommon 2
 
