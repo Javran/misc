@@ -74,6 +74,7 @@ iditFft vs = V.map (/ fromIntegral l) (iditFft' vs)
 
 isPowerOf2 :: Int -> Bool
 isPowerOf2 v = countLeadingZeros v + countTrailingZeros v + 1 == finiteBitSize v
+
 {-
   Find the closest power of two that is greater or equal to input.
   only works for v >= 1
@@ -101,8 +102,8 @@ rightPadZeros vs
 
 main :: IO ()
 main = do
-  let cs = zipWith (:+) [0..15] [2,4..]
-      vs = V.fromList cs
+  let cs = (\x -> (x*2 :+ (x*2 + 1))) <$> [0..19]
+      vs = rightPadZeros $ V.fromList cs
       vs1 = ditFft vs
       vs2 = iditFft vs1
   print vs1
