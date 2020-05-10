@@ -62,15 +62,14 @@ gDitFft expF = fix $
         pure vec
 
 ditFft :: V.Vector Cpx -> V.Vector Cpx
-ditFft = gDitFft expFft
-
-iditFft' :: V.Vector Cpx -> V.Vector Cpx
-iditFft' = gDitFft expIfft
+ditFft = gDitFft expFft . rightPadZeros
 
 iditFft :: V.Vector Cpx -> V.Vector Cpx
-iditFft vs = V.map (/ fromIntegral l) (iditFft' vs)
+iditFft (rightPadZeros -> vs) = V.map (/ fromIntegral l) (iditFftAux vs)
   where
     l = V.length vs
+    iditFftAux :: V.Vector Cpx -> V.Vector Cpx
+    iditFftAux = gDitFft expIfft
 
 {-
   right padding zeros in the end of a matrix to make the length of the vector
@@ -98,7 +97,7 @@ rightPadZeros vs
 main :: IO ()
 main = do
   let cs = (\x -> x*2 :+ (x*2 + 1)) <$> [0..19]
-      vs = rightPadZeros $ V.fromList cs
+      vs = V.fromList cs
       vs1 = ditFft vs
       vs2 = iditFft vs1
   print vs1
