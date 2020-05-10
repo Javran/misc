@@ -10,7 +10,9 @@ import Control.Monad
 import Data.Bits
 import Data.Complex
 import Data.Function
-import System.Random.TF
+import Statistics.Sample
+import System.Random.TF ()
+import Text.Printf
 
 import qualified Data.Vector as V
 import qualified Data.Vector.Mutable as VM
@@ -95,11 +97,17 @@ rightPadZeros vs
     isPowerOf2 =
       countLeadingZeros l + countTrailingZeros l + 1 == finiteBitSize l
 
+evaluateOnVector :: V.Vector Cpx -> IO ()
+evaluateOnVector vs = do
+  let result = iditFft (ditFft vs)
+      diffs :: V.Vector Double
+      diffs = V.zipWith (\x y -> magnitude (x - y)) vs result
+  print vs
+  print result
+  printf "StdDev: %.9f\n" (stdDev diffs)
+
 main :: IO ()
 main = do
   let cs = (\x -> x*2 :+ (x*2 + 1)) <$> [0..19]
       vs = V.fromList cs
-      vs1 = ditFft vs
-      vs2 = iditFft vs1
-  print vs1
-  print vs2
+  evaluateOnVector vs
