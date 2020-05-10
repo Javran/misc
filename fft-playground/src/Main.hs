@@ -10,6 +10,7 @@ import Control.Monad
 import Data.Bits
 import Data.Complex
 import Data.Function
+import System.Random.TF
 
 import qualified Data.Vector as V
 import qualified Data.Vector.Mutable as VM
