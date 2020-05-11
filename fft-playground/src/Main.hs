@@ -10,6 +10,7 @@ import Control.Monad
 import Control.Monad.State.Strict
 import Data.Bits
 import Data.Complex
+import Data.Monoid
 import Statistics.Sample
 import System.Random
 import Text.Printf
@@ -125,6 +126,18 @@ evalRandomVector = do
   liftIO $ do
     printf "Vector length: %d\n" (V.length vs)
     evaluateOnVector vs
+
+directConvolve :: V.Vector Cpx -> V.Vector Cpx -> V.Vector Cpx
+directConvolve xs ys = V.fromListN lZ (f <$> [0 .. lZ-1])
+  where
+    lX = V.length xs
+    lY = V.length ys
+    lZ = lX + lY - 1
+    f i = getSum . foldMap Sum $ do
+      j <- [0..i]
+      case (xs V.!? i, ys V.!? (j-i)) of
+        (Just x, Just y) -> [x * y]
+        _ -> []
 
 main :: IO ()
 main = do
