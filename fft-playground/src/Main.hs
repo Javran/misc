@@ -127,6 +127,7 @@ evalRandomVector = do
     printf "Vector length: %d\n" (V.length vs)
     evaluateOnVector vs
 
+{- TODO: I somehow got this wrong -}
 directConvolve :: V.Vector Cpx -> V.Vector Cpx -> V.Vector Cpx
 directConvolve xs ys = V.fromListN lZ (f <$> [0 .. lZ-1])
   where
@@ -139,6 +140,18 @@ directConvolve xs ys = V.fromListN lZ (f <$> [0 .. lZ-1])
         (Just x, Just y) -> [x * y]
         _ -> []
 
+fftConvolve :: V.Vector Cpx -> V.Vector Cpx -> V.Vector Cpx
+fftConvolve xsPre ysPre = V.fromListN lZ (V.toList (iditFft rs))
+  where
+    lX = V.length xsPre
+    lY = V.length ysPre
+    lZ = lX + lY - 1
+    xs = V.fromListN lZ (V.toList xsPre <> repeat 0)
+    ys = V.fromListN lZ (V.toList ysPre <> repeat 0)
+    xs' = ditFft xs
+    ys' = ditFft ys
+    rs = V.zipWith (*) xs' ys'
+
 main :: IO ()
 main = do
   let cs = (\x -> x*2 :+ (x*2 + 1)) <$> [0..19]
@@ -146,3 +159,7 @@ main = do
   evaluateOnVector vs
   g <- newStdGen
   evalStateT evalRandomVector g
+  let xs = V.fromList [2,3,4,5]
+      ys = V.fromList [7,9]
+  print (directConvolve xs ys)
+  print (fftConvolve xs ys)
