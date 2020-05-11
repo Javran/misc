@@ -127,7 +127,6 @@ evalRandomVector = do
     printf "Vector length: %d\n" (V.length vs)
     evaluateOnVector vs
 
-{- TODO: I somehow got this wrong -}
 directConvolve :: V.Vector Cpx -> V.Vector Cpx -> V.Vector Cpx
 directConvolve xs ys = V.fromListN lZ (f <$> [0 .. lZ-1])
   where
@@ -136,7 +135,7 @@ directConvolve xs ys = V.fromListN lZ (f <$> [0 .. lZ-1])
     lZ = lX + lY - 1
     f i = getSum . foldMap Sum $ do
       j <- [0..i]
-      case (xs V.!? i, ys V.!? (j-i)) of
+      case (xs V.!? j, ys V.!? (i-j)) of
         (Just x, Just y) -> [x * y]
         _ -> []
 
@@ -146,6 +145,7 @@ fftConvolve xsPre ysPre = V.fromListN lZ (V.toList (iditFft rs))
     lX = V.length xsPre
     lY = V.length ysPre
     lZ = lX + lY - 1
+    -- TOOD: admittedly this is a bit wasteful...
     xs = V.fromListN lZ (V.toList xsPre <> repeat 0)
     ys = V.fromListN lZ (V.toList ysPre <> repeat 0)
     xs' = ditFft xs
