@@ -12,6 +12,8 @@ dependencies:
 - base
 - tf-random
 - statistics
+- mtl
+- random
 - vector
 
 executables:

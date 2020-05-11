@@ -7,11 +7,11 @@ module Main
   ) where
 
 import Control.Monad
+import Control.Monad.State.Strict
 import Data.Bits
 import Data.Complex
-import Data.Function
 import Statistics.Sample
-import System.Random.TF ()
+import System.Random
 import Text.Printf
 
 import qualified Data.Vector as V
@@ -102,12 +102,34 @@ evaluateOnVector vs = do
   let result = iditFft (ditFft vs)
       diffs :: V.Vector Double
       diffs = V.zipWith (\x y -> magnitude (x - y)) vs result
-  print vs
-  print result
   printf "StdDev: %.9f\n" (stdDev diffs)
+
+type M = StateT StdGen IO
+
+genRandomR :: Random a => (a, a) -> M a
+genRandomR = state . randomR
+
+genCpxVector :: M (V.Vector Cpx)
+genCpxVector =
+  genRandomR (1024, 8192) >>= genCpxVectorOfSize
+
+genCpxVectorOfSize :: Int -> M (V.Vector Cpx)
+genCpxVectorOfSize l = do
+  let rDouble = genRandomR (-100,100)
+  xs <- replicateM l $ (:+) <$> rDouble <*> rDouble
+  pure $ V.fromListN l xs
+
+evalRandomVector :: M ()
+evalRandomVector = do
+  vs <- genCpxVector
+  liftIO $ do
+    printf "Vector length: %d\n" (V.length vs)
+    evaluateOnVector vs
 
 main :: IO ()
 main = do
   let cs = (\x -> x*2 :+ (x*2 + 1)) <$> [0..19]
       vs = V.fromList cs
   evaluateOnVector vs
+  g <- newStdGen
+  evalStateT evalRandomVector g
