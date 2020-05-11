@@ -159,7 +159,14 @@ main = do
   evaluateOnVector vs
   g <- newStdGen
   evalStateT evalRandomVector g
-  let xs = V.fromList [2,3,4,5]
-      ys = V.fromList [7,9]
-  print (directConvolve xs ys)
-  print (fftConvolve xs ys)
+  let xs = V.fromListN 20 $ let fibs = 1 : 1 : zipWith (+) fibs (tail fibs) in fibs
+      ys = V.fromList $ (:+ 0) <$> [1..6]
+      roundToInt :: Cpx -> Int
+      roundToInt = round . magnitude
+      tr = fmap roundToInt
+  putStrLn "xs: " >> print (tr xs)
+  putStrLn "ys: " >> print (tr ys)
+  putStrLn "Direct: "
+  print (tr $ directConvolve xs ys)
+  putStrLn "FFT: "
+  print (tr $ fftConvolve xs ys)
