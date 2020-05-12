@@ -10,10 +10,12 @@ description: description
 
 dependencies:
 - base
+- deepseq
 - tf-random
 - statistics
 - mtl
 - random
+- time
 - vector
 
 executables:

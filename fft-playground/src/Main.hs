@@ -6,11 +6,13 @@ module Main
   ( main
   ) where
 
+import Control.DeepSeq
 import Control.Monad
 import Control.Monad.State.Strict
 import Data.Bits
 import Data.Complex
 import Data.Monoid
+import Data.Time.Clock
 import Statistics.Sample
 import System.Random
 import Text.Printf
@@ -165,7 +167,16 @@ evalRandomConvolve = do
       diffs = V.zipWith (\x y -> magnitude (x - y)) zsDirect zsFft
   liftIO $ do
     putStrLn $ "Vector lengths: " <> show (lX, lY, lZ)
+    _ <- forceAndMeasure zsDirect
+    _ <- forceAndMeasure zsFft
     printf "StdDev: %.9f\n" (stdDev diffs)
+
+forceAndMeasure :: NFData a => a -> IO a
+forceAndMeasure r = do
+  tBefore <- getCurrentTime
+  tAfter <- r `deepseq` getCurrentTime
+  printf "Time: %.6f\n" ((realToFrac $ diffUTCTime tAfter tBefore) :: Double)
+  pure r
 
 main :: IO ()
 main = do
