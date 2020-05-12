@@ -11,7 +11,6 @@ import Control.Monad
 import Control.Monad.State.Strict
 import Data.Bits
 import Data.Complex
-import Data.Monoid
 import Data.Time.Clock
 import Statistics.Sample
 import System.Random
@@ -130,16 +129,19 @@ evalRandomVector = do
     evaluateOnVector vs
 
 directConvolve :: V.Vector Cpx -> V.Vector Cpx -> V.Vector Cpx
-directConvolve xs ys = V.fromListN lZ (f <$> [0 .. lZ-1])
-  where
-    lX = V.length xs
-    lY = V.length ys
-    lZ = lX + lY - 1
-    f i = getSum . foldMap Sum $ do
-      j <- [0..i]
-      case (xs V.!? j, ys V.!? (i-j)) of
-        (Just x, Just y) -> [x * y]
-        _ -> []
+directConvolve xs ys = V.create $ do
+  let lX = V.length xs
+      lY = V.length ys
+      lZ = lX + lY - 1
+  vec <- VM.replicate lZ 0
+  forM_ [0 .. lX - 1] $ \i -> do
+    let x = V.unsafeIndex xs i
+    forM_ [0 .. lY - 1] $ \j -> do
+      let y = V.unsafeIndex ys j
+          k = i + j
+      v <- VM.unsafeRead vec k
+      VM.unsafeWrite vec k $! v + x * y
+  pure vec
 
 fftConvolve :: V.Vector Cpx -> V.Vector Cpx -> V.Vector Cpx
 fftConvolve xsPre ysPre = V.fromListN lZ (V.toList (iditFft rs))
@@ -185,14 +187,3 @@ main = do
   evaluateOnVector vs
   g <- newStdGen
   evalStateT (evalRandomVector >> evalRandomConvolve) g
-  let xs = V.fromListN 20 $ let fibs = 1 : 1 : zipWith (+) fibs (tail fibs) in fibs
-      ys = V.fromList $ (:+ 0) <$> [1..6]
-      roundToInt :: Cpx -> Int
-      roundToInt = round . magnitude
-      tr = fmap roundToInt
-  putStrLn "xs: " >> print (tr xs)
-  putStrLn "ys: " >> print (tr ys)
-  putStrLn "Direct: "
-  print (tr $ directConvolve xs ys)
-  putStrLn "FFT: "
-  print (tr $ fftConvolve xs ys)
