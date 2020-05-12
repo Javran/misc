@@ -166,16 +166,16 @@ evalRandomConvolve = do
       diffs :: V.Vector Double
       diffs = V.zipWith (\x y -> magnitude (x - y)) zsDirect zsFft
   liftIO $ do
-    putStrLn $ "Vector lengths: " <> show (lX, lY, lZ)
-    _ <- forceAndMeasure zsDirect
-    _ <- forceAndMeasure zsFft
+    putStrLn $ "Vector lengths (xs,ys,xs * ys): " <> show (lX, lY, lZ)
+    _ <- forceAndMeasure "Direct" zsDirect
+    _ <- forceAndMeasure "FFT" zsFft
     printf "StdDev: %.9f\n" (stdDev diffs)
 
-forceAndMeasure :: NFData a => a -> IO a
-forceAndMeasure r = do
+forceAndMeasure :: NFData a => String -> a -> IO a
+forceAndMeasure tag r = do
   tBefore <- getCurrentTime
   tAfter <- r `deepseq` getCurrentTime
-  printf "Time: %.6f\n" ((realToFrac $ diffUTCTime tAfter tBefore) :: Double)
+  printf "Time (%s): %.6f\n" tag ((realToFrac $ diffUTCTime tAfter tBefore) :: Double)
   pure r
 
 main :: IO ()
