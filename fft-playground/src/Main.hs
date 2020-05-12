@@ -152,13 +152,28 @@ fftConvolve xsPre ysPre = V.fromListN lZ (V.toList (iditFft rs))
     ys' = ditFft ys
     rs = V.zipWith (*) xs' ys'
 
+evalRandomConvolve :: M ()
+evalRandomConvolve = do
+  xs <- genCpxVector
+  ys <- genCpxVector
+  let lX = V.length xs
+      lY = V.length ys
+      lZ = lX + lY - 1
+      zsDirect = directConvolve xs ys
+      zsFft = fftConvolve xs ys
+      diffs :: V.Vector Double
+      diffs = V.zipWith (\x y -> magnitude (x - y)) zsDirect zsFft
+  liftIO $ do
+    putStrLn $ "Vector lengths: " <> show (lX, lY, lZ)
+    printf "StdDev: %.9f\n" (stdDev diffs)
+
 main :: IO ()
 main = do
   let cs = (\x -> x*2 :+ (x*2 + 1)) <$> [0..19]
       vs = V.fromList cs
   evaluateOnVector vs
   g <- newStdGen
-  evalStateT evalRandomVector g
+  evalStateT (evalRandomVector >> evalRandomConvolve) g
   let xs = V.fromListN 20 $ let fibs = 1 : 1 : zipWith (+) fibs (tail fibs) in fibs
       ys = V.fromList $ (:+ 0) <$> [1..6]
       roundToInt :: Cpx -> Int
