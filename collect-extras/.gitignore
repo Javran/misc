@@ -1,0 +1,6 @@
+.stack-work/
+collect-extras.cabal
+stack.yaml.lock
+*~
+
+z
