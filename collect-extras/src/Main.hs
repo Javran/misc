@@ -12,10 +12,12 @@ module Main
 import Control.Monad
 import Control.Monad.Writer
 import Data.Aeson
+import Data.Aeson.Types
 import Data.Functor.Compose
 
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Map.Strict as M
+import qualified Data.Set as S
 import qualified Data.Text as T
 
 data Foo
@@ -26,20 +28,30 @@ data Foo
   , extra :: M.Map T.Text T.Text
   }
 
+keepName :: (Object -> T.Text -> Parser a)
+  -> Object -> T.Text -> Compose (Writer (Endo [T.Text])) Parser a
+keepName f obj fieldName = Compose $ do
+    tell (Endo (fieldName:))
+    pure (f obj fieldName)
+
 instance FromJSON Foo where
   parseJSON = withObject "Foo" $ \obj -> do
-    aaa <- obj .: "aaa"
-    bbb <- obj .: "bbb"
-    ccc <- obj .:? "ccc"
-    let existingFields = T.words "aaa bbb ccc"
+    let Compose (runWriter ->
+                  ( parser
+                  , S.fromList . ($ []) . appEndo -> existingFields
+                  )) = do
+          aaa <- keepName (.:) obj "aaa"
+          bbb <- keepName (.:) obj "bbb"
+          ccc <- keepName (.:?) obj "ccc"
+          pure (\extra -> Foo {aaa,bbb,ccc,extra})
         obj' =
-          -- for sake of simplicity, I'm not using the most efficient approach.
           filter ((`notElem` existingFields) . fst)
           . HM.toList
           $ obj
     (M.fromList -> extra) <- forM obj' $ \(k,v) ->
       withText "ExtraText" (pure . (k,)) v
-    pure Foo {aaa,bbb,ccc,extra}
+    r <- parser
+    pure $ r extra
 
 type C = Compose (Writer [String]) (Writer [Int])
 
