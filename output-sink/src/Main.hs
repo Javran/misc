@@ -20,7 +20,6 @@ import System.IO
 import System.IO.Error
 import System.Process
 
-import qualified Data.ByteString as BS
 import qualified Data.ByteString.Builder as BSB
 import qualified Data.ByteString.Lazy as BSL
 
@@ -32,14 +31,14 @@ createOutputSink h = do
     fix (\loop out -> do
           r <- tryIO $ do
             _ <- hWaitForInput h (-1)
-            BS.hGetNonBlocking h 4096
+            BSL.hGetNonBlocking h 4096
           case r of
             Left e ->
               if isEOFError e
                  then pure $ BSB.toLazyByteString out
                  else throw e
             Right xs -> do
-              let out' = out <> BSB.byteString xs
+              let out' = out <> BSB.lazyByteString xs
               -- force WHNF and swap in.
               _ <- swapMVar mOut $! out'
               loop out')
