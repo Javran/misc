@@ -1,0 +1,6 @@
+.stack-work/
+output-sink.cabal
+stack.yaml.lock
+*~
+
+z
