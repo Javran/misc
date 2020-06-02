@@ -12,6 +12,8 @@ dependencies:
 - async
 - base
 - bytestring
+- directory
+- filepath
 - process
 - safe-exceptions
 
