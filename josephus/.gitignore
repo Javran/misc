@@ -1,0 +1,6 @@
+.stack-work/
+josephus.cabal
+stack.yaml.lock
+*~
+
+z
