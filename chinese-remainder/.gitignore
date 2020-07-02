@@ -1,0 +1,6 @@
+.stack-work/
+chinese-remainder.cabal
+stack.yaml.lock
+*~
+
+z

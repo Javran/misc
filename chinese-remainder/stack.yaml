@@ -1,0 +1,8 @@
+resolver: lts-15.12
+packages:
+- .
+
+extra-deps:
+- reactive-banana-1.2.1.0
+
+allow-newer: true
