@@ -88,7 +88,10 @@ main = do
     otherwise:
     - we'll get "blocked indefinitely" exception from RTS
     - I can't think of a better way to start the network after actuation.
+    TODO: why does it block indefintely?
    -}
-  _ <- async $ requestIncrement 0
+  _ <- async $
+    -- slight delay to make sure this happens after actuation is started
+    threadDelay 100 >> requestIncrement 0
   actuate network
   wait h
