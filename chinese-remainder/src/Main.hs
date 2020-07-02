@@ -1,22 +1,24 @@
 {-
   Simulate solving Chinese remainder problem the naive way.
  -}
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module Main
   ( main
   )
 where
 
-import Data.IORef
+import Control.Concurrent
+import Control.Concurrent.Async
+import Data.Function
 import Data.List
 import Reactive.Banana
 import Reactive.Banana.Frameworks
 
-type State = Int
-
 data CheckResult
   = Unsat Int -- condition is not satisfieid, requesting a increment
   | Sat -- condition is satisfied
-  deriving (Eq)
+  deriving (Eq, Show)
 
 remCheck :: Int -> Int -> Int -> CheckResult
 remCheck n targetR v = case compare r targetR of
@@ -27,11 +29,7 @@ remCheck n targetR v = case compare r targetR of
     r = rem v n
 
 checks :: [Int -> CheckResult]
-checks =
-  [ remCheck 3 2
-  , remCheck 5 3
-  , remCheck 7 2
-  ]
+checks = [ remCheck 3 2 , remCheck 5 3 , remCheck 7 2]
 
 mergeCheckResult :: CheckResult -> CheckResult -> CheckResult
 mergeCheckResult l r = case (l, r) of
@@ -45,9 +43,52 @@ checkAll =
 
 main :: IO ()
 main = do
+  putStrLn $ "Expecting: "
   print
     (unfoldr
        (\v -> case checkAll v of
           Sat -> Nothing
           Unsat d -> Just $ let v' = v + d in (v', v'))
        0)
+  ch <- newChan
+  (addHandler :: AddHandler Int, requestIncrement :: Int -> IO ()) <- newAddHandler
+  h <- async $
+    {-
+      this is the solver thread, it looks at increment requests from the network,
+      and feed requested increment back into the network.
+     -}
+    fix $ \next -> do
+      r <- readChan ch
+      print r
+      case r of
+        Sat -> pure ()
+        Unsat x -> requestIncrement x >> next
+  let resultCallback :: CheckResult -> IO ()
+      resultCallback = writeChan ch
+      networkDesc :: MomentIO ()
+      networkDesc = do
+        eIncr <- fromAddHandler addHandler
+        -- accumulated state
+        eSum <- accumE (0 :: Int) $ fmap (+) eIncr
+        let eChecks :: Event [CheckResult]
+            -- current state of all checks
+            eChecks = fmap (\v -> fmap ($ v) checks) eSum
+            -- fold result, to see what increment should we try next
+            bCheckResult = fmap (foldr mergeCheckResult Sat) eChecks
+        -- trigger IO to send request to solver.
+        reactimate $ fmap resultCallback bCheckResult
+        reactimate $ fmap (\v -> putStrLn $ "Current sum: " <> show v) eSum
+        reactimate $ fmap (\chks -> putStrLn $ "Checkers: " <> show chks) eChecks
+  network <- compile networkDesc
+  {-
+    this request "activates" the network,
+    its purpose is to trigger an initial event
+    to start driving the network.
+    note that this is send by another thread,
+    otherwise:
+    - we'll get "blocked indefinitely" exception from RTS
+    - I can't think of a better way to start the network after actuation.
+   -}
+  _ <- async $ requestIncrement 0
+  actuate network
+  wait h
