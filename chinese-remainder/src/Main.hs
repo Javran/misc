@@ -84,14 +84,10 @@ main = do
     this request "activates" the network,
     its purpose is to trigger an initial event
     to start driving the network.
-    note that this is send by another thread,
-    otherwise:
-    - we'll get "blocked indefinitely" exception from RTS
-    - I can't think of a better way to start the network after actuation.
-    TODO: why does it block indefintely?
+
+    Note that no multi-threading stuff is needed
+    as it turns out "actuate" is not blocking.
    -}
-  _ <- async $
-    -- slight delay to make sure this happens after actuation is started
-    threadDelay 100 >> requestIncrement 0
   actuate network
+  requestIncrement 0
   wait h
