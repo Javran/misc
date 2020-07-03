@@ -65,7 +65,7 @@ _coordsCombinedFleet =
 coords :: [(Int, Int)]
 coords = if hasVanguard then coordsWithVanguard else coordsNormal
   where
-    hasVanguard = False
+    hasVanguard = True
 
 getMapUrls :: Int -> Int -> (String, String)
 getMapUrls area num = (base <> "_image.png", base <> "_image.json")
@@ -118,7 +118,7 @@ allGameMaps :: [(Int, Int)]
 allGameMaps =
   sort $
     [(area,num) | area <- [1..6], num <- [1..5]] <> [(1,6),(7,1),(7,2)]
-    -- <> [(44, num) | num <- [1..5]]
+    <> [(48, num) | num <- [1..4]]
 
 main :: IO ()
 main = do
