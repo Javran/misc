@@ -1,6 +1,7 @@
-resolver: lts-15.12
+resolver: lts-16.4
 packages:
-- .
+- chinese-remainder
+- josephus
 
 extra-deps:
 - reactive-banana-1.2.1.0

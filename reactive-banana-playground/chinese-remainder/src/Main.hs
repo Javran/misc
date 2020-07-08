@@ -1,5 +1,24 @@
 {-
   Simulate solving Chinese remainder problem the naive way.
+
+  We'll start with s=0 state, together with 3 checks to verify that:
+
+  - s `mod` 3 == 2
+  - s `mod` 5 == 3
+  - s `mod` 7 == 2
+
+  Checker replies `Sat` if it is satisfied,
+  otherwise `Unsat v`, where `v` is a suggested increment
+  to the state so that `n+v` satisfies this checker.
+
+  Every round the network will look at result from 3 checkers:
+  - if all of them are `Sat`, we are done here.
+  - otherwise merge then by constructing `Unsat v` where v is the max of
+    all `Unsat`s.
+
+  This system does not always terminate given different set of checkers,
+  but in this well-known case, it does.
+
  -}
 {-# LANGUAGE ScopedTypeVariables #-}
 
