@@ -2,6 +2,7 @@ resolver: lts-16.4
 packages:
 - chinese-remainder
 - josephus
+- random-walk
 
 extra-deps:
 - reactive-banana-1.2.1.0

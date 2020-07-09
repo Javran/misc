@@ -1,0 +1,6 @@
+.stack-work/
+random-walk.cabal
+stack.yaml.lock
+*~
+
+z
