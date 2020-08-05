@@ -1,0 +1,6 @@
+.stack-work/
+random-distribution.cabal
+stack.yaml.lock
+*~
+
+z

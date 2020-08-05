@@ -1,0 +1,10 @@
+resolver: lts-16.4
+packages:
+- .
+
+extra-deps:
+- random-fu-0.2.7.4
+- random-source-0.3.0.8
+- rvar-0.2.0.6
+- flexible-defaults-0.0.3
+
