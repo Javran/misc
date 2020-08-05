@@ -8,6 +8,7 @@ where
 import Control.Monad
 import Control.Monad.Trans
 import Data.Binary
+import qualified Data.ByteString.Lazy as BSL
 import Data.Random
 import Data.Random.Source.MWC
 import qualified Data.Vector as V
@@ -23,6 +24,9 @@ instance Binary SeedPack where
   put (SeedPack vs) = mapM_ put vs
   get = (SeedPack . V.fromListN spLen) <$> replicateM spLen get
 
+drawFromURandom :: IO SeedPack
+drawFromURandom = decode <$> BSL.readFile "/dev/urandom"
+
 -- a Double is generated and multipled by `scale` to give range from 0 to scale-1
 scaledExperiment :: Int -> Int -> IO (V.Vector Int)
 scaledExperiment scale totalCount = do
@@ -34,7 +38,8 @@ scaledExperiment scale totalCount = do
           let result :: Int
               result = floor (fromIntegral scale * d)
           lift $ VM.modify mv succ result
-  g <- create -- TODO: use a random source
+  SeedPack seed <- drawFromURandom
+  g <- initialize seed
   _ <- runRVarT (replicateM totalCount roll) g
   V.unsafeFreeze mv
 
