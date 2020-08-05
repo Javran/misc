@@ -11,6 +11,9 @@ description: description
 dependencies:
 - base
 - random-fu
+- vector
+- mtl
+- random-source
 
 executables:
   demo:
