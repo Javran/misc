@@ -9,11 +9,11 @@ import Control.Monad
 import Control.Monad.Trans
 import Data.Binary
 import qualified Data.ByteString.Lazy as BSL
+import Data.Maybe
 import Data.Random
 import Data.Random.Source.MWC
 import qualified Data.Vector as V
 import qualified Data.Vector.Mutable as VM
-import Data.Maybe
 import System.Console.Terminfo
 
 -- experiment to generate different random distributions
@@ -48,6 +48,15 @@ scaledExperiment scale totalCount = do
 main :: IO ()
 main = do
   term <- setupTermFromEnv
-  let _rows = fromMaybe 20 $ getCapability term termLines
-      _cols = fromMaybe 80 $ getCapability term termColumns
-  scaledExperiment 100 100000 >>= print
+  let rows = fromMaybe 20 $ fmap (subtract 4) $ getCapability term termLines
+      cols = fromMaybe 80 $ getCapability term termColumns
+  results <- scaledExperiment rows 100000
+  let maxV = maximum results
+      fills =
+        V.map
+          (\v ->
+             round
+               (fromIntegral (v * cols) / fromIntegral maxV :: Double)
+             :: Int)
+          results
+  mapM_ (putStrLn . (\x -> replicate x '*')) fills
