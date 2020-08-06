@@ -13,6 +13,8 @@ import Data.Random
 import Data.Random.Source.MWC
 import qualified Data.Vector as V
 import qualified Data.Vector.Mutable as VM
+import Data.Maybe
+import System.Console.Terminfo
 
 -- experiment to generate different random distributions
 newtype SeedPack = SeedPack (V.Vector Word32)
@@ -44,4 +46,8 @@ scaledExperiment scale totalCount = do
   V.unsafeFreeze mv
 
 main :: IO ()
-main = scaledExperiment 100 100000 >>= print
+main = do
+  term <- setupTermFromEnv
+  let _rows = fromMaybe 20 $ getCapability term termLines
+      _cols = fromMaybe 80 $ getCapability term termColumns
+  scaledExperiment 100 100000 >>= print

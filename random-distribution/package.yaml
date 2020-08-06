@@ -16,6 +16,7 @@ dependencies:
 - random-source
 - binary
 - bytestring
+- terminfo
 
 executables:
   demo:
