@@ -1,0 +1,6 @@
+.stack-work/
+ellipse-approx.cabal
+stack.yaml.lock
+*~
+
+z
