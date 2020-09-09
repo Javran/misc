@@ -20,6 +20,12 @@ module Main
 
   - how to extract and recognize trees and empty spaces?
 
+    a reasonable assumption will be that there will always be some empty spaces on board for us to recognize,
+    and hopefully every boundary will have one empty cell. we can find the board by taking min max of those results.
+
+    a tricky thing about tree is that it sticks out into its upper cell. as a temporary measure,
+    let's exclude the potentially overlapping part from tree sample template.
+
   - how to extract and recognize digits on board sides?
 
  -}
