@@ -35,4 +35,6 @@ circum a b = fmap (\t -> pi * fromIntegral (a + b) * realToFrac t) (mulTerm h)
     h = ((a - b) * (a - b)) % ((a + b) * (a + b))
 
 main :: IO ()
-main = print (take 10 (circum 1234 1000))
+main = do
+  print (take 10 (circum 1234 1000))
+  print (take 10 termParts)
