@@ -26,6 +26,9 @@ module Main
     a tricky thing about tree is that it sticks out into its upper cell. as a temporary measure,
     let's exclude the potentially overlapping part from tree sample template.
 
+    we can also use the fact that all empty spaces are using the same color: #343131.
+    I'm not sure how to use this fact yet but I feel this is a useful fact to have.
+
   - how to extract and recognize digits on board sides?
 
  -}
