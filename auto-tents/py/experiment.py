@@ -21,17 +21,33 @@ def find_and_mark_matches(img, result, pat_dims, mx):
 
 
 def scale_pattern(pat_orig, target_width):
-  pat_orig_w, pat_orig_h, _ = pat_orig.shape
+  pat_orig_h, pat_orig_w, _ = pat_orig.shape
   scale = target_width / pat_orig_w
-  pat_w = round(pat_orig_w * scale)
   pat_h = round(pat_orig_h * scale)
-  return cv2.resize(pat_orig, (pat_w, pat_h))
+  pat_w = round(pat_orig_w * scale)
+  return cv2.resize(pat_orig, (pat_w, pat_h), cv2.INTER_LANCZOS4)
 
 def main():
+  # pat_h, pat_w, _ = pat.shape  # for 14x14, the target width seems to be 83
+  img = cv2.imread('../private/sample-14x14.png')
+
   # width of the original pattern: 211
-  pat = cv2.imread('../sample/tree-sample.png')
-  pat = scale_pattern(pat, 83)
-  pat_w, pat_h, _ = pat.shape
+  pat_orig = cv2.imread('../sample/tree-sample.png')
+
+  best_target_width = None
+  best_max_val = None
+  for target_width in range(70,90,1):
+    pat = scale_pattern(pat_orig, target_width)
+    pat_w, pat_h, _ = pat.shape
+    result = cv2.matchTemplate(img,pat,cv2.TM_CCORR_NORMED)
+    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+    if best_max_val is None or best_max_val < max_val:
+        best_max_val, best_target_width = max_val, target_width
+    print(target_width, max_val)
+
+  print(f'Best target width is: {best_target_width}')
+  pat = scale_pattern(pat_orig, best_target_width)
+  pat_h, pat_w, _ = pat.shape
   print(pat.shape)
   # pat_h, pat_w, _ = pat.shape  # for 14x14, the target width seems to be 83
   img = cv2.imread('../private/sample-14x14.png')
