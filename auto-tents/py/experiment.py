@@ -19,16 +19,19 @@ def find_and_mark_matches(img, result, pat_dims, mx):
                 bottom_right = (c + pat_w, r + pat_h)
                 cv2.rectangle(img,top_left, bottom_right, 255, 2)
 
+
+def scale_pattern(pat_orig, target_width):
+  pat_orig_w, pat_orig_h, _ = pat_orig.shape
+  scale = target_width / pat_orig_w
+  pat_w = round(pat_orig_w * scale)
+  pat_h = round(pat_orig_h * scale)
+  return cv2.resize(pat_orig, (pat_w, pat_h))
+
 def main():
-  scale = 83 / 211
   # width of the original pattern: 211
   pat = cv2.imread('../sample/tree-sample.png')
-
-  pat_w = int(pat.shape[1] * scale)
-  pat_h = int(pat.shape[0] * scale)
-
-  pat = cv2.resize(pat, (pat_w, pat_h))
-
+  pat = scale_pattern(pat, 83)
+  pat_w, pat_h, _ = pat.shape
   print(pat.shape)
   # pat_h, pat_w, _ = pat.shape  # for 14x14, the target width seems to be 83
   img = cv2.imread('../private/sample-14x14.png')
