@@ -7,17 +7,24 @@
 import cv2
 from matplotlib import pyplot
 
+# finding best width:
+# original width 211, let's say minimal is 30.
+# try numbers 16 steps apart, keep only 20% best values as candidate.
+# try numbers 8 steps apart from candidates, keep only 20%
+# ...
+# until we get one best value.
+
 def find_and_mark_matches(img, result, pat_dims, mx):
-    h, w = result.shape
-    pat_h, pat_w = pat_dims
-    threshold = 0.9995 * mx
-    for r in range(h):
-        for c in range(w):
-            if (result[r,c] > threshold):
-                print(r,c, result[r,c])
-                top_left = (c,r)
-                bottom_right = (c + pat_w, r + pat_h)
-                cv2.rectangle(img,top_left, bottom_right, 255, 2)
+  h, w = result.shape
+  pat_h, pat_w = pat_dims
+  threshold = 0.9995 * mx
+  for r in range(h):
+    for c in range(w):
+      if (result[r,c] > threshold):
+        print(r,c, result[r,c])
+        top_left = (c,r)
+        bottom_right = (c + pat_w, r + pat_h)
+        cv2.rectangle(img,top_left, bottom_right, 255, 2)
 
 
 def scale_pattern(pat_orig, target_width):
@@ -42,7 +49,7 @@ def main():
     result = cv2.matchTemplate(img,pat,cv2.TM_CCORR_NORMED)
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
     if best_max_val is None or best_max_val < max_val:
-        best_max_val, best_target_width = max_val, target_width
+      best_max_val, best_target_width = max_val, target_width
     print(target_width, max_val)
 
   print(f'Best target width is: {best_target_width}')
