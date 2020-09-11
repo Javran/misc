@@ -5,6 +5,8 @@
 """
 
 import cv2
+import functools
+import math
 from matplotlib import pyplot
 
 # finding best width:
@@ -15,6 +17,8 @@ from matplotlib import pyplot
 # until we get one best value.
 
 def find_and_mark_matches(img, result, pat_dims, mx):
+  """Find and mark matching places given a result of matchTemplate.
+  """
   h, w = result.shape
   pat_h, pat_w = pat_dims
   threshold = 0.9995 * mx
@@ -32,7 +36,44 @@ def scale_pattern(pat_orig, target_width):
   scale = target_width / pat_orig_w
   pat_h = round(pat_orig_h * scale)
   pat_w = round(pat_orig_w * scale)
-  return cv2.resize(pat_orig, (pat_w, pat_h), cv2.INTER_LANCZOS4)
+  return cv2.resize(pat_orig, (pat_w, pat_h), cv2.INTER_AREA)
+
+def optimize_pattern_width(pat_orig, img):
+  @functools.lru_cache()
+  def evaluate_width(width):
+    pat = scale_pattern(pat_orig, width)
+    pat_w, pat_h, _ = pat.shape
+    result = cv2.matchTemplate(img,pat,cv2.TM_CCORR_NORMED)
+    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+    print(f'{width} => {max_val}')
+    return max_val
+
+  # search within this range, with decreasing steps per iteration until
+  # we reach a local maxima
+  min_width, max_width = 30, 220
+  step = 16
+  candidates = set(range(min_width, max_width, step))
+
+  while True:
+    sorted_candidates = sorted(candidates,key=evaluate_width,reverse=True)
+    keep = max(1, math.floor(len(sorted_candidates) * 0.4))
+    candidates = sorted_candidates[:keep]
+    step //= 2
+    if not step:
+      break
+    # candidate expansion for next iteration.
+    candidates = {
+      y
+      for x in candidates
+      for y in [x-step, x, x+step]
+      if y >= min_width and y <= max_width
+    }
+
+  # note that here candidates are sorted
+  best_target_width = candidates[0]
+  print(f'Best target width is: {best_target_width}')
+  return best_target_width
+
 
 def main():
   # pat_h, pat_w, _ = pat.shape  # for 14x14, the target width seems to be 83
@@ -41,18 +82,7 @@ def main():
   # width of the original pattern: 211
   pat_orig = cv2.imread('../sample/tree-sample.png')
 
-  best_target_width = None
-  best_max_val = None
-  for target_width in range(70,90,1):
-    pat = scale_pattern(pat_orig, target_width)
-    pat_w, pat_h, _ = pat.shape
-    result = cv2.matchTemplate(img,pat,cv2.TM_CCORR_NORMED)
-    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
-    if best_max_val is None or best_max_val < max_val:
-      best_max_val, best_target_width = max_val, target_width
-    print(target_width, max_val)
-
-  print(f'Best target width is: {best_target_width}')
+  best_target_width = optimize_pattern_width(pat_orig, img)
   pat = scale_pattern(pat_orig, best_target_width)
   pat_h, pat_w, _ = pat.shape
   print(pat.shape)
@@ -66,6 +96,7 @@ def main():
   print(f'min: {min_val}, max: {max_val}')
   top_left = max_loc
   bottom_right = (top_left[0] + pat_w, top_left[1] + pat_h)
+  pyplot.figure().canvas.set_window_title('@dev')
   pyplot.subplot(121)
   pyplot.imshow(result_norm,cmap = 'gray')
   pyplot.title('result'), pyplot.xticks([]), pyplot.yticks([])
@@ -76,8 +107,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-    while True:
-        r = cv2.waitKey() & 0xFF
-        if r == ord('q'):
-            break
 
