@@ -38,6 +38,7 @@ def scale_pattern(pat_orig, target_width):
   pat_w = round(pat_orig_w * scale)
   return cv2.resize(pat_orig, (pat_w, pat_h), cv2.INTER_AREA)
 
+
 def optimize_pattern_width(pat_orig, img):
   @functools.lru_cache()
   def evaluate_width(width):
@@ -56,7 +57,8 @@ def optimize_pattern_width(pat_orig, img):
 
   while True:
     sorted_candidates = sorted(candidates,key=evaluate_width,reverse=True)
-    keep = max(1, math.floor(len(sorted_candidates) * 0.4))
+    # Only top 20% survives.
+    keep = max(1, math.floor(len(sorted_candidates) * 0.2))
     candidates = sorted_candidates[:keep]
     step //= 2
     if not step:
@@ -66,7 +68,7 @@ def optimize_pattern_width(pat_orig, img):
       y
       for x in candidates
       for y in [x-step, x, x+step]
-      if y >= min_width and y <= max_width
+      if min_width <= y <= max_width
     }
 
   # note that here candidates are sorted
@@ -76,8 +78,7 @@ def optimize_pattern_width(pat_orig, img):
 
 
 def main():
-  # pat_h, pat_w, _ = pat.shape  # for 14x14, the target width seems to be 83
-  img = cv2.imread('../private/sample-14x14.png')
+  img = cv2.imread('../private/sample-22x22.png')
 
   # width of the original pattern: 211
   pat_orig = cv2.imread('../sample/tree-sample.png')
@@ -86,9 +87,6 @@ def main():
   pat = scale_pattern(pat_orig, best_target_width)
   pat_h, pat_w, _ = pat.shape
   print(pat.shape)
-  # pat_h, pat_w, _ = pat.shape  # for 14x14, the target width seems to be 83
-  img = cv2.imread('../private/sample-14x14.png')
-
   result = cv2.matchTemplate(img,pat,cv2.TM_CCORR_NORMED)
   result_norm = cv2.normalize(result,0, 255)
   min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
