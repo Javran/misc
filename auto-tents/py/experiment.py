@@ -62,8 +62,8 @@ def optimize_pattern_width(pat_orig, img):
 
   while True:
     sorted_candidates = sorted(candidates,key=evaluate_width,reverse=True)
-    # Only top 20% survives.
-    keep = max(1, math.floor(len(sorted_candidates) * 0.2))
+    # Only top few candidates survive.
+    keep = max(1, math.floor(len(sorted_candidates) * 0.1))
     candidates = sorted_candidates[:keep]
     step //= 2
     if not step:
