@@ -17,13 +17,12 @@ from matplotlib import pyplot
 # until we get one best value.
 
 
-def find_and_mark_matches(img, result, pat_dims, mx):
+def find_and_mark_matches(img, result, pat_dims, threshold):
   """Find and mark matching places given a result of matchTemplate.
   """
   img_marked = img.copy()
   h, w = result.shape
   pat_h, pat_w = pat_dims
-  threshold = 0.9995 * mx
   for r in range(h):
     for c in range(w):
       if (result[r,c] > threshold):
@@ -93,7 +92,7 @@ def resample_pattern_from_image(pat_orig, img):
   return img[r:r+pat_h,c:c+pat_w]
 
 def main_scale_pattern_and_match():
-  img = cv2.imread('../private/sample-8x8.png')
+  img = cv2.imread('../private/sample-22x22.png')
   pat_orig = cv2.imread('../sample/tree-sample.png')
   pat = resample_pattern_from_image(pat_orig, img)
   pat_h, pat_w, _ = pat.shape
@@ -101,22 +100,22 @@ def main_scale_pattern_and_match():
   result = cv2.matchTemplate(img,pat,cv2.TM_CCORR_NORMED)
   result_norm = cv2.normalize(result,0, 255)
   min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
-  img_marked = find_and_mark_matches(img, result, [pat_h, pat_w], max_val)
+  img_marked = find_and_mark_matches(img, result, [pat_h, pat_w], 0.999)
   print(f'min: {min_val}, max: {max_val}')
   top_left = max_loc
   bottom_right = (top_left[0] + pat_w, top_left[1] + pat_h)
   pyplot.figure().canvas.set_window_title('@dev')
 
-  pyplot.subplot(221)
+  pyplot.subplot(121)
   pyplot.imshow(result_norm,cmap = 'gray')
   pyplot.title('result'), pyplot.xticks([]), pyplot.yticks([])
   # opencv stores in BGR while pyplot in RGB. (https://stackoverflow.com/a/41869419/315302)
-  pyplot.subplot(222),pyplot.imshow(img_marked[:,:,[2,1,0]])
+  pyplot.subplot(122),pyplot.imshow(img_marked[:,:,[2,1,0]])
   pyplot.title('origin'), pyplot.xticks([]), pyplot.yticks([])
-  pyplot.subplot(223),pyplot.imshow(pat_orig[:,:,[2,1,0]])
-  pyplot.title('pat_orig'), pyplot.xticks([]), pyplot.yticks([])
-  pyplot.subplot(224),pyplot.imshow(pat[:,:,[2,1,0]])
-  pyplot.title('pat'), pyplot.xticks([]), pyplot.yticks([])
+  # pyplot.subplot(223),pyplot.imshow(pat_orig[:,:,[2,1,0]])
+  # pyplot.title('pat_orig'), pyplot.xticks([]), pyplot.yticks([])
+  # pyplot.subplot(224),pyplot.imshow(pat[:,:,[2,1,0]])
+  # pyplot.title('pat'), pyplot.xticks([]), pyplot.yticks([])
 
   pyplot.show()
 
