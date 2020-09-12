@@ -16,6 +16,8 @@ from matplotlib import pyplot
 # ...
 # until we get one best value.
 
+tm_method = cv2.TM_CCOEFF_NORMED
+
 
 def find_and_mark_matches(img, result, pat_dims, threshold):
   """Find and mark matching places given a result of matchTemplate.
@@ -49,7 +51,7 @@ def optimize_pattern_width(pat_orig, img):
     nonlocal eval_count
     pat = scale_pattern(pat_orig, width)
     pat_w, pat_h, _ = pat.shape
-    result = cv2.matchTemplate(img,pat,cv2.TM_CCORR_NORMED)
+    result = cv2.matchTemplate(img,pat,tm_method)
     min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
     eval_count += 1
     return max_val
@@ -86,7 +88,7 @@ def resample_pattern_from_image(pat_orig, img):
   best_target_width = optimize_pattern_width(pat_orig, img)
   pat = scale_pattern(pat_orig, best_target_width)
   pat_h, pat_w, _ = pat.shape
-  result = cv2.matchTemplate(img,pat,cv2.TM_CCORR_NORMED)
+  result = cv2.matchTemplate(img,pat,tm_method)
   _, _, _, max_loc = cv2.minMaxLoc(result)
   c, r = max_loc
   return img[r:r+pat_h,c:c+pat_w]
@@ -97,11 +99,11 @@ def main_scale_pattern_and_match():
   pat = resample_pattern_from_image(pat_orig, img)
   pat_h, pat_w, _ = pat.shape
   print(pat.shape)
-  result = cv2.matchTemplate(img,pat,cv2.TM_CCORR_NORMED)
+  result = cv2.matchTemplate(img,pat,tm_method)
   # result_hist = numpy.histogram(result, bins=256, range=(0,255))
   result_norm = cv2.normalize(result, 0, 255)
   min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
-  img_marked = find_and_mark_matches(img, result, [pat_h, pat_w], 0.99)
+  img_marked = find_and_mark_matches(img, result, [pat_h, pat_w], 0.95)
   print(f'min: {min_val}, max: {max_val}')
   top_left = max_loc
   bottom_right = (top_left[0] + pat_w, top_left[1] + pat_h)
