@@ -9,13 +9,6 @@ import functools
 import math
 from matplotlib import pyplot
 
-# finding best width:
-# original width 211, let's say minimal is 30.
-# try numbers 16 steps apart, keep only 20% best values as candidate.
-# try numbers 8 steps apart from candidates, keep only 20%
-# ...
-# until we get one best value.
-
 tm_method = cv2.TM_CCOEFF_NORMED
 
 
@@ -100,9 +93,11 @@ def main_scale_pattern_and_match():
   pat_h, pat_w, _ = pat.shape
   print(pat.shape)
   result = cv2.matchTemplate(img,pat,tm_method)
-  # result_hist = numpy.histogram(result, bins=256, range=(0,255))
   result_norm = cv2.normalize(result, 0, 255)
   min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+
+  # now the problem lies in how should we find this threshold.
+  # it is promising here to analyze histogram to determine this value.
   img_marked = find_and_mark_matches(img, result, [pat_h, pat_w], 0.95)
   print(f'min: {min_val}, max: {max_val}')
   top_left = max_loc
@@ -115,7 +110,7 @@ def main_scale_pattern_and_match():
   pyplot.subplot(132), pyplot.imshow(img_marked[:,:,[2,1,0]])
   pyplot.title('origin'), pyplot.xticks([]), pyplot.yticks([])
 
-  pyplot.subplot(133), pyplot.hist(result.flatten(), bins=256, range=(0.0, 1.0), log=True)
+  pyplot.subplot(133), pyplot.hist(result.flatten(), range=(0.9, 1.0))
   pyplot.title('hist')
   # pyplot.subplot(223),pyplot.imshow(pat_orig[:,:,[2,1,0]])
   # pyplot.title('pat_orig'), pyplot.xticks([]), pyplot.yticks([])
