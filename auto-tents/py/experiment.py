@@ -133,6 +133,20 @@ def main_all_samples():
     print(f'{i}: {target_width}')
 
 
-if __name__ == '__main__':
-    main_scale_pattern_and_match()
+def main_find_blanks():
+  img = cv2.imread('../private/sample-18x18.png')
+  # This is the exact color that game uses for blank cells.
+  bk = (49, 49, 52)
+  result = cv2.inRange(img, bk, bk)
+  pyplot.figure().canvas.set_window_title('@dev')
 
+  pyplot.subplot(121), pyplot.imshow(img[:,:,[2,1,0]])
+  pyplot.title('origin'), pyplot.xticks([]), pyplot.yticks([])
+  pyplot.subplot(122), pyplot.imshow(result,cmap = 'gray')
+  pyplot.title('result'), pyplot.xticks([]), pyplot.yticks([])
+  pyplot.show()
+
+
+if __name__ == '__main__':
+  #main_scale_pattern_and_match()
+  main_find_blanks()
