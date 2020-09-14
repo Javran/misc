@@ -9,6 +9,7 @@ import functools
 import math
 import numpy as np
 from matplotlib import pyplot
+import collections
 
 tm_method = cv2.TM_CCOEFF_NORMED
 
@@ -136,17 +137,21 @@ def main_find_blanks():
   bk = (49, 49, 52)
   result = cv2.inRange(img, bk, bk)
 
-  found = None
+  rows_stat = collections.defaultdict(lambda : 0)
+  cols_stat = collections.defaultdict(lambda : 0)
+
   mask = np.zeros((h+2,w+2), dtype=np.uint8)
   for r in range(h):
-    if found:
-      break
     for c in range(w):
       if (result[r,c] != 0):
-        print(r,c,result[r,c])
+        rows_stat[r] += 1
+        cols_stat[c] += 1
+        # I'm not sure why opencv api has such a FUCKED UP use of coordinates, but yeah
+        # (c,r) rather than (r,c) here is not a mistake, you are welcome.
         retval, result, _, _ = cv2.floodFill(result, mask, (c,r), 0)
-        found = True
-        break
+
+  for stat in [rows_stat, cols_stat]:
+    print(sorted(stat.items(), key=lambda x: (x[1], x[0]), reverse=True))
 
   pyplot.figure().canvas.set_window_title('@dev')
   pyplot.subplot(131), pyplot.imshow(img[:,:,[2,1,0]])
