@@ -7,6 +7,7 @@
 import cv2
 import functools
 import math
+import numpy as np
 from matplotlib import pyplot
 
 tm_method = cv2.TM_CCOEFF_NORMED
@@ -130,15 +131,30 @@ def main_all_samples():
 
 def main_find_blanks():
   img = cv2.imread('../private/sample-18x18.png')
+  h, w, _ = img.shape
   # This is the exact color that game uses for blank cells.
   bk = (49, 49, 52)
   result = cv2.inRange(img, bk, bk)
-  pyplot.figure().canvas.set_window_title('@dev')
 
-  pyplot.subplot(121), pyplot.imshow(img[:,:,[2,1,0]])
+  found = None
+  mask = np.zeros((h+2,w+2), dtype=np.uint8)
+  for r in range(h):
+    if found:
+      break
+    for c in range(w):
+      if (result[r,c] != 0):
+        print(r,c,result[r,c])
+        retval, result, _, _ = cv2.floodFill(result, mask, (c,r), 0)
+        found = True
+        break
+
+  pyplot.figure().canvas.set_window_title('@dev')
+  pyplot.subplot(131), pyplot.imshow(img[:,:,[2,1,0]])
   pyplot.title('origin'), pyplot.xticks([]), pyplot.yticks([])
-  pyplot.subplot(122), pyplot.imshow(result,cmap = 'gray')
+  pyplot.subplot(132), pyplot.imshow(result,cmap = 'gray')
   pyplot.title('result'), pyplot.xticks([]), pyplot.yticks([])
+  pyplot.subplot(133), pyplot.imshow(mask,cmap = 'gray')
+  pyplot.title('mask'), pyplot.xticks([]), pyplot.yticks([])
   pyplot.show()
 
 
