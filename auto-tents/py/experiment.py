@@ -217,10 +217,10 @@ def main_find_blanks():
       (col_ends_stat, 'Col end'),
   ]:
     print(desc)
-    st = list(resolve_stat(stat, size))
-    print(st)
-    for k, v in sorted(stat.items()):
-      print(f'  {k}, item count: {v}')
+    st = list(map(round, resolve_stat(stat, size)))
+    print(f'  {st}')
+    diff = [st[i+1] - st[i] for i in range(0, len(st)-1)]
+    print(f'  {diff}')
 
   show = False
   if show:
