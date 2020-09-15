@@ -148,10 +148,11 @@ def main_find_blanks():
         cols_stat[c] += 1
         # I'm not sure why opencv api has such a FUCKED UP use of coordinates, but yeah
         # (c,r) rather than (r,c) here is not a mistake, you are welcome.
-        retval, result, _, _ = cv2.floodFill(result, mask, (c,r), 0)
+        retval, result, _, rect = cv2.floodFill(result, mask, (c,r), 0)
+        print((r,c), rect)
 
   for stat in [rows_stat, cols_stat]:
-    print(sorted(stat.items(), key=lambda x: (x[1], x[0]), reverse=True))
+    print(sorted(stat.items(), reverse=True))
 
   pyplot.figure().canvas.set_window_title('@dev')
   pyplot.subplot(131), pyplot.imshow(img[:,:,[2,1,0]])
