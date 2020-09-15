@@ -133,6 +133,43 @@ def main_all_samples():
     print(f'{i}: {target_width}')
 
 
+def resolve_stat(d, size, threshold = 3):
+  """
+    Given a dict d and an expected # of elements,
+    derive a list of row values (or column values) from it.
+  """
+  hold = None  # or (k, <sub dict>)
+  grouping = []
+  for k, v in sorted(d.items(), key=lambda x: x[0]):
+    if hold is None:
+      hold = (k, {k: v})
+    else:
+      kh, sd = hold
+      if k - kh < threshold:
+        sd[k] = v
+      else:
+        grouping.append(sd)
+        hold = (k, {k: v})
+
+  if hold is not None:
+    grouping.append(hold[1])
+    hold = None
+
+  # TODO: given sufficient info we might be able to
+  # "fill in the blank" if there are missing elements,
+  # but for now it seems good enough to not worry about
+  # this issue.
+  assert len(grouping) == size
+
+  # calculate weighted average from grouping elements.
+  def ave(sub_dict):
+    numer = sum(k * v for k, v in sub_dict.items())
+    denom = sum(sub_dict.values())
+    return numer / denom
+
+  return map(ave, grouping)
+
+
 def main_find_blanks():
   size = 18
   img = load_sample(18)
@@ -180,6 +217,8 @@ def main_find_blanks():
       (col_ends_stat, 'Col end'),
   ]:
     print(desc)
+    st = list(resolve_stat(stat, size))
+    print(st)
     for k, v in sorted(stat.items()):
       print(f'  {k}, item count: {v}')
 
