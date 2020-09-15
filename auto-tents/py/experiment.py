@@ -13,6 +13,9 @@ import collections
 
 tm_method = cv2.TM_CCOEFF_NORMED
 
+def load_sample(size):
+  return cv2.imread(f'../private/sample-{size}x{size}.png')
+
 
 def find_and_mark_matches(img, result, pat_dims, threshold):
   """Find and mark matching places given a result of matchTemplate.
@@ -89,7 +92,7 @@ def resample_pattern_from_image(pat_orig, img):
   return img[r:r+pat_h,c:c+pat_w]
 
 def main_scale_pattern_and_match():
-  img = cv2.imread('../private/sample-18x18.png')
+  img = load_sample(18)
   pat_orig = cv2.imread('../sample/tree-sample.png')
   pat = resample_pattern_from_image(pat_orig, img)
   pat_h, pat_w, _ = pat.shape
@@ -125,13 +128,14 @@ def main_scale_pattern_and_match():
 def main_all_samples():
   pat_orig = cv2.imread('../sample/tree-sample.png')
   for i in range(5,22+1):
-    img = cv2.imread(f'../private/sample-{i}x{i}.png')
+    img = load_sample(i)
     target_width = optimize_pattern_width(pat_orig, img)
     print(f'{i}: {target_width}')
 
 
 def main_find_blanks():
-  img = cv2.imread('../private/sample-8x8.png')
+  size = 18
+  img = load_sample(18)
   h, w, _ = img.shape
   # This is the exact color that game uses for blank cells.
   bk = (49, 49, 52)
@@ -171,16 +175,18 @@ def main_find_blanks():
 
   for stat in [row_begins_stat, row_ends_stat, col_begins_stat, col_ends_stat]:
     for k, v in sorted(stat.items()):
-      print(k, f'item count: {v}')
+      print(k, f', item count: {v}')
 
-  pyplot.figure().canvas.set_window_title('@dev')
-  pyplot.subplot(131), pyplot.imshow(img[:,:,[2,1,0]])
-  pyplot.title('origin'), pyplot.xticks([]), pyplot.yticks([])
-  pyplot.subplot(132), pyplot.imshow(result,cmap = 'gray')
-  pyplot.title('result'), pyplot.xticks([]), pyplot.yticks([])
-  pyplot.subplot(133), pyplot.imshow(mask,cmap = 'gray')
-  pyplot.title('mask'), pyplot.xticks([]), pyplot.yticks([])
-  pyplot.show()
+  show = False
+  if show:
+    pyplot.figure().canvas.set_window_title('@dev')
+    pyplot.subplot(131), pyplot.imshow(img[:,:,[2,1,0]])
+    pyplot.title('origin'), pyplot.xticks([]), pyplot.yticks([])
+    pyplot.subplot(132), pyplot.imshow(result,cmap = 'gray')
+    pyplot.title('result'), pyplot.xticks([]), pyplot.yticks([])
+    pyplot.subplot(133), pyplot.imshow(mask,cmap = 'gray')
+    pyplot.title('mask'), pyplot.xticks([]), pyplot.yticks([])
+    pyplot.show()
 
 
 if __name__ == '__main__':
