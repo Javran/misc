@@ -141,18 +141,24 @@ def main_find_blanks():
   cols_stat = collections.defaultdict(lambda : 0)
 
   mask = np.zeros((h+2,w+2), dtype=np.uint8)
+  first_skipped = False
   for r in range(h):
     for c in range(w):
       if (result[r,c] != 0):
-        rows_stat[r] += 1
-        cols_stat[c] += 1
-        # I'm not sure why opencv api has such a FUCKED UP use of coordinates, but yeah
-        # (c,r) rather than (r,c) here is not a mistake, you are welcome.
-        retval, result, _, rect = cv2.floodFill(result, mask, (c,r), 0)
-        print((r,c), rect)
+        x,y = c,r
+        retval, result, _, rect = cv2.floodFill(result, mask, (x,y), 0)
+        rect_x, rect_y, rect_w, rect_h = rect
+        print((x,y), rect)
+
+        if not first_skipped:
+          first_skipped = True
+          continue
+
+        rows_stat[rect_y] += 1
+        cols_stat[rect_x] += 1
 
   for stat in [rows_stat, cols_stat]:
-    print(sorted(stat.items(), reverse=True))
+    print(sorted(stat.items()))
 
   pyplot.figure().canvas.set_window_title('@dev')
   pyplot.subplot(131), pyplot.imshow(img[:,:,[2,1,0]])
