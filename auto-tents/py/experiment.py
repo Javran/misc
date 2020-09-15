@@ -173,9 +173,15 @@ def main_find_blanks():
         row_ends_stat[rect_y_end] += 1
         col_ends_stat[rect_x_end] += 1
 
-  for stat in [row_begins_stat, row_ends_stat, col_begins_stat, col_ends_stat]:
+  for (stat, desc) in [
+      (row_begins_stat, 'Row begin'),
+      (row_ends_stat, 'Row end'),
+      (col_begins_stat, 'Col begin'),
+      (col_ends_stat, 'Col end'),
+  ]:
+    print(desc)
     for k, v in sorted(stat.items()):
-      print(k, f', item count: {v}')
+      print(f'  {k}, item count: {v}')
 
   show = False
   if show:
