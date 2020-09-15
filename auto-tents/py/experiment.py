@@ -131,16 +131,24 @@ def main_all_samples():
 
 
 def main_find_blanks():
-  img = cv2.imread('../private/sample-18x18.png')
+  img = cv2.imread('../private/sample-8x8.png')
   h, w, _ = img.shape
   # This is the exact color that game uses for blank cells.
   bk = (49, 49, 52)
   result = cv2.inRange(img, bk, bk)
 
-  rows_stat = collections.defaultdict(lambda : 0)
-  cols_stat = collections.defaultdict(lambda : 0)
+  mk_stat = lambda: collections.defaultdict(lambda: 0)
+
+  row_begins_stat = mk_stat()
+  row_ends_stat = mk_stat()
+
+  col_begins_stat = mk_stat()
+  col_ends_stat = mk_stat()
 
   mask = np.zeros((h+2,w+2), dtype=np.uint8)
+
+  # skip first region encountered, which is likely just the difficulty box
+  # on the top right corner.
   first_skipped = False
   for r in range(h):
     for c in range(w):
@@ -148,17 +156,22 @@ def main_find_blanks():
         x,y = c,r
         retval, result, _, rect = cv2.floodFill(result, mask, (x,y), 0)
         rect_x, rect_y, rect_w, rect_h = rect
-        print((x,y), rect)
 
         if not first_skipped:
           first_skipped = True
           continue
 
-        rows_stat[rect_y] += 1
-        cols_stat[rect_x] += 1
+        row_begins_stat[rect_y] += 1
+        col_begins_stat[rect_x] += 1
 
-  for stat in [rows_stat, cols_stat]:
-    print(sorted(stat.items()))
+        rect_x_end = rect_x + rect_w - 1
+        rect_y_end = rect_y + rect_h - 1
+        row_ends_stat[rect_y_end] += 1
+        col_ends_stat[rect_x_end] += 1
+
+  for stat in [row_begins_stat, row_ends_stat, col_begins_stat, col_ends_stat]:
+    for k, v in sorted(stat.items()):
+      print(k, f'item count: {v}')
 
   pyplot.figure().canvas.set_window_title('@dev')
   pyplot.subplot(131), pyplot.imshow(img[:,:,[2,1,0]])
