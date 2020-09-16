@@ -223,15 +223,15 @@ def main_find_blanks():
     for c, (col_lo, col_hi) in enumerate(col_bounds):
       cells[r][c] = img[row_lo:row_hi+1, col_lo:col_hi+1]
 
-  show = False
+  recombined = np.concatenate([ np.concatenate(row, axis=1) for row in cells], axis=0)
+
+  show = True
   if show:
     pyplot.figure().canvas.set_window_title('@dev')
-    pyplot.subplot(131), pyplot.imshow(img[:,:,[2,1,0]])
+    pyplot.subplot(121), pyplot.imshow(img[:,:,[2,1,0]])
     pyplot.title('origin'), pyplot.xticks([]), pyplot.yticks([])
-    pyplot.subplot(132), pyplot.imshow(result,cmap = 'gray')
-    pyplot.title('result'), pyplot.xticks([]), pyplot.yticks([])
-    pyplot.subplot(133), pyplot.imshow(mask,cmap = 'gray')
-    pyplot.title('mask'), pyplot.xticks([]), pyplot.yticks([])
+    pyplot.subplot(122), pyplot.imshow(recombined[:,:,[2,1,0]])
+    pyplot.title('extracted'), pyplot.xticks([]), pyplot.yticks([])
     pyplot.show()
 
 
