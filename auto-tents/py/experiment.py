@@ -210,17 +210,16 @@ def main_find_blanks():
         row_ends_stat[rect_y_end] += 1
         col_ends_stat[rect_x_end] += 1
 
-  for (stat, desc) in [
-      (row_begins_stat, 'Row begin'),
-      (row_ends_stat, 'Row end'),
-      (col_begins_stat, 'Col begin'),
-      (col_ends_stat, 'Col end'),
-  ]:
-    print(desc)
-    st = list(map(round, resolve_stat(stat, size)))
-    print(f'  {st}')
-    diff = [st[i+1] - st[i] for i in range(0, len(st)-1)]
-    print(f'  {diff}')
+  def make_bounds(begin_stat, end_stat):
+    begin_coords = map(round, resolve_stat(begin_stat, size))
+    end_coords = map(round, resolve_stat(end_stat, size))
+    return map(lambda x,y: (x,y), begin_coords, end_coords)
+
+  row_bounds = make_bounds(row_begins_stat, row_ends_stat)
+  col_bounds = make_bounds(col_begins_stat, col_ends_stat)
+
+  print(list(row_bounds))
+  print(list(col_bounds))
 
   show = False
   if show:
