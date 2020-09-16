@@ -213,13 +213,15 @@ def main_find_blanks():
   def make_bounds(begin_stat, end_stat):
     begin_coords = map(round, resolve_stat(begin_stat, size))
     end_coords = map(round, resolve_stat(end_stat, size))
-    return map(lambda x,y: (x,y), begin_coords, end_coords)
+    return list(map(lambda x,y: (x,y), begin_coords, end_coords))
 
   row_bounds = make_bounds(row_begins_stat, row_ends_stat)
   col_bounds = make_bounds(col_begins_stat, col_ends_stat)
 
-  print(list(row_bounds))
-  print(list(col_bounds))
+  cells = [ [ None for _ in range(size) ] for _ in range(size)]
+  for r, (row_lo, row_hi) in enumerate(row_bounds):
+    for c, (col_lo, col_hi) in enumerate(col_bounds):
+      cells[r][c] = img[row_lo:row_hi+1, col_lo:col_hi+1]
 
   show = False
   if show:
