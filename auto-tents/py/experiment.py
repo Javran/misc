@@ -171,8 +171,8 @@ def resolve_stat(d, size, threshold = 3):
 
 
 def main_find_blanks():
-  size = 18
-  img = load_sample(18)
+  size = 9
+  img = load_sample(size)
   h, w, _ = img.shape
   # This is the exact color that game uses for blank cells.
   bk = (49, 49, 52)
@@ -225,16 +225,34 @@ def main_find_blanks():
 
   recombined = np.concatenate([ np.concatenate(row, axis=1) for row in cells], axis=0)
 
+
   show = True
   if show:
     pyplot.figure().canvas.set_window_title('@dev')
-    pyplot.subplot(121), pyplot.imshow(img[:,:,[2,1,0]])
+    pyplot.subplot(131), pyplot.imshow(img[:,:,[2,1,0]])
     pyplot.title('origin'), pyplot.xticks([]), pyplot.yticks([])
-    pyplot.subplot(122), pyplot.imshow(recombined[:,:,[2,1,0]])
+    pyplot.subplot(132), pyplot.imshow(recombined[:,:,[2,1,0]])
     pyplot.title('extracted'), pyplot.xticks([]), pyplot.yticks([])
+    pyplot.subplot(133), pyplot.imshow(edges,cmap = 'gray')
+    pyplot.title('result'), pyplot.xticks([]), pyplot.yticks([])
     pyplot.show()
 
 
+def main_edge_detection():
+  size = 22
+  img = load_sample(size)
+  # as long as the threshold is good for digits,
+  # it is good enough.
+  edges = cv2.Canny(img,9,10)
+  pyplot.figure().canvas.set_window_title('@dev')
+  pyplot.subplot(121), pyplot.imshow(img[:,:,[2,1,0]])
+  pyplot.title('origin'), pyplot.xticks([]), pyplot.yticks([])
+  pyplot.subplot(122), pyplot.imshow(edges,cmap = 'gray')
+  pyplot.title('result'), pyplot.xticks([]), pyplot.yticks([])
+  pyplot.show()
+
+
 if __name__ == '__main__':
-  #main_scale_pattern_and_match()
-  main_find_blanks()
+  # main_scale_pattern_and_match()
+  # main_find_blanks()
+  main_edge_detection()
