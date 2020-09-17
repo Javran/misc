@@ -171,7 +171,7 @@ def resolve_stat(d, size, threshold = 3):
 
 
 def main_find_blanks():
-  size = 9
+  size = 17
   img = load_sample(size)
   h, w, _ = img.shape
   # This is the exact color that game uses for blank cells.
@@ -225,6 +225,23 @@ def main_find_blanks():
 
   recombined = np.concatenate([ np.concatenate(row, axis=1) for row in cells], axis=0)
 
+  max_cell_side = max(map(lambda x: x[1] - x[0] + 1, row_bounds + col_bounds))
+  def extract_digit(row,col):
+    return img[row:row+max_cell_side-1,col:col+max_cell_side-1]
+
+  # Suppose first two cells are A and B, we can then find a cell C if we extend
+  # difference between A and B but in the other direction.
+  # A - (B - A) = 2A - B
+
+  digit_row_start = 2 * row_bounds[0][0] - row_bounds[1][0]
+  digit_col_start = 2 * col_bounds[0][0] - col_bounds[1][0]
+
+  # digits accompanying every column.
+  col_digits = [ extract_digit(digit_row_start,col_lo) for col_lo, _ in col_bounds ]
+  # same but for rows
+  row_digits = [ extract_digit(row_lo,digit_col_start) for row_lo, _ in row_bounds ]
+
+  digits = np.concatenate([np.concatenate(row_digits, axis=1),np.concatenate(col_digits, axis=1)])
 
   show = True
   if show:
@@ -233,8 +250,8 @@ def main_find_blanks():
     pyplot.title('origin'), pyplot.xticks([]), pyplot.yticks([])
     pyplot.subplot(132), pyplot.imshow(recombined[:,:,[2,1,0]])
     pyplot.title('extracted'), pyplot.xticks([]), pyplot.yticks([])
-    pyplot.subplot(133), pyplot.imshow(edges,cmap = 'gray')
-    pyplot.title('result'), pyplot.xticks([]), pyplot.yticks([])
+    pyplot.subplot(133), pyplot.imshow(digits[:,:,[2,1,0]])
+    pyplot.title('digits'), pyplot.xticks([]), pyplot.yticks([])
     pyplot.show()
 
 
@@ -254,5 +271,5 @@ def main_edge_detection():
 
 if __name__ == '__main__':
   # main_scale_pattern_and_match()
-  # main_find_blanks()
-  main_edge_detection()
+  main_find_blanks()
+  # main_edge_detection()
