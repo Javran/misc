@@ -125,6 +125,16 @@ def main_scale_pattern_and_match():
   pyplot.show()
 
 
+def subplot_gray(num, img, title):
+  pyplot.subplot(num), pyplot.imshow(img,cmap = 'gray')
+  pyplot.title(title), pyplot.xticks([]), pyplot.yticks([])
+
+
+def subplot_color(num, img, title):
+  pyplot.subplot(num), pyplot.imshow(img[:,:,[2,1,0]])
+  pyplot.title(title), pyplot.xticks([]), pyplot.yticks([])
+
+
 def main_all_samples():
   pat_orig = cv2.imread('../sample/tree-sample.png')
   for i in range(5,22+1):
@@ -242,22 +252,16 @@ def main_find_blanks():
   row_digits = [ extract_digit(row_lo,digit_col_start) for row_lo, _ in row_bounds ]
 
   digits = np.concatenate([np.concatenate(row_digits, axis=1),np.concatenate(col_digits, axis=1)])
-  digits_result = cv2.inRange(digits, (0x41, 0x4e, 0x7e), (0x41, 0x4e, 0x7e))
+  color_unsat = (0x41, 0x4e, 0x7e)  # B,G,R
+  digits_result = cv2.inRange(digits, color_unsat, color_unsat)
 
   show = True
   if show:
     pyplot.figure().canvas.set_window_title('@dev')
-    pyplot.subplot(141), pyplot.imshow(img[:,:,[2,1,0]])
-    pyplot.title('origin'), pyplot.xticks([]), pyplot.yticks([])
-    pyplot.subplot(142), pyplot.imshow(recombined[:,:,[2,1,0]])
-    pyplot.title('extracted'), pyplot.xticks([]), pyplot.yticks([])
-
-    pyplot.subplot(143), pyplot.imshow(digits[:,:,[2,1,0]])
-    pyplot.title('digits'), pyplot.xticks([]), pyplot.yticks([])
-
-    pyplot.subplot(144), pyplot.imshow(digits_result,cmap = 'gray')
-    pyplot.title('digits_inrange'), pyplot.xticks([]), pyplot.yticks([])
-
+    subplot_color(221, img, 'origin')
+    subplot_color(222, recombined, 'extracted')
+    subplot_color(223, digits, 'digits')
+    subplot_gray(224, digits_result, 'digits_inrange')
     pyplot.show()
 
 
