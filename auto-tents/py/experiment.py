@@ -253,7 +253,9 @@ def main_find_blanks():
 
   digits = np.concatenate([np.concatenate(row_digits, axis=1),np.concatenate(col_digits, axis=1)])
   color_unsat = (0x41, 0x4e, 0x7e)  # B,G,R
-  digits_result = cv2.inRange(digits, color_unsat, color_unsat)
+  digits_result_unsat = cv2.inRange(digits, color_unsat, color_unsat)
+  color_sat = (0x97, 0xa7, 0xc8)
+  digits_result_sat = cv2.inRange(digits, color_sat, color_sat)
 
   show = True
   if show:
@@ -261,7 +263,10 @@ def main_find_blanks():
     subplot_color(221, img, 'origin')
     subplot_color(222, recombined, 'extracted')
     subplot_color(223, digits, 'digits')
-    subplot_gray(224, digits_result, 'digits_inrange')
+    subplot_gray(
+      224,
+      np.concatenate([digits_result_unsat, digits_result_sat]),
+      'digits_inrange')
     pyplot.show()
 
 
