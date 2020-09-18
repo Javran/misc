@@ -257,6 +257,17 @@ def main_find_blanks():
   color_sat = (0x97, 0xa7, 0xc8)
   digits_result_sat = cv2.inRange(digits, color_sat, color_sat)
 
+  # digit sample extraction steps (for each single cell image)
+  # (TODO: for simplicity, let's only consider color of unsat digits for now)
+  # - cv2.inRange to extract shape of the digit
+  # - cv2.boundingRect to find the bounding rectangle
+  # - crop it and save it as image.
+  # - for sat digits, the checkmark needs to be extracted,
+  #   but that's not an immediate issue as most of the digits are indeed unsat.
+  # - note that a digit cell can contain multiple digits,
+  #   we could get only a partial digit, but that doesn't really affect
+  #   the correctness of matchTemplate.
+
   show = True
   if show:
     pyplot.figure().canvas.set_window_title('@dev')
