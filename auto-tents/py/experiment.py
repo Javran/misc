@@ -171,7 +171,7 @@ def resolve_stat(d, size, threshold = 3):
 
 
 def main_find_blanks():
-  size = 17
+  size = 22
   img = load_sample(size)
   h, w, _ = img.shape
   # This is the exact color that game uses for blank cells.
@@ -242,16 +242,22 @@ def main_find_blanks():
   row_digits = [ extract_digit(row_lo,digit_col_start) for row_lo, _ in row_bounds ]
 
   digits = np.concatenate([np.concatenate(row_digits, axis=1),np.concatenate(col_digits, axis=1)])
+  digits_result = cv2.inRange(digits, (0x41, 0x4e, 0x7e), (0x41, 0x4e, 0x7e))
 
   show = True
   if show:
     pyplot.figure().canvas.set_window_title('@dev')
-    pyplot.subplot(131), pyplot.imshow(img[:,:,[2,1,0]])
+    pyplot.subplot(141), pyplot.imshow(img[:,:,[2,1,0]])
     pyplot.title('origin'), pyplot.xticks([]), pyplot.yticks([])
-    pyplot.subplot(132), pyplot.imshow(recombined[:,:,[2,1,0]])
+    pyplot.subplot(142), pyplot.imshow(recombined[:,:,[2,1,0]])
     pyplot.title('extracted'), pyplot.xticks([]), pyplot.yticks([])
-    pyplot.subplot(133), pyplot.imshow(digits[:,:,[2,1,0]])
+
+    pyplot.subplot(143), pyplot.imshow(digits[:,:,[2,1,0]])
     pyplot.title('digits'), pyplot.xticks([]), pyplot.yticks([])
+
+    pyplot.subplot(144), pyplot.imshow(digits_result,cmap = 'gray')
+    pyplot.title('digits_inrange'), pyplot.xticks([]), pyplot.yticks([])
+
     pyplot.show()
 
 
