@@ -91,39 +91,6 @@ def resample_pattern_from_image(pat_orig, img):
   c, r = max_loc
   return img[r:r+pat_h,c:c+pat_w]
 
-def main_scale_pattern_and_match():
-  img = load_sample(18)
-  pat_orig = cv2.imread('../sample/tree-sample.png')
-  pat = resample_pattern_from_image(pat_orig, img)
-  pat_h, pat_w, _ = pat.shape
-  print(pat.shape)
-  result = cv2.matchTemplate(img,pat,tm_method)
-  result_norm = cv2.normalize(result, 0, 255)
-  min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
-
-  # now the problem lies in how should we find this threshold.
-  # it is promising here to analyze histogram to determine this value.
-  img_marked = find_and_mark_matches(img, result, [pat_h, pat_w], 0.95)
-  print(f'min: {min_val}, max: {max_val}')
-  top_left = max_loc
-  bottom_right = (top_left[0] + pat_w, top_left[1] + pat_h)
-  pyplot.figure().canvas.set_window_title('@dev')
-
-  pyplot.subplot(131), pyplot.imshow(result_norm,cmap = 'gray')
-  pyplot.title('result'), pyplot.xticks([]), pyplot.yticks([])
-  # opencv stores in BGR while pyplot in RGB. (https://stackoverflow.com/a/41869419/315302)
-  pyplot.subplot(132), pyplot.imshow(img_marked[:,:,[2,1,0]])
-  pyplot.title('origin'), pyplot.xticks([]), pyplot.yticks([])
-
-  pyplot.subplot(133), pyplot.hist(result.flatten(), range=(0.9, 1.0))
-  pyplot.title('hist')
-  # pyplot.subplot(223),pyplot.imshow(pat_orig[:,:,[2,1,0]])
-  # pyplot.title('pat_orig'), pyplot.xticks([]), pyplot.yticks([])
-  # pyplot.subplot(224),pyplot.imshow(pat[:,:,[2,1,0]])
-  # pyplot.title('pat'), pyplot.xticks([]), pyplot.yticks([])
-
-  pyplot.show()
-
 
 def subplot_gray(num, img, title):
   pyplot.subplot(num), pyplot.imshow(img,cmap = 'gray')
@@ -371,5 +338,4 @@ def main_find_blanks():
 
 
 if __name__ == '__main__':
-  # main_scale_pattern_and_match()
   main_find_blanks()
