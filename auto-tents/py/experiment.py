@@ -147,6 +147,26 @@ def resolve_stat(d, size, threshold = 3):
   return map(ave, grouping)
 
 
+def rescale_and_match(img, templ_in, tm_method):
+  (_,_,w,h) = cv2.boundingRect(img)
+  if w == 0 or h == 0:
+    return None
+  else:
+    # try to rescale pattern to match image width (of the bounding rect)
+    # we are targeting width here because we can prevent one digit pattern
+    # to match with multiple digit ones this way.
+    # also because digits tend to vary more in horizontal direction
+    # so we are actually eliminating lots of candidates this way.
+    templ = scale_pattern(templ_in, w)
+    templ_h, _ = templ.shape
+    if templ_h > h:
+      return None
+
+  result = cv2.matchTemplate(img, templ, tm_method)
+  _, max_val, _, _ = cv2.minMaxLoc(result)
+  return max_val
+
+
 def main_find_blanks():
   size = 22
   img = load_sample(size)
@@ -271,25 +291,6 @@ def main_find_blanks():
   row_digit_templs = [ process_digit_cell(d) for d in row_digits ]
 
   def debug_cross_compare(digits, digit_templs):
-    def rescale_and_match(img, templ_in, tm_method):
-      (_,_,w,h) = cv2.boundingRect(img)
-      if w == 0 or h == 0:
-        return None
-      else:
-        # try to rescale pattern to match image width (of the bounding rect)
-        # we are targeting width here because we can prevent one digit pattern
-        # to match with multiple digit ones this way.
-        # also because digits tend to vary more in horizontal direction
-        # so we are actually eliminating lots of candidates this way.
-        templ = scale_pattern(templ_in, w)
-
-      templ_h, _ = templ.shape
-      if templ_h > h:
-        return None
-      result = cv2.matchTemplate(img, templ, tm_method)
-      _, max_val, _, _ = cv2.minMaxLoc(result)
-      return max_val
-
     for dg_img_pre in digits:
       dg_img = cv2.inRange(dg_img_pre, color_unsat, color_unsat)
       line = []
