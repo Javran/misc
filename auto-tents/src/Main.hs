@@ -16,20 +16,43 @@ module Main
 
   Questions:
 
-  - where is the board?
-
   - how to extract and recognize trees and empty spaces?
 
-    a reasonable assumption will be that there will always be some empty spaces on board for us to recognize,
-    and hopefully every boundary will have one empty cell. we can find the board by taking min max of those results.
+    For simplicity, let's only work on a clean board (that is, no empty or tent marked).
 
-    a tricky thing about tree is that it sticks out into its upper cell. as a temporary measure,
-    let's exclude the potentially overlapping part from tree sample template.
+    This is currently done based on the fact that all empty cells use the exact same color,
+    so the region can be extracted with OpenCV's inRange function, after which we can floodFill
+    to find boundaries of empty cells can use that to derive row and col coordinates of the board.
 
-    we can also use the fact that all empty spaces are using the same color: #343131.
-    I'm not sure how to use this fact yet but I feel this is a useful fact to have.
+    Board's position (or we should say each cell's position) is straightforward to figure out
+    after we derive bounding low/high for each cell's row and col.
+
+    a reasonable (but not safe) assumption that we use here is that:
+
+    + there will always be some empty spaces on board for each row and col.
+    + every boundary will have at least one empty cell.
 
   - how to extract and recognize digits on board sides?
+
+    This is now done by guessing: given first two cells of a row or column,
+    we extend cell boundary in the other direction - as it turns out that
+    all digits happen to be placed in that region.
+
+    (TODO) Quick notes:
+
+    - there are two different colors for digits:
+
+      + one color is consistently used for unsatisfied digits
+      + another color is consistently used for satisfied digits,
+        and satistifed digits are trickier to recognoze as there's an extra check mark character
+        that we want to exclude.
+
+   - for unsatisfied digits, the plan is simple: run through inRange by filtering on just that unsatisfied color,
+     the we can find boundary of it and extract those as samples
+
+   - for satisfied digits, well since that row / col is already satisfied, we can derive what that number is from
+     the board itself. The board parsing function might need some modification, but I believe we can entirely
+     ignore the problem of recognizing digits from picture.
 
  -}
 
