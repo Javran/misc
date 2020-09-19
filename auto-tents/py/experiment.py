@@ -246,16 +246,28 @@ def main_find_blanks():
   digit_row_start = 2 * row_bounds[0][0] - row_bounds[1][0]
   digit_col_start = 2 * col_bounds[0][0] - col_bounds[1][0]
 
+  color_unsat = (0x41, 0x4e, 0x7e)  # B,G,R
+  color_sat = (0x97, 0xa7, 0xc8)
+
+  def process_digit_cell(dg_img):
+    result = cv2.inRange(dg_img, color_unsat, color_unsat)
+    bd_rect = cv2.boundingRect(result)
+    result = cv2.cvtColor(result, cv2.COLOR_GRAY2BGR)
+    return cv2.rectangle(result, bd_rect, (0xFF, 0, 0))
+
+
   # digits accompanying every column.
-  col_digits = [ extract_digit(digit_row_start,col_lo) for col_lo, _ in col_bounds ]
+  col_digits = [
+    process_digit_cell(extract_digit(digit_row_start,col_lo))
+    for col_lo, _ in col_bounds
+  ]
   # same but for rows
-  row_digits = [ extract_digit(row_lo,digit_col_start) for row_lo, _ in row_bounds ]
+  row_digits = [
+    process_digit_cell(extract_digit(row_lo,digit_col_start))
+    for row_lo, _ in row_bounds
+  ]
 
   digits = np.concatenate([np.concatenate(row_digits, axis=1),np.concatenate(col_digits, axis=1)])
-  color_unsat = (0x41, 0x4e, 0x7e)  # B,G,R
-  digits_result_unsat = cv2.inRange(digits, color_unsat, color_unsat)
-  color_sat = (0x97, 0xa7, 0xc8)
-  digits_result_sat = cv2.inRange(digits, color_sat, color_sat)
 
   # digit sample extraction steps (for each single cell image)
   # (TODO: for simplicity, let's only consider color of unsat digits for now)
@@ -274,10 +286,6 @@ def main_find_blanks():
     subplot_color(221, img, 'origin')
     subplot_color(222, recombined, 'extracted')
     subplot_color(223, digits, 'digits')
-    subplot_gray(
-      224,
-      np.concatenate([digits_result_unsat, digits_result_sat]),
-      'digits_inrange')
     pyplot.show()
 
 
