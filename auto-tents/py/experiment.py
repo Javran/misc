@@ -233,7 +233,22 @@ def main_find_blanks():
     for c, (col_lo, col_hi) in enumerate(col_bounds):
       cells[r][c] = img[row_lo:row_hi+1, col_lo:col_hi+1]
 
+
+  def find_tree(cell_img):
+    color_shade = (0x55, 0xc8, 0x87)
+    result = cv2.inRange(cell_img, color_shade, color_shade)
+    (_,_,w,h) = cv2.boundingRect(result)
+    if w != 0 and h != 0:
+      color = 0xFF
+    else:
+      color = 0
+    return np.full((4,4), color)
+
   recombined = np.concatenate([ np.concatenate(row, axis=1) for row in cells], axis=0)
+
+  cell_results_recombined = np.concatenate([
+    np.concatenate([ find_tree(c) for c in row], axis=1) for row in cells
+  ], axis=0)
 
   max_cell_side = max(map(lambda x: x[1] - x[0] + 1, row_bounds + col_bounds))
   def extract_digit(row,col):
@@ -298,7 +313,7 @@ def main_find_blanks():
           continue
         result = cv2.matchTemplate(dg_img,templ,cv2.TM_CCORR_NORMED)
         min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
-        line.append(f'{max_val:6f}')
+        line.append(f'{max_val:.4f}')
       print(', '.join(line))
 
   debug_cross_compare(row_digits, row_digit_templs)
@@ -327,6 +342,7 @@ def main_find_blanks():
     subplot_color(221, img, 'origin')
     subplot_color(222, recombined, 'extracted')
     subplot_gray(223, digits, 'digits')
+    subplot_gray(224, cell_results_recombined, 'find tree')
     pyplot.show()
 
 
