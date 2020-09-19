@@ -249,25 +249,66 @@ def main_find_blanks():
   color_unsat = (0x41, 0x4e, 0x7e)  # B,G,R
   color_sat = (0x97, 0xa7, 0xc8)
 
+  side_length_for_display = math.ceil(max_cell_side * 1.1)
   def process_digit_cell(dg_img):
     result = cv2.inRange(dg_img, color_unsat, color_unsat)
-    bd_rect = cv2.boundingRect(result)
-    result = cv2.cvtColor(result, cv2.COLOR_GRAY2BGR)
-    return cv2.rectangle(result, bd_rect, (0xFF, 0, 0))
+    (x,y,w,h) = cv2.boundingRect(result)
+    if w == 0 or h == 0:
+      return None
+    return result[y:y+h,x:x+w]
 
+  def padding_digit_img(dg_img):
+    if dg_img is None:
+      return np.full((side_length_for_display, side_length_for_display), 0x7F)
+
+    h, w = dg_img.shape
+    top = math.floor((side_length_for_display - h) / 2)
+    bottom = side_length_for_display - top - h
+    left = math.floor((side_length_for_display - w) / 2)
+    right =  side_length_for_display - left - w
+    return cv2.copyMakeBorder(dg_img, top, bottom, left, right, borderType=cv2.BORDER_CONSTANT, value=0x7F)
+
+  # TODO: make a matrix of matching results of matchTemplate for row / col digits.
+  # where the template is digits cropped by bounding rect,
+  # and image is the digit picture after inRange filter.
+  # TODO: scaling is for now ignored but we'll do something about it
+  # plan: run boundingRect on digit image, and use height of resulting
+  # rectangle to scale the template into same height before matchTemplate run.
 
   # digits accompanying every column.
   col_digits = [
-    process_digit_cell(extract_digit(digit_row_start,col_lo))
+    extract_digit(digit_row_start,col_lo)
     for col_lo, _ in col_bounds
   ]
+  col_digit_templs = [ process_digit_cell(d) for d in col_digits ]
   # same but for rows
   row_digits = [
-    process_digit_cell(extract_digit(row_lo,digit_col_start))
+    extract_digit(row_lo,digit_col_start)
     for row_lo, _ in row_bounds
   ]
+  row_digit_templs = [ process_digit_cell(d) for d in row_digits ]
 
-  digits = np.concatenate([np.concatenate(row_digits, axis=1),np.concatenate(col_digits, axis=1)])
+  def debug_cross_compare(digits, digit_templs):
+    for dg_img_pre in digits:
+      dg_img = cv2.inRange(dg_img_pre, color_unsat, color_unsat)
+      line = []
+      for templ in digit_templs:
+        if templ is None:
+          line.append('--------')
+          continue
+        result = cv2.matchTemplate(dg_img,templ,cv2.TM_CCORR_NORMED)
+        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+        line.append(f'{max_val:6f}')
+      print(', '.join(line))
+
+  debug_cross_compare(row_digits, row_digit_templs)
+  debug_cross_compare(col_digits, col_digit_templs)
+
+  digits = np.concatenate(
+    [
+      np.concatenate([padding_digit_img(x) for x in row_digit_templs], axis=1),
+      np.concatenate([padding_digit_img(x) for x in col_digit_templs], axis=1),
+    ])
 
   # digit sample extraction steps (for each single cell image)
   # (TODO: for simplicity, let's only consider color of unsat digits for now)
@@ -285,7 +326,7 @@ def main_find_blanks():
     pyplot.figure().canvas.set_window_title('@dev')
     subplot_color(221, img, 'origin')
     subplot_color(222, recombined, 'extracted')
-    subplot_color(223, digits, 'digits')
+    subplot_gray(223, digits, 'digits')
     pyplot.show()
 
 
