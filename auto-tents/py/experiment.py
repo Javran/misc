@@ -157,10 +157,12 @@ def rescale_and_match(img, templ_in, tm_method):
     # to match with multiple digit ones this way.
     # also because digits tend to vary more in horizontal direction
     # so we are actually eliminating lots of candidates this way.
-    templ = scale_pattern(templ_in, w)
-    templ_h, _ = templ.shape
+    templ_in_h, templ_in_w = templ_in.shape
+    scale = w / templ_in_w
+    templ_h = round(templ_in_h * w / templ_in_w)
     if templ_h > h:
       return None
+    templ = cv2.resize(templ_in, (w, templ_h), cv2.INTER_AREA)
 
   result = cv2.matchTemplate(img, templ, tm_method)
   _, max_val, _, _ = cv2.minMaxLoc(result)
