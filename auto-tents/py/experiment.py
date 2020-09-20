@@ -16,6 +16,8 @@ import re
 import functools
 import json
 
+# We use CCOEFF here as we do want some penalty on mismatched bits
+# so that result is spreaded over a wider range so we have finer control using threshold.
 tm_method = cv2.TM_CCOEFF_NORMED
 color_unsat = (0x41, 0x4e, 0x7e)  # B,G,R
 color_sat = (0x97, 0xa7, 0xc8)
@@ -23,6 +25,12 @@ color_shade = (0x55, 0xc8, 0x87)
 # This is the exact color that game uses for blank cells.
 color_blank = (49, 49, 52)
 
+# threshold used for sampling, this is higher that threshold used for
+# recognition as we do want a wider range of samples.
+SAMPLE_THRESHOLD = 0.9
+# threshold used for recognition.
+# a matching result lower than this is considered not confident and may be incorrect.
+RECOG_THRESHOLD = 0.85
 
 store_path = '../private/digits'
 preset_path = '../private/preset.json'
@@ -430,7 +438,7 @@ def main_tagging(dry_run=True):
       # use original image for this step as we want some room around
       # the sample to allow some flexibility.
       best_val, best_tag = find_tag(tagged_samples, digit_img)
-      if best_val is not None and best_val >= 0.9:
+      if best_val is not None and best_val >= SAMPLE_THRESHOLD:
         good_count += 1
         continue
 
@@ -577,6 +585,8 @@ def main_verify_preset():
       # use original image for this step as we want some room around
       # the sample to allow some flexibility.
       best_val, best_tag = find_tag(tagged_samples, digit_img)
+      if best_val < RECOG_THRESHOLD:
+        print(f'Warning: best_val is only {best_val}, the recognized digit might be incorrect.')
       # TOOD: turn this into UNTAGGED if best_val is too low,
       # we can also do "UNTAGGED_<x>_<whatever id>.png"
       # where "<x>" is the best tag we have.
@@ -591,9 +601,79 @@ def main_verify_preset():
   pyplot.show()
 
 
+# Here we focus on two numbers:
+# - what is the worst match inside the same tag (in-tag min),
+#   this measures how "spreaded" are those samples.
+# - what is the best match with other different tags (cross-tag min),
+#   this one is arguably the more valuable info of the two,
+#   as it provides some guidance on how to set the "it's a good match" threshold.
+def main_sample_analysis():
+  """Analysis of collected samples."""
+  tagged_samples = load_samples()
+  flat_samples = sum(
+    [[(tag, i, s)] for tag, samples in tagged_samples.items() for i, s in enumerate(samples)],
+    []
+  )
+  print(len(flat_samples))
+  # stores match in results[tag0, i0][tag1, i1]
+  results = collections.defaultdict(dict)
+  for (tag0, i0, s_img_pre) in flat_samples:
+    padding = 5
+    # Apply padding in all directions, this is to:
+    # (1) simulate the situation that we need to match a pattern
+    # in an image that contains some extra empty parts.
+    # (2) allow some flexibility for matchTemplate
+    s_img = cv2.copyMakeBorder(
+      s_img_pre,
+      padding, padding, padding, padding,
+      borderType=cv2.BORDER_CONSTANT,
+      value=0)
+
+    for (tag1, i1, s_pat) in flat_samples:
+      val = rescale_and_match(s_img,s_pat,tm_method)
+      if val is None:
+        continue
+      results[tag0,i0][tag1,i1] = val
+
+  def minMaxWithoutOne(xs_pre):
+    xs = [ x for x in xs_pre if x < 1 ]
+    if len(xs):
+      return min(xs), max(xs)
+    else:
+      return None
+
+  in_tag_min, cross_tag_max = None, None
+  for tag, samples in tagged_samples.items():
+    print(f'Tag {tag} has {len(samples)} samples.')
+    l = range(len(samples))
+    vals = [ results[tag, i][tag, j] for i in l for j in l if (tag, j) in results[tag, i] ]
+    min_max = minMaxWithoutOne(vals)
+    print(f'  stats in-tag: min_val, max_val = {min_max}')
+    if min_max is not None:
+      if in_tag_min is None or min_max[0] < in_tag_min:
+        in_tag_min = min_max[0]
+    vals = [
+      val
+      for (tag0, _), d in results.items()
+      if tag0 == tag
+      for (tag1, _), val in d.items()
+      if tag1 != tag
+    ]
+    min_max = minMaxWithoutOne(vals)
+    if min_max is not None:
+      if cross_tag_max is None or min_max[1] > cross_tag_max:
+        cross_tag_max = min_max[1]
+    print(f'  stats cross-tag: min_val, max_val = {min_max}')
+  print(f'in-tag min: {in_tag_min}, cross-tag max: {cross_tag_max}')
+  # for now the result is:
+  # in-tag min: 0.6574000716209412, cross-tag max: 0.7616900205612183
+  # so I guess 0.85 could be a decent threshold to use.
+
+
 if __name__ == '__main__':
   # main_experiment()
   # main_tagging()
   # main_generate_preset()
   main_verify_preset()
+  # main_sample_analysis()
 
