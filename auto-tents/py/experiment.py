@@ -20,6 +20,9 @@ tm_method = cv2.TM_CCOEFF_NORMED
 color_unsat = (0x41, 0x4e, 0x7e)  # B,G,R
 color_sat = (0x97, 0xa7, 0xc8)
 color_shade = (0x55, 0xc8, 0x87)
+# This is the exact color that game uses for blank cells.
+color_blank = (49, 49, 52)
+
 
 store_path = '../private/digits'
 preset_path = '../private/preset.json'
@@ -182,9 +185,7 @@ def rescale_and_match(img, templ_in, tm_method):
 
 def find_cell_bounds(img, size=None):
   h, w, _ = img.shape
-  # This is the exact color that game uses for blank cells.
-  bk = (49, 49, 52)
-  result = cv2.inRange(img, bk, bk)
+  result = cv2.inRange(img, color_blank, color_blank)
 
   mk_stat = lambda: collections.defaultdict(lambda: 0)
 
@@ -280,7 +281,6 @@ def main_experiment():
       cells[r][c] = img[row_lo:row_hi+1, col_lo:col_hi+1]
 
   def find_tree(cell_img):
-
     result = cv2.inRange(cell_img, color_shade, color_shade)
     (_,_,w,h) = cv2.boundingRect(result)
     if w != 0 and h != 0:
@@ -484,8 +484,116 @@ def main_generate_preset():
   print(json.dumps(full,sort_keys=True,separators=(',', ':')))
 
 
+RE_RAW_SIZE = re.compile(r'^(\d+)x\1$')
+
+
+def main_verify_preset():
+  d = None
+  with open(preset_path) as f:
+    d = json.load(f)['1440x2880']
+  assert d is not None
+
+  def to_side_length_set(bounds):
+    return { x[1] - x[0] + 1 for x in bounds }
+
+  # Build reverse map from side length of a blank cell to size (# of cells in row or col)
+  side_length_to_size = {}
+  for size_raw, v in d.items():
+    size = int(RE_RAW_SIZE.match(size_raw).group(1))
+    row_bounds = to_side_length_set(v['row_bounds'])
+    col_bounds = to_side_length_set(v['col_bounds'])
+    all_bounds = set.union(row_bounds, col_bounds)
+    for x in all_bounds:
+      assert x not in side_length_to_size, 'Side length is ambiguous.'
+      side_length_to_size[x] = size
+
+  # TODO: this is just quick and dirty and contains tons of duplicated codes.
+  img = cv2.imread(f'../private/sample-daily.png')
+  h, w, _ = img.shape
+  result = cv2.inRange(img, color_blank, color_blank)
+  mask = np.zeros((h+2,w+2), dtype=np.uint8)
+  # now we just need one empty cell for this to work,
+  # we can just search inside bounding rect and
+  # find the last empty cell so that we don't need to
+  # skip first box and then look at many filler lines.
+  r_x, r_y, r_w, r_h = cv2.boundingRect(result)
+  size = None
+  for r in reversed(range(r_y,r_y+r_h)):
+    if size is not None:
+      break
+    for c in reversed(range(r_x,r_x+r_w)):
+      if (result[r,c] != 0):
+        x,y = c,r
+        retval, result, _, rect = cv2.floodFill(result, mask, (x,y), 0)
+        rect_x, rect_y, rect_w, rect_h = rect
+        size = side_length_to_size[rect_w]
+        print(f'Side length (width): {rect_w}, size: {size}x{size}')
+        break
+  assert size is not None, 'Size cannot be recognized.'
+  cell_bounds_raw = d[f'{size}x{size}']
+  row_bounds = list(map(lambda x: (x[0], x[1]), cell_bounds_raw['row_bounds']))
+  col_bounds = list(map(lambda x: (x[0], x[1]), cell_bounds_raw['col_bounds']))
+  row_digits, col_digits = extract_digits(img, (row_bounds, col_bounds))
+  digits = np.concatenate(
+    [
+      np.concatenate(row_digits, axis=1),
+      np.concatenate(col_digits, axis=1),
+    ])
+
+  cells = [ [ None for _ in range(size) ] for _ in range(size)]
+  for r, (row_lo, row_hi) in enumerate(row_bounds):
+    for c, (col_lo, col_hi) in enumerate(col_bounds):
+      cells[r][c] = img[row_lo:row_hi+1, col_lo:col_hi+1]
+
+  recombined = np.concatenate([ np.concatenate(row, axis=1) for row in cells ], axis=0)
+
+  def find_tree(cell_img):
+    result = cv2.inRange(cell_img, color_shade, color_shade)
+    (_,_,w,h) = cv2.boundingRect(result)
+    if w != 0 and h != 0:
+      color = 0xFF
+    else:
+      color = 0
+    return np.full((4,4), color)
+
+  recombined = np.concatenate([ np.concatenate(row, axis=1) for row in cells ], axis=0)
+
+  cell_results_recombined = np.concatenate([
+    np.concatenate([ find_tree(c) for c in row], axis=1) for row in cells
+  ], axis=0)
+
+  tagged_samples = load_samples()
+
+  for desc, ds in [
+      ('Row', row_digits),
+      ('Col', col_digits),
+  ]:
+    print(f'{desc} info:')
+    for digit_img in ds:
+      digit_img_cropped = crop_digit_cell(digit_img)
+      if digit_img_cropped is None:
+        print('-')
+        continue
+      # use original image for this step as we want some room around
+      # the sample to allow some flexibility.
+      best_val, best_tag = find_tag(tagged_samples, digit_img)
+      # TOOD: turn this into UNTAGGED if best_val is too low,
+      # we can also do "UNTAGGED_<x>_<whatever id>.png"
+      # where "<x>" is the best tag we have.
+      # this makes it easier to rename if the best guess is actually correct.
+      print(best_tag, best_val)
+
+  pyplot.figure().canvas.set_window_title('@dev')
+  subplot_color(221, img, 'origin')
+  subplot_color(222, recombined, 'extracted')
+  subplot_color(223, digits, 'digits')
+  subplot_gray(224, cell_results_recombined, 'find tree')
+  pyplot.show()
+
+
 if __name__ == '__main__':
   # main_experiment()
   # main_tagging()
-  main_generate_preset()
+  # main_generate_preset()
+  main_verify_preset()
 
