@@ -495,6 +495,27 @@ def main_generate_preset():
 RE_RAW_SIZE = re.compile(r'^(\d+)x\1$')
 
 
+def find_board_size(side_length_to_size, img):
+  h, w, _ = img.shape
+  result = cv2.inRange(img, color_blank, color_blank)
+  mask = np.zeros((h+2,w+2), dtype=np.uint8)
+  # now we just need one empty cell for this to work,
+  # we can just search inside bounding rect and
+  # find the last empty cell so that we don't need to
+  # skip first box and then look at many filler lines.
+  r_x, r_y, r_w, r_h = cv2.boundingRect(result)
+  for r in reversed(range(r_y,r_y+r_h)):
+    for c in reversed(range(r_x,r_x+r_w)):
+      if (result[r,c] != 0):
+        x,y = c,r
+        retval, result, _, rect = cv2.floodFill(result, mask, (x,y), 0)
+        _, _, rect_w, _ = rect
+        if rect_w in side_length_to_size:
+          return side_length_to_size[rect_w]
+        else:
+          return None
+
+
 def main_verify_preset():
   d = None
   with open(preset_path) as f:
@@ -517,27 +538,9 @@ def main_verify_preset():
 
   # TODO: this is just quick and dirty and contains tons of duplicated codes.
   img = cv2.imread(f'../private/sample-daily.png')
-  h, w, _ = img.shape
-  result = cv2.inRange(img, color_blank, color_blank)
-  mask = np.zeros((h+2,w+2), dtype=np.uint8)
-  # now we just need one empty cell for this to work,
-  # we can just search inside bounding rect and
-  # find the last empty cell so that we don't need to
-  # skip first box and then look at many filler lines.
-  r_x, r_y, r_w, r_h = cv2.boundingRect(result)
-  size = None
-  for r in reversed(range(r_y,r_y+r_h)):
-    if size is not None:
-      break
-    for c in reversed(range(r_x,r_x+r_w)):
-      if (result[r,c] != 0):
-        x,y = c,r
-        retval, result, _, rect = cv2.floodFill(result, mask, (x,y), 0)
-        rect_x, rect_y, rect_w, rect_h = rect
-        size = side_length_to_size[rect_w]
-        print(f'Side length (width): {rect_w}, size: {size}x{size}')
-        break
+  size = find_board_size(side_length_to_size, img)
   assert size is not None, 'Size cannot be recognized.'
+  print(f'Board size: {size}x{size}')
   cell_bounds_raw = d[f'{size}x{size}']
   row_bounds = list(map(lambda x: (x[0], x[1]), cell_bounds_raw['row_bounds']))
   col_bounds = list(map(lambda x: (x[0], x[1]), cell_bounds_raw['col_bounds']))
@@ -646,7 +649,12 @@ def main_sample_analysis():
   for tag, samples in tagged_samples.items():
     print(f'Tag {tag} has {len(samples)} samples.')
     l = range(len(samples))
-    vals = [ results[tag, i][tag, j] for i in l for j in l if (tag, j) in results[tag, i] ]
+    vals = [
+      results[tag, i][tag, j]
+      for i in l
+      for j in l
+      if (tag, j) in results[tag, i]
+    ]
     min_max = minMaxWithoutOne(vals)
     print(f'  stats in-tag: min_val, max_val = {min_max}')
     if min_max is not None:
@@ -676,4 +684,3 @@ if __name__ == '__main__':
   # main_generate_preset()
   main_verify_preset()
   # main_sample_analysis()
-
