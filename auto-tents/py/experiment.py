@@ -240,13 +240,6 @@ def extract_digits(img, cell_bounds):
   digit_row_start = 2 * row_bounds[0][0] - row_bounds[1][0]
   digit_col_start = 2 * col_bounds[0][0] - col_bounds[1][0]
 
-  # TODO: make a matrix of matching results of matchTemplate for row / col digits.
-  # where the template is digits cropped by bounding rect,
-  # and image is the digit picture after inRange filter.
-  # TODO: scaling is for now ignored but we'll do something about it
-  # plan: run boundingRect on digit image, and use height of resulting
-  # rectangle to scale the template into same height before matchTemplate run.
-
   # digits accompanying every row.
   row_digits = [
     extract_digit(row_lo,digit_col_start)
@@ -310,13 +303,6 @@ def main_experiment():
     right =  side_length_for_display - left - w
     return cv2.copyMakeBorder(dg_img, top, bottom, left, right, borderType=cv2.BORDER_CONSTANT, value=0x7F)
 
-  # TODO: make a matrix of matching results of matchTemplate for row / col digits.
-  # where the template is digits cropped by bounding rect,
-  # and image is the digit picture after inRange filter.
-  # TODO: scaling is for now ignored but we'll do something about it
-  # plan: run boundingRect on digit image, and use height of resulting
-  # rectangle to scale the template into same height before matchTemplate run.
-
   # digits accompanying every row and col.
   row_digits, col_digits = extract_digits(img, cell_bounds)
 
@@ -350,16 +336,10 @@ def main_experiment():
       np.concatenate([padding_digit_img(x) for x in col_digit_templs], axis=1),
     ])
 
-  # digit sample extraction steps (for each single cell image)
-  # (TODO: for simplicity, let's only consider color of unsat digits for now)
+  # digit sample extraction steps (for each single cell image):
   # - cv2.inRange to extract shape of the digit
   # - cv2.boundingRect to find the bounding rectangle
   # - crop it and save it as image.
-  # - for sat digits, the checkmark needs to be extracted,
-  #   but that's not an immediate issue as most of the digits are indeed unsat.
-  # - note that a digit cell can contain multiple digits,
-  #   we could get only a partial digit, but that doesn't really affect
-  #   the correctness of matchTemplate.
 
   show = True
   if show:
@@ -413,7 +393,6 @@ def find_tag(tagged_samples, img_pre):
 
 
 def main_tagging(dry_run=True):
-  # TODO:
   # the idea of this function is to turn this program into an iterative loop to
   # gradually tag sample images with digits, recognized from boards of various sizes.
 
@@ -468,6 +447,13 @@ def main_tagging(dry_run=True):
   print(f'Visited {visit_count} samples and {good_count} of them found good matches.')
 
 
+# TODO: Given that most of the processing time is spent on doing floodFill to figure out cell bounds,
+# it makes sense that we have this info pre-processed. In order to achieve so, we must extract size of the board.
+# Luckily that the rectangle containing this info is fixed, so given a phone screen size we can do this easily.
+# Originally I don't want to hard code a screen size but for now this isn't an issue that we need to deal with immediate,
+# as I don't have a rich set of screen sizes to find a decent threshold in the first place.
+
 if __name__ == '__main__':
   # main_experiment()
-  main_tagging(dry_run=False)
+  main_tagging()
+
