@@ -449,11 +449,27 @@ def main_tagging(dry_run=True):
 
 # TODO: Given that most of the processing time is spent on doing floodFill to figure out cell bounds,
 # it makes sense that we have this info pre-processed. In order to achieve so, we must extract size of the board.
-# Luckily that the rectangle containing this info is fixed, so given a phone screen size we can do this easily.
-# Originally I don't want to hard code a screen size but for now this isn't an issue that we need to deal with immediate,
-# as I don't have a rich set of screen sizes to find a decent threshold in the first place.
+# Note that despite regular puzzle shows size info (size x size), daily puzzles do not.
+# one potential alternative is to examine an empty cell of the board and see if it's possible to establish size this way
+# (assuming that all puzzles are squares)
+def main_preset_resources():
+  rects = []
+  for size in range(6,22+1):
+    img = load_sample(size)
+    h, w, _ = img.shape
+    assert (h,w) == (2880,1440)
+    # position: 1100, 85
+    # size: 160, 50
+    rects.append(img[85:85+50,1100:1100+160])
+
+  all_rects =  np.concatenate(rects, axis=0)
+  pyplot.figure().canvas.set_window_title('@dev')
+  subplot_color(111, all_rects, 'rects')
+  pyplot.show()
+
 
 if __name__ == '__main__':
   # main_experiment()
-  main_tagging()
+  # main_tagging()
+  main_preset_resources()
 
