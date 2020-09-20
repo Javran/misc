@@ -14,6 +14,7 @@ import os
 import uuid
 import re
 import functools
+import json
 
 tm_method = cv2.TM_CCOEFF_NORMED
 color_unsat = (0x41, 0x4e, 0x7e)  # B,G,R
@@ -21,6 +22,7 @@ color_sat = (0x97, 0xa7, 0xc8)
 color_shade = (0x55, 0xc8, 0x87)
 
 store_path = '../private/digits'
+preset_path = '../private/preset.json'
 
 def load_sample(size):
   return cv2.imread(f'../private/sample-{size}x{size}.png')
@@ -145,7 +147,7 @@ def resolve_stat(d, size, threshold = 3):
   # "fill in the blank" if there are missing elements,
   # but for now it seems good enough to not worry about
   # this issue.
-  assert len(grouping) == size
+  assert size is None or len(grouping) == size
 
   # calculate weighted average from grouping elements.
   def ave(sub_dict):
@@ -178,7 +180,7 @@ def rescale_and_match(img, templ_in, tm_method):
   return max_val
 
 
-def find_cell_bounds(img, size):
+def find_cell_bounds(img, size=None):
   h, w, _ = img.shape
   # This is the exact color that game uses for blank cells.
   bk = (49, 49, 52)
@@ -223,6 +225,10 @@ def find_cell_bounds(img, size):
 
   row_bounds = make_bounds(row_begins_stat, row_ends_stat)
   col_bounds = make_bounds(col_begins_stat, col_ends_stat)
+
+  if size is None:
+    assert len(row_bounds) == len(col_bounds), f'Mismatched bound length {len(row_bounds)} vs {len(col_bounds)}.'
+
   return row_bounds, col_bounds
 
 
@@ -452,24 +458,34 @@ def main_tagging(dry_run=True):
 # Note that despite regular puzzle shows size info (size x size), daily puzzles do not.
 # one potential alternative is to examine an empty cell of the board and see if it's possible to establish size this way
 # (assuming that all puzzles are squares)
-def main_preset_resources():
-  rects = []
+def main_generate_preset():
+  # TODO: plan to serialize to json file.
+  # schema:
+  # top level is an Object keyed by screen width and height i.e. "1440x2880"
+  # then values are Object keyed by size e.g. "16x16", which is then keyed by "row_bounds" and "col_bounds",
+  # which are Arrays whose elements are Array of two elements [lo, hi].
+  # e.g.:
+  # {
+  #   "1440x2880": {"16x16": {"row_bounds": [[a,b], [c,d], ...], "col_bounds": [[a,b], [c,d], ...]}}
+  # }
+  cell_bounds_mapping = {}
   for size in range(6,22+1):
+    print(f'Processing {size}x{size} ...')
     img = load_sample(size)
     h, w, _ = img.shape
     assert (h,w) == (2880,1440)
-    # position: 1100, 85
-    # size: 160, 50
-    rects.append(img[85:85+50,1100:1100+160])
-
-  all_rects =  np.concatenate(rects, axis=0)
-  pyplot.figure().canvas.set_window_title('@dev')
-  subplot_color(111, all_rects, 'rects')
-  pyplot.show()
+    cell_bounds = find_cell_bounds(img, size)
+    row_bounds, col_bounds = cell_bounds
+    cell_bounds_mapping[f'{size}x{size}'] = {
+      'row_bounds': row_bounds,
+      'col_bounds': col_bounds,
+    }
+  full = {'1440x2880': cell_bounds_mapping}
+  print(json.dumps(full,sort_keys=True,separators=(',', ':')))
 
 
 if __name__ == '__main__':
   # main_experiment()
   # main_tagging()
-  main_preset_resources()
+  main_generate_preset()
 
