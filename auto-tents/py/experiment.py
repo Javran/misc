@@ -12,7 +12,11 @@ from matplotlib import pyplot
 import collections
 import os
 
+
 tm_method = cv2.TM_CCOEFF_NORMED
+color_unsat = (0x41, 0x4e, 0x7e)  # B,G,R
+color_sat = (0x97, 0xa7, 0xc8)
+color_shade = (0x55, 0xc8, 0x87)
 
 def load_sample(size):
   return cv2.imread(f'../private/sample-{size}x{size}.png')
@@ -218,21 +222,62 @@ def find_cell_bounds(img, size):
   return row_bounds, col_bounds
 
 
+def extract_digits(img, cell_bounds):
+  h, w, _ = img.shape
+  row_bounds, col_bounds = cell_bounds
+  max_cell_side = max(map(lambda x: x[1] - x[0] + 1, row_bounds + col_bounds))
+  def extract_digit(row,col):
+    return img[row:row+max_cell_side-1,col:col+max_cell_side-1]
+
+  # Suppose first two cells are A and B, we can then find a cell C if we extend
+  # difference between A and B but in the other direction.
+  # A - (B - A) = 2A - B
+
+  digit_row_start = 2 * row_bounds[0][0] - row_bounds[1][0]
+  digit_col_start = 2 * col_bounds[0][0] - col_bounds[1][0]
+
+  # TODO: make a matrix of matching results of matchTemplate for row / col digits.
+  # where the template is digits cropped by bounding rect,
+  # and image is the digit picture after inRange filter.
+  # TODO: scaling is for now ignored but we'll do something about it
+  # plan: run boundingRect on digit image, and use height of resulting
+  # rectangle to scale the template into same height before matchTemplate run.
+
+  # digits accompanying every row.
+  row_digits = [
+    extract_digit(row_lo,digit_col_start)
+    for row_lo, _ in row_bounds
+  ]
+  # same but for columns
+  col_digits = [
+    extract_digit(digit_row_start,col_lo)
+    for col_lo, _ in col_bounds
+  ]
+  return row_digits, col_digits
+
+def crop_digit_cell(img):
+  result = cv2.inRange(img, color_unsat, color_unsat)
+  (x,y,w,h) = cv2.boundingRect(result)
+  if w == 0 or h == 0:
+    return None
+  return result[y:y+h,x:x+w]
+
+
 def main_experiment():
   size = 22
   img = load_sample(size)
   h, w, _ = img.shape
 
-  row_bounds, col_bounds = find_cell_bounds(img, size)
+  cell_bounds =  find_cell_bounds(img, size)
+  row_bounds, col_bounds = cell_bounds
 
   cells = [ [ None for _ in range(size) ] for _ in range(size)]
   for r, (row_lo, row_hi) in enumerate(row_bounds):
     for c, (col_lo, col_hi) in enumerate(col_bounds):
       cells[r][c] = img[row_lo:row_hi+1, col_lo:col_hi+1]
 
-
   def find_tree(cell_img):
-    color_shade = (0x55, 0xc8, 0x87)
+
     result = cv2.inRange(cell_img, color_shade, color_shade)
     (_,_,w,h) = cv2.boundingRect(result)
     if w != 0 and h != 0:
@@ -248,26 +293,7 @@ def main_experiment():
   ], axis=0)
 
   max_cell_side = max(map(lambda x: x[1] - x[0] + 1, row_bounds + col_bounds))
-  def extract_digit(row,col):
-    return img[row:row+max_cell_side-1,col:col+max_cell_side-1]
-
-  # Suppose first two cells are A and B, we can then find a cell C if we extend
-  # difference between A and B but in the other direction.
-  # A - (B - A) = 2A - B
-
-  digit_row_start = 2 * row_bounds[0][0] - row_bounds[1][0]
-  digit_col_start = 2 * col_bounds[0][0] - col_bounds[1][0]
-
-  color_unsat = (0x41, 0x4e, 0x7e)  # B,G,R
-  color_sat = (0x97, 0xa7, 0xc8)
-
   side_length_for_display = math.ceil(max_cell_side * 1.1)
-  def process_digit_cell(dg_img):
-    result = cv2.inRange(dg_img, color_unsat, color_unsat)
-    (x,y,w,h) = cv2.boundingRect(result)
-    if w == 0 or h == 0:
-      return None
-    return result[y:y+h,x:x+w]
 
   def padding_digit_img(dg_img):
     if dg_img is None:
@@ -287,18 +313,11 @@ def main_experiment():
   # plan: run boundingRect on digit image, and use height of resulting
   # rectangle to scale the template into same height before matchTemplate run.
 
-  # digits accompanying every column.
-  col_digits = [
-    extract_digit(digit_row_start,col_lo)
-    for col_lo, _ in col_bounds
-  ]
-  col_digit_templs = [ process_digit_cell(d) for d in col_digits ]
-  # same but for rows
-  row_digits = [
-    extract_digit(row_lo,digit_col_start)
-    for row_lo, _ in row_bounds
-  ]
-  row_digit_templs = [ process_digit_cell(d) for d in row_digits ]
+  # digits accompanying every row and col.
+  row_digits, col_digits = extract_digits(img, cell_bounds)
+
+  row_digit_templs = [ crop_digit_cell(d) for d in row_digits ]
+  col_digit_templs = [ crop_digit_cell(d) for d in col_digits ]
 
   def debug_cross_compare(digits, digit_templs):
     for dg_img_pre in digits:
@@ -362,9 +381,10 @@ def main_tagging():
   for size in range(6,22+1):
     if store_quota <= 0:
       break
+    print(f'Processing image sample of size {size} ...')
     img = load_sample(size)
     h, w, _ = img.shape
-
+    cell_bounds = find_cell_bounds(img, size)
 
 if __name__ == '__main__':
   main_experiment()
