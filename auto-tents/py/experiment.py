@@ -20,6 +20,8 @@ color_unsat = (0x41, 0x4e, 0x7e)  # B,G,R
 color_sat = (0x97, 0xa7, 0xc8)
 color_shade = (0x55, 0xc8, 0x87)
 
+store_path = '../private/digits'
+
 def load_sample(size):
   return cv2.imread(f'../private/sample-{size}x{size}.png')
 
@@ -288,7 +290,7 @@ def main_experiment():
       color = 0
     return np.full((4,4), color)
 
-  recombined = np.concatenate([ np.concatenate(row, axis=1) for row in cells], axis=0)
+  recombined = np.concatenate([ np.concatenate(row, axis=1) for row in cells ], axis=0)
 
   cell_results_recombined = np.concatenate([
     np.concatenate([ find_tree(c) for c in row], axis=1) for row in cells
@@ -374,7 +376,7 @@ SAMPLE_FILENAME_PATTEN = re.compile(r'^([^_]+)_.*.png$')
 
 def load_samples():
   """Returns a dict from tag to a list of images."""
-  store_path = '../private/digits'
+
   if not os.path.exists(store_path):
     os.makedirs(store_path)
     return {}
@@ -390,24 +392,41 @@ def load_samples():
     if tag == 'UNTAGGED':
       untagged_count += 1
       continue
-    d[tag].append(cv2.imread(os.path.join(store_path, filename)))
+    d[tag].append(cv2.imread(os.path.join(store_path, filename),cv2.IMREAD_GRAYSCALE))
 
   if untagged_count:
     print(f'There are {untagged_count} untagged samples.')
   return d
 
 
+def find_tag(tagged_samples, img_pre):
+  img = cv2.inRange(img_pre, color_unsat, color_unsat)
+  best_val, best_tag = None, None
+  for tag, samples in tagged_samples.items():
+    for pat in samples:
+      val = rescale_and_match(img,pat,tm_method)
+      if val is None:
+        continue
+      if best_val is None or best_val < val:
+        best_val, best_tag = val, tag
+  return best_val, best_tag
+
+
 def main_tagging(dry_run=True):
   # TODO:
   # the idea of this function is to turn this program into an iterative loop to
-  # gradually tag sample images with digits, recognized from board of various sizes.
+  # gradually tag sample images with digits, recognized from boards of various sizes.
 
   tagged_samples = load_samples()
   sample_count = functools.reduce(lambda acc, l: acc + len(l), tagged_samples.values(), 0)
   print(f'Loaded {len(tagged_samples)} tags, {sample_count} tagged samples in total.')
 
   # limit the # of samples stored to disk per execution.
-  store_quota = 12
+  # for now this is effectively not doing anything but we want to avoid
+  # running into a situation that saves too many files at once.
+  store_quota = 100
+  visit_count = 0
+  good_count = 0
 
   for size in range(6,22+1):
     if store_quota <= 0:
@@ -418,23 +437,37 @@ def main_tagging(dry_run=True):
     cell_bounds = find_cell_bounds(img, size)
     row_digits, col_digits = extract_digits(img, cell_bounds)
     for digit_img in row_digits + col_digits:
-      digit_img = crop_digit_cell(digit_img)
-      if digit_img is None:
+      digit_img_cropped = crop_digit_cell(digit_img)
+      if digit_img_cropped is None:
         continue
+
+      visit_count += 1
+      # use original image for this step as we want some room around
+      # the sample to allow some flexibility.
+      best_val, best_tag = find_tag(tagged_samples, digit_img)
+      if best_val is not None and best_val >= 0.9:
+        good_count += 1
+        continue
+
+      if best_val is None:
+        print(f'Found new sample with no good guesses.')
+      else:
+        print(f'Found new sample with best guess being {best_tag}, with score {best_val}')
 
       nonce = str(uuid.uuid4())
       fpath = os.path.join(store_path, f'UNTAGGED_{nonce}.png')
       if dry_run:
-        print(f'(Dry run) Saving a sample shaped {digit_img.shape} to {fpath}...')
+        print(f'(Dry run) Saving a sample shaped {digit_img_cropped.shape} to {fpath}...')
       else:
-        print(f'Saving a sample shaped {digit_img.shape} to {fpath}...')
-        cv2.imwrite(fpath, digit_img)
+        print(f'Saving a sample shaped {digit_img_cropped.shape} to {fpath}...')
+        cv2.imwrite(fpath, digit_img_cropped)
       store_quota -= 1
       if store_quota <= 0:
         break
   print(f'Store quota is now {store_quota}.')
+  print(f'Visited {visit_count} samples and {good_count} of them found good matches.')
 
 
 if __name__ == '__main__':
   # main_experiment()
-  main_tagging()
+  main_tagging(dry_run=False)
