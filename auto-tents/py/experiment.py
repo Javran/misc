@@ -170,9 +170,7 @@ def rescale_and_match(img, templ_in, tm_method):
   return max_val
 
 
-def main_experiment():
-  size = 22
-  img = load_sample(size)
+def find_cell_bounds(img, size):
   h, w, _ = img.shape
   # This is the exact color that game uses for blank cells.
   bk = (49, 49, 52)
@@ -217,6 +215,15 @@ def main_experiment():
 
   row_bounds = make_bounds(row_begins_stat, row_ends_stat)
   col_bounds = make_bounds(col_begins_stat, col_ends_stat)
+  return row_bounds, col_bounds
+
+
+def main_experiment():
+  size = 22
+  img = load_sample(size)
+  h, w, _ = img.shape
+
+  row_bounds, col_bounds = find_cell_bounds(img, size)
 
   cells = [ [ None for _ in range(size) ] for _ in range(size)]
   for r, (row_lo, row_hi) in enumerate(row_bounds):
@@ -360,5 +367,5 @@ def main_tagging():
 
 
 if __name__ == '__main__':
-  # main_experiment()
-  main_tagging()
+  main_experiment()
+  # main_tagging()
