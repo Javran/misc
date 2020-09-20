@@ -12,6 +12,8 @@ from matplotlib import pyplot
 import collections
 import os
 import uuid
+import re
+import functools
 
 tm_method = cv2.TM_CCOEFF_NORMED
 color_unsat = (0x41, 0x4e, 0x7e)  # B,G,R
@@ -367,13 +369,42 @@ def main_experiment():
     pyplot.show()
 
 
+SAMPLE_FILENAME_PATTEN = re.compile(r'^([^_]+)_.*.png$')
+
+
+def load_samples():
+  """Returns a dict from tag to a list of images."""
+  store_path = '../private/digits'
+  if not os.path.exists(store_path):
+    os.makedirs(store_path)
+    return {}
+
+  d = collections.defaultdict(list)
+  untagged_count = 0
+
+  for filename in os.listdir(store_path):
+    result = SAMPLE_FILENAME_PATTEN.match(filename)
+    if result is None:
+      continue
+    tag = result.group(1)
+    if tag == 'UNTAGGED':
+      untagged_count += 1
+      continue
+    d[tag].append(cv2.imread(os.path.join(store_path, filename)))
+
+  if untagged_count:
+    print(f'There are {untagged_count} untagged samples.')
+  return d
+
+
 def main_tagging(dry_run=True):
   # TODO:
   # the idea of this function is to turn this program into an iterative loop to
   # gradually tag sample images with digits, recognized from board of various sizes.
-  store_path = '../private/digits'
-  if not os.path.exists(store_path):
-    os.makedirs(store_path)
+
+  tagged_samples = load_samples()
+  sample_count = functools.reduce(lambda acc, l: acc + len(l), tagged_samples.values(), 0)
+  print(f'Loaded {len(tagged_samples)} tags, {sample_count} tagged samples in total.')
 
   # limit the # of samples stored to disk per execution.
   store_quota = 12
