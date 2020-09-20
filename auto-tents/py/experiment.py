@@ -10,6 +10,7 @@ import math
 import numpy as np
 from matplotlib import pyplot
 import collections
+import os
 
 tm_method = cv2.TM_CCOEFF_NORMED
 
@@ -169,7 +170,7 @@ def rescale_and_match(img, templ_in, tm_method):
   return max_val
 
 
-def main_find_blanks():
+def main_experiment():
   size = 22
   img = load_sample(size)
   h, w, _ = img.shape
@@ -340,5 +341,24 @@ def main_find_blanks():
     pyplot.show()
 
 
+def main_tagging():
+  # TODO:
+  # the idea of this function is to turn this program into an iterative loop to
+  # gradually tag sample images with digits, recognized from board of various sizes.
+  store_path = '../private/digits'
+  if not os.path.exists(store_path):
+    os.makedirs(store_path)
+
+  # limit the # of samples stored to disk per execution.
+  store_quota = 12
+
+  for size in range(6,22+1):
+    if store_quota <= 0:
+      break
+    img = load_sample(size)
+    h, w, _ = img.shape
+
+
 if __name__ == '__main__':
-  main_find_blanks()
+  # main_experiment()
+  main_tagging()
