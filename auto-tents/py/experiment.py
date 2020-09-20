@@ -11,7 +11,7 @@ import numpy as np
 from matplotlib import pyplot
 import collections
 import os
-
+import uuid
 
 tm_method = cv2.TM_CCOEFF_NORMED
 color_unsat = (0x41, 0x4e, 0x7e)  # B,G,R
@@ -367,7 +367,7 @@ def main_experiment():
     pyplot.show()
 
 
-def main_tagging():
+def main_tagging(dry_run=True):
   # TODO:
   # the idea of this function is to turn this program into an iterative loop to
   # gradually tag sample images with digits, recognized from board of various sizes.
@@ -385,7 +385,25 @@ def main_tagging():
     img = load_sample(size)
     h, w, _ = img.shape
     cell_bounds = find_cell_bounds(img, size)
+    row_digits, col_digits = extract_digits(img, cell_bounds)
+    for digit_img in row_digits + col_digits:
+      digit_img = crop_digit_cell(digit_img)
+      if digit_img is None:
+        continue
+
+      nonce = str(uuid.uuid4())
+      fpath = os.path.join(store_path, f'UNTAGGED_{nonce}.png')
+      if dry_run:
+        print(f'(Dry run) Saving a sample shaped {digit_img.shape} to {fpath}...')
+      else:
+        print(f'Saving a sample shaped {digit_img.shape} to {fpath}...')
+        cv2.imwrite(fpath, digit_img)
+      store_quota -= 1
+      if store_quota <= 0:
+        break
+  print(f'Store quota is now {store_quota}.')
+
 
 if __name__ == '__main__':
-  main_experiment()
-  # main_tagging()
+  # main_experiment()
+  main_tagging()
