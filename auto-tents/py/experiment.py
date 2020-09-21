@@ -516,7 +516,7 @@ def find_board_size(side_length_to_size, img):
           return None
 
 
-def main_verify_preset():
+def main_recognize_board():
   d = None
   with open(preset_path) as f:
     d = json.load(f)['1440x2880']
@@ -537,7 +537,7 @@ def main_verify_preset():
       side_length_to_size[x] = size
 
   # TODO: this is just quick and dirty and contains tons of duplicated codes.
-  img = cv2.imread(f'../private/sample-daily.png')
+  img = cv2.imread(f'../private/sample-daily4.png')
   size = find_board_size(side_length_to_size, img)
   assert size is not None, 'Size cannot be recognized.'
   print(f'Board size: {size}x{size}')
@@ -555,34 +555,37 @@ def main_verify_preset():
   for r, (row_lo, row_hi) in enumerate(row_bounds):
     for c, (col_lo, col_hi) in enumerate(col_bounds):
       cells[r][c] = img[row_lo:row_hi+1, col_lo:col_hi+1]
-
   recombined = np.concatenate([ np.concatenate(row, axis=1) for row in cells ], axis=0)
 
-  def find_tree(cell_img):
+  output_board = [ [ None for _ in range(size) ] for _ in range(size)]
+  def find_tree(cell_img,r,c):
     result = cv2.inRange(cell_img, color_shade, color_shade)
     (_,_,w,h) = cv2.boundingRect(result)
     if w != 0 and h != 0:
       color = 0xFF
+      output_board[r][c] = 'R'
     else:
       color = 0
+      output_board[r][c] = '?'
     return np.full((4,4), color)
 
-  recombined = np.concatenate([ np.concatenate(row, axis=1) for row in cells ], axis=0)
-
   cell_results_recombined = np.concatenate([
-    np.concatenate([ find_tree(c) for c in row], axis=1) for row in cells
+    np.concatenate([ find_tree(cell,r,c) for c, cell in enumerate(row)], axis=1) for r, row in enumerate(cells)
   ], axis=0)
 
   tagged_samples = load_samples()
+  recog_row_digits = [ None for _ in range(size) ]
+  recog_col_digits = [ None for _ in range(size) ]
 
-  for desc, ds in [
-      ('Row', row_digits),
-      ('Col', col_digits),
+  for desc, ds, ds_out in [
+      ('Row', row_digits, recog_row_digits),
+      ('Col', col_digits, recog_col_digits),
   ]:
     print(f'{desc} info:')
-    for digit_img in ds:
+    for i, digit_img in enumerate(ds):
       digit_img_cropped = crop_digit_cell(digit_img)
       if digit_img_cropped is None:
+        ds_out[i] = '0'
         print('-')
         continue
       # use original image for this step as we want some room around
@@ -590,12 +593,20 @@ def main_verify_preset():
       best_val, best_tag = find_tag(tagged_samples, digit_img)
       if best_val < RECOG_THRESHOLD:
         print(f'Warning: best_val is only {best_val}, the recognized digit might be incorrect.')
+
+      ds_out[i] = best_tag
+
       # TOOD: turn this into UNTAGGED if best_val is too low,
       # we can also do "UNTAGGED_<x>_<whatever id>.png"
       # where "<x>" is the best tag we have.
       # this makes it easier to rename if the best guess is actually correct.
       print(best_tag, best_val)
-
+  print('# PUZZLE OUTPUT BEGIN')
+  print(f'{size} {size}')
+  for i, line in enumerate(output_board):
+    print(''.join(line) + f' {recog_row_digits[i]}')
+  print(' '.join(recog_col_digits))
+  print('# PUZZLE OUTPUT END')
   pyplot.figure().canvas.set_window_title('@dev')
   subplot_color(221, img, 'origin')
   subplot_color(222, recombined, 'extracted')
@@ -682,5 +693,5 @@ if __name__ == '__main__':
   # main_experiment()
   # main_tagging()
   # main_generate_preset()
-  main_verify_preset()
+  main_recognize_board()
   # main_sample_analysis()
