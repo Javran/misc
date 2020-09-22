@@ -17,6 +17,9 @@ import functools
 import json
 import subprocess
 import io
+import tempfile
+import time
+import random
 
 # We use CCOEFF here as we do want some penalty on mismatched bits
 # so that result is spreaded over a wider range so we have finer control using threshold.
@@ -542,7 +545,11 @@ def main_recognize_and_solve_board():
       side_length_to_size[x] = size
 
   # TODO: this is just quick and dirty and contains tons of duplicated codes.
-  img = cv2.imread(f'../private/sample-daily5.png')
+  fp_img = tempfile.NamedTemporaryFile(delete=False,suffix='.png')
+  subprocess.run(['adb', 'exec-out', 'screencap', '-p'], stdout=fp_img)
+  fp_img.close()
+  img = cv2.imread(fp_img.name)
+  os.remove(fp_img.name)
   size = find_board_size(side_length_to_size, img)
   assert size is not None, 'Size cannot be recognized.'
   print(f'Board size: {size}x{size}')
@@ -639,7 +646,23 @@ def main_recognize_and_solve_board():
     return int(a), int(b)
   tent_positions = list(map(parse_raw, raw_tent_positions))
   print(f'Received {len(tent_positions)} tent positions.')
+  procs = []
+  def tap(r,c):
+    row_lo, row_hi = row_bounds[r]
+    row_pos = round((row_lo + row_hi) / 2)
+    col_lo, col_hi = col_bounds[c]
+    col_pos = round((col_lo + col_hi) / 2)
+    procs.append(subprocess.Popen(['adb', 'exec-out', 'input', 'tap', str(col_pos), str(row_pos)]))
 
+
+  solving_moves = [ d for pos in tent_positions for d in [pos, pos] ]
+  random.shuffle(solving_moves)
+  for (r,c) in solving_moves:
+    tap(r,c)
+    time.sleep(0.2)
+
+  for p in procs:
+    p.wait()
 
 # Here we focus on two numbers:
 # - what is the worst match inside the same tag (in-tag min),
