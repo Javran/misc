@@ -15,6 +15,8 @@ import uuid
 import re
 import functools
 import json
+import subprocess
+import io
 
 # We use CCOEFF here as we do want some penalty on mismatched bits
 # so that result is spreaded over a wider range so we have finer control using threshold.
@@ -516,7 +518,10 @@ def find_board_size(side_length_to_size, img):
           return None
 
 
-def main_recognize_board():
+def main_recognize_and_solve_board():
+  # compiled binary of https://github.com/Javran/puzzle-solving-collection/tree/master/tents-solver
+  tents_demo_bin = os.environ['TENTS_DEMO_BIN']
+  print(f'tents-demo: {tents_demo_bin}')
   d = None
   with open(preset_path) as f:
     d = json.load(f)['1440x2880']
@@ -537,7 +542,7 @@ def main_recognize_board():
       side_length_to_size[x] = size
 
   # TODO: this is just quick and dirty and contains tons of duplicated codes.
-  img = cv2.imread(f'../private/sample-daily4.png')
+  img = cv2.imread(f'../private/sample-daily5.png')
   size = find_board_size(side_length_to_size, img)
   assert size is not None, 'Size cannot be recognized.'
   print(f'Board size: {size}x{size}')
@@ -581,12 +586,12 @@ def main_recognize_board():
       ('Row', row_digits, recog_row_digits),
       ('Col', col_digits, recog_col_digits),
   ]:
-    print(f'{desc} info:')
+    # print(f'{desc} info:')
     for i, digit_img in enumerate(ds):
       digit_img_cropped = crop_digit_cell(digit_img)
       if digit_img_cropped is None:
         ds_out[i] = '0'
-        print('-')
+        # print('-')
         continue
       # use original image for this step as we want some room around
       # the sample to allow some flexibility.
@@ -600,19 +605,40 @@ def main_recognize_board():
       # we can also do "UNTAGGED_<x>_<whatever id>.png"
       # where "<x>" is the best tag we have.
       # this makes it easier to rename if the best guess is actually correct.
-      print(best_tag, best_val)
-  print('# PUZZLE OUTPUT BEGIN')
-  print(f'{size} {size}')
+      # print(best_tag, best_val)
+  input_lines = []
+  def out(line):
+    input_lines.append(line)
+
+  out(f'{size} {size}')
   for i, line in enumerate(output_board):
-    print(''.join(line) + f' {recog_row_digits[i]}')
-  print(' '.join(recog_col_digits))
+    input_lines
+    out(''.join(line) + f' {recog_row_digits[i]}')
+  out(' '.join(recog_col_digits))
+  print('# PUZZLE OUTPUT BEGIN')
+  for l in input_lines:
+    print(l)
   print('# PUZZLE OUTPUT END')
-  pyplot.figure().canvas.set_window_title('@dev')
-  subplot_color(221, img, 'origin')
-  subplot_color(222, recombined, 'extracted')
-  subplot_color(223, digits, 'digits')
-  subplot_gray(224, cell_results_recombined, 'find tree')
-  pyplot.show()
+  plot = False
+  if plot:
+    pyplot.figure().canvas.set_window_title('@dev')
+    subplot_color(221, img, 'origin')
+    subplot_color(222, recombined, 'extracted')
+    subplot_color(223, digits, 'digits')
+    subplot_gray(224, cell_results_recombined, 'find tree')
+    pyplot.show()
+  proc_result = subprocess.run(
+    [tents_demo_bin, 'stdin'],
+    input='\n'.join(input_lines) + '\n',
+    text=True,
+    capture_output=True,
+  )
+  raw_tent_positions = proc_result.stdout.strip().split('|')
+  def parse_raw(raw):
+    [a,b] = raw.split(',')
+    return int(a), int(b)
+  tent_positions = list(map(parse_raw, raw_tent_positions))
+  print(f'Received {len(tent_positions)} tent positions.')
 
 
 # Here we focus on two numbers:
@@ -693,5 +719,5 @@ if __name__ == '__main__':
   # main_experiment()
   # main_tagging()
   # main_generate_preset()
-  main_recognize_board()
+  main_recognize_and_solve_board()
   # main_sample_analysis()
