@@ -98,6 +98,16 @@ packages:
 - ignore: {name: Use newtype instead of data}
 - ignore: {name: Use uncurry}
 
+{-# START_FILE hie.yaml #-}
+cradle:
+  stack:
+    - path: "./src"
+      component: "{{name}}:lib"
+    - path: "./exe"
+      component: "{{name}}:exe:demo"
+    - path: "./test"
+      component: "{{name}}:test:hspec"
+
 {-# START_FILE z #-}
 #!/bin/bash
 
