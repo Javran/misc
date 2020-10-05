@@ -12,23 +12,71 @@ description: description
 dependencies:
 - base
 
+library:
+  source-dirs: src
+  ghc-options:
+    - -Wall
+    - -O2
+
 executables:
   demo:
     main: Main.hs
-    source-dirs: src
+    source-dirs: exe
+    dependencies:
+      - {{name}}
     ghc-options:
       - -Wall
+      - -O2
       - -threaded
       - -rtsopts
       - -with-rtsopts=-N
 
-{-# START_FILE src/Main.hs #-}
-module Main
+tests:
+  hspec:
+    main: Spec.hs
+    source-dirs:
+      - test
+    dependencies:
+      - {{name}}
+      - QuickCheck
+      - hspec
+    ghc-options:
+      - -Wall
+      - -O2
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+      - -main-is Spec
+
+{-# START_FILE src/Lib.hs #-}
+module Lib
   ( main
   ) where
 
 main :: IO ()
 main = pure ()
+
+{-# START_FILE exe/Main.hs #-}
+module Main
+  ( main
+  ) where
+
+import Lib (main)
+
+{-# START_FILE test/Spec.hs #-}
+{-# OPTIONS_GHC -F -pgmF hspec-discover -optF --module-name=Spec #-}
+
+{-# START_FILE test/DemoSpec.hs #-}
+
+module DemoSpec where
+
+import Test.Hspec
+
+spec :: Spec
+spec =
+  describe "demo" $
+    specify "trivial" $
+      () `shouldBe` ()
 
 {-# START_FILE .gitignore #-}
 .stack-work/
@@ -36,9 +84,10 @@ main = pure ()
 stack.yaml.lock
 *~
 
-z
+private/
+z*
 {-# START_FILE stack.yaml #-}
-resolver: lts-14.27
+resolver: lts-16.3
 packages:
 - .
 
@@ -52,4 +101,4 @@ packages:
 {-# START_FILE z #-}
 #!/bin/bash
 
-stack build && stack exec -- demo
+stack build && stack exec -- demo "$@"
