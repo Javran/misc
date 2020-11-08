@@ -1,0 +1,8 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "apportionment:lib"
+    - path: "./exe"
+      component: "apportionment:exe:demo"
+    - path: "./test"
+      component: "apportionment:test:hspec"
