@@ -22,7 +22,7 @@ type M = StateT (M.Map T.Text Int) IO
  -}
 main :: IO ()
 main = do
-  _ <- runStateT (replicateM 20 assignNextSeat) initSeats
+  _ <- runStateT (replicateM (385+5) assignNextSeat) initSeats
   pure ()
 
 initSeats :: M.Map T.Text Int
