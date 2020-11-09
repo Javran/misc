@@ -24,6 +24,17 @@ popLine = do
 
 {-
   source: https://www.thegreenpapers.com/Census10/ApportionMath.phtml
+
+  The reference for priority values:
+  https://www2.census.gov/programs-surveys/decennial/2010/data/apportionment/PriorityValues2010.pdf
+
+  Note that to reproduce the exact same result, a correct dataset must be applied.
+  Original the source is parsed from https://en.wikipedia.org/wiki/2010_United_States_Census,
+  which is a bit off that the actual dataset (in that dataset, population for
+  California is 37253956).
+
+  As a simple check, the population for California should be 37341989 instead.
+
  -}
 
 populations :: M.Map T.Text Int
