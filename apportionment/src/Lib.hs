@@ -11,6 +11,7 @@ import Data.List
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import Population
 
 type M = StateT (M.Map T.Text Int) IO
 
@@ -22,6 +23,7 @@ type M = StateT (M.Map T.Text Int) IO
 main :: IO ()
 main = do
   _ <- runStateT (replicateM 20 assignNextSeat) initSeats
+  print pops
   pure ()
 
 initSeats :: M.Map T.Text Int
