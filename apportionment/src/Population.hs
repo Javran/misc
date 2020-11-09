@@ -1,17 +1,43 @@
-{-# LANGUAGE OverloadedStrings, QuasiQuotes #-}
-module Population where
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TypeApplications #-}
 
+module Population
+  ( populations
+  )
+where
+
+import Control.Applicative
+import qualified Data.Attoparsec.Text as P
+import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Text.RawString.QQ
+
+popLine :: P.Parser (T.Text, Int)
+popLine = do
+  _ <- P.decimal @Int
+  _ <- ": "
+  stateName <- T.pack <$> many (P.satisfy (/= ','))
+  _ <- ", Population "
+  pop <- P.decimal
+  pure (stateName, pop)
 
 {-
   source: https://www.thegreenpapers.com/Census10/ApportionMath.phtml
  -}
 
-pops = T.lines rawPop
+populations :: M.Map T.Text Int
+populations = M.fromList $ parsePop <$> T.lines rawPop
+  where
+    parsePop :: T.Text -> (T.Text, Int)
+    parsePop raw = v
+      where
+        Right v = P.parseOnly popLine raw
 
 rawPop :: T.Text
-rawPop = T.stripStart [r|
+rawPop =
+  T.stripStart
+    [r|
 1: Alabama, Population 4802982
 2: Alaska, Population 721523
 3: Arizona, Population 6412700

@@ -23,7 +23,6 @@ type M = StateT (M.Map T.Text Int) IO
 main :: IO ()
 main = do
   _ <- runStateT (replicateM 20 assignNextSeat) initSeats
-  print pops
   pure ()
 
 initSeats :: M.Map T.Text Int
@@ -45,8 +44,8 @@ assignNextSeat = do
 -- source: https://en.wikipedia.org/wiki/2010_United_States_Census
 -- TODO: https://www.youtube.com/watch?v=6JN4RI7nkes might explain priority value difference,
 -- as it appears to be a different population dataset that we are using.
-populations :: M.Map T.Text Int
-populations =
+_populations :: M.Map T.Text Int
+_populations =
   M.fromList
     [ ("California", 37253956)
     , ("Texas", 25145561)
