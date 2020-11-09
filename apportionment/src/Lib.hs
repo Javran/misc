@@ -16,14 +16,15 @@ import Population
 type M = StateT (M.Map T.Text Int) IO
 
 {-
-  TODO: just want to follow US congressional apportionment process for fun.
-
+  Just want to follow US congressional apportionment process for fun, which is detailed in:
   https://en.wikipedia.org/wiki/United_States_congressional_apportionment#Apportionment_methods
  -}
 main :: IO ()
 main = do
-  _ <- runStateT (replicateM (385+5) assignNextSeat) initSeats
-  pure ()
+  seats <- execStateT (replicateM 385 assignNextSeat) initSeats
+  let sortedSeats = sortOn (negate . snd) $ M.toList seats
+  forM_ sortedSeats $ \(stName, seatCount) -> do
+    T.putStrLn $ stName <> ": " <> T.pack (show seatCount)
 
 initSeats :: M.Map T.Text Int
 initSeats = M.map (const 1) populations
