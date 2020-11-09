@@ -12,6 +12,7 @@ import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Population
+import Text.Printf
 
 type M = StateT (M.Map T.Text Int) IO
 
@@ -23,8 +24,11 @@ main :: IO ()
 main = do
   seats <- execStateT (replicateM 385 assignNextSeat) initSeats
   let sortedSeats = sortOn (negate . snd) $ M.toList seats
+  putStrLn ""
   forM_ sortedSeats $ \(stName, seatCount) -> do
-    T.putStrLn $ stName <> ": " <> T.pack (show seatCount)
+    let popPerSeat :: Double
+        popPerSeat = fromIntegral (populations M.! stName) / fromIntegral seatCount
+    printf "%s: %d, pop/seat = %.2f\n" (T.unpack stName) seatCount popPerSeat
 
 initSeats :: M.Map T.Text Int
 initSeats = M.map (const 1) populations
