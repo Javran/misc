@@ -10,7 +10,6 @@ import Control.Monad.State.Strict
 import Data.List
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
-import qualified Data.Text.IO as T
 import Population
 import Text.Printf
 
@@ -43,5 +42,5 @@ assignNextSeat = do
       sorted = sortOn (negate . snd) $ M.toList prios
       (pKey, pVal) = head sorted
   liftIO $
-    T.putStrLn $ pKey <> ", " <> T.pack (show pVal) <> ", " <> T.pack (show (1 + seats M.! pKey))
+    printf "%s, %.2f, %d\n" (T.unpack pKey) pVal (1 + seats M.! pKey)
   modify (M.adjust succ pKey)
