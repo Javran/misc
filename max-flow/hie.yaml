@@ -1,0 +1,8 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "max-flow:lib"
+    - path: "./exe"
+      component: "max-flow:exe:demo"
+    - path: "./test"
+      component: "max-flow:test:hspec"
