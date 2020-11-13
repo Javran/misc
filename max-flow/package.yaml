@@ -11,7 +11,11 @@ description: description
 dependencies:
 - base
 
+data-files:
+  - data/simple.dimacs
+
 library:
+  generated-exposed-modules: Paths_max_flow
   source-dirs: src
   ghc-options:
     - -Wall
