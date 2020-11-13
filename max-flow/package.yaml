@@ -12,6 +12,7 @@ dependencies:
 - base
 - text
 - attoparsec
+- mtl
 
 data-files:
   - data/simple.dimacs

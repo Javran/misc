@@ -10,5 +10,5 @@ main :: IO ()
 main = do
   fnData <- getDataFileName "data/simple.dimacs"
   raw <- T.readFile fnData
-  print (parseContent raw)
+  print (parseFromRaw raw)
   pure ()
