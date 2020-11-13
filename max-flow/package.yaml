@@ -10,6 +10,8 @@ description: description
 
 dependencies:
 - base
+- text
+- attoparsec
 
 data-files:
   - data/simple.dimacs
