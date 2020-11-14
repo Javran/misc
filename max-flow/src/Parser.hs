@@ -4,7 +4,11 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Parser where
+module Parser
+  ( NetworkRep (..)
+  , parseFromRaw
+  )
+where
 
 import Control.Applicative
 import Control.Monad.Except
@@ -20,7 +24,7 @@ data RawLine
   | RArc (Int, Int) Int
   deriving (Show)
 
-data Network = Network
+data NetworkRep = NetworkRep
   { nNodeCount :: Int
   , nArcCount :: Int
   , nSource :: Int
@@ -65,7 +69,7 @@ parseContent :: T.Text -> Either String [RawLine]
 parseContent =
   P.parseOnly (rawLine `P.sepBy1` "\n" <* P.takeWhile isSpace)
 
-parseNetwork :: StateT [RawLine] (Except String) Network
+parseNetwork :: StateT [RawLine] (Except String) NetworkRep
 parseNetwork = do
   -- drop comments
   modify
@@ -88,10 +92,10 @@ parseNetwork = do
         let convert (RArc p cap) = pure (p, cap)
             convert t = throwError $ "not an arc: " <> show t
         nArcs <- mapM convert arcDescs
-        pure Network {nNodeCount, nArcCount, nSource, nSink, nArcs}
+        pure NetworkRep {nNodeCount, nArcCount, nSource, nSink, nArcs}
     _ -> throwError "invalid initial input lines"
 
-parseFromRaw :: T.Text -> Either String Network
+parseFromRaw :: T.Text -> Either String NetworkRep
 parseFromRaw raw = runExcept $ do
   xs <- liftEither $ parseContent raw
   r <- runStateT parseNetwork xs
