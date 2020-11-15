@@ -16,21 +16,13 @@ import Control.Monad.State
 import qualified Data.Attoparsec.Text as P
 import Data.Char
 import qualified Data.Text as T
+import Types
 
 data RawLine
   = RComment T.Text
   | RProblem Int Int
   | RNodeDesc Int Bool {- true for source -}
   | RArc (Int, Int) Int
-  deriving (Show)
-
-data NetworkRep = NetworkRep
-  { nNodeCount :: Int
-  , nArcCount :: Int
-  , nSource :: Int
-  , nSink :: Int
-  , nArcs :: [((Int, Int), Int)]
-  }
   deriving (Show)
 
 {-
@@ -84,15 +76,15 @@ parseNetwork = do
    -}
   xs <- state $ splitAt 3
   case xs of
-    [RProblem nNodeCount nArcCount, RNodeDesc v0 isSrc0, RNodeDesc v1 isSrc1]
+    [RProblem nrNodeCount nrArcCount, RNodeDesc v0 isSrc0, RNodeDesc v1 isSrc1]
       | isSrc0 /= isSrc1 -> do
-        let (nSource, nSink) = if isSrc0 then (v0, v1) else (v1, v0)
+        let (nrSource, nrSink) = if isSrc0 then (v0, v1) else (v1, v0)
         arcDescs <- state (\s -> (s, []))
         -- those must be arc lines
         let convert (RArc p cap) = pure (p, cap)
             convert t = throwError $ "not an arc: " <> show t
-        nArcs <- mapM convert arcDescs
-        pure NetworkRep {nNodeCount, nArcCount, nSource, nSink, nArcs}
+        nrArcs <- mapM convert arcDescs
+        pure NetworkRep {nrNodeCount, nrArcCount, nrSource, nrSink, nrArcs}
     _ -> throwError "invalid initial input lines"
 
 parseFromRaw :: T.Text -> Either String NetworkRep
