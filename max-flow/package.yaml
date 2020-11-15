@@ -13,6 +13,7 @@ dependencies:
 - text
 - attoparsec
 - mtl
+- containers
 
 data-files:
   - data/simple.dimacs
