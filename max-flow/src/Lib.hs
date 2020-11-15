@@ -13,5 +13,5 @@ main = do
   raw <- T.readFile fnData
   let Right nr = parseFromRaw raw
   print nr
-  print (checkNetwork nr)
+  print (checkAndBuildCapacity nr)
   pure ()
