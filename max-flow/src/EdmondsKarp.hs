@@ -2,17 +2,26 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
-module EdmondsKarp where
+module EdmondsKarp
+  ( prepare
+  )
+where
 
 import Control.Monad.Except
 import qualified Data.IntMap.Strict as IM
+import qualified Data.Map.Strict as M
+import Data.Maybe
 import Data.Monoid
+import qualified Data.Sequence as Seq
+import Data.Tuple
 import Types
 
-type NetworkConsts = IM.IntMap (IM.IntMap Int)
+type Consts = IM.IntMap (IM.IntMap Int)
 
-checkAndBuildCapacity :: NetworkRep -> Either String NetworkConsts
-checkAndBuildCapacity NetworkRep {nrArcCount, nrArcs, nrNodeCount} = runExcept $ do
+type Flow = M.Map (Int, Int) Int
+
+prepare :: NetworkRep -> Either String (Consts, Flow)
+prepare NetworkRep {nrArcCount, nrArcs, nrNodeCount} = runExcept $ do
   unless (length nrArcs == nrArcCount) $
     throwError "arc count mismatched."
   let checkArc ((src, dst), cap) = do
@@ -39,7 +48,8 @@ checkAndBuildCapacity NetworkRep {nrArcCount, nrArcs, nrNodeCount} = runExcept $
       allArcs = nrArcs <> fmap revArc nrArcs
         where
           revArc ((src, dst), _) = ((dst, src), 0)
-      capa :: NetworkConsts
+      initFlow = M.fromList $ fmap (\(p, _) -> (p, 0)) nrArcs
+      capa :: Consts
       capa = foldr go IM.empty allArcs
         where
           go ((src, dst), cap) =
@@ -55,4 +65,32 @@ checkAndBuildCapacity NetworkRep {nrArcCount, nrArcs, nrNodeCount} = runExcept $
    -}
   unless (getSum (foldMap (Sum . IM.size) capa) == nrArcCount * 2) $
     throwError "capacity map size mismatch"
-  pure capa
+  pure (capa, initFlow)
+
+findAugPath caps netSrc netDst flow pre q = case Seq.viewl q of
+  Seq.EmptyL -> do
+    guard $ netDst `elem` pre
+    -- TODO: construct augmenting path.
+    Nothing
+  src Seq.:< q' -> do
+    subCaps <- caps M.!? src
+    let getFlowCap dst =
+          ( if cap > 0
+              then flow M.! (src, dst)
+              else - (flow M.! (dst, src))
+          , cap
+          )
+          where
+            cap = subCaps IM.! dst
+        alts :: [(Int, Int)]
+        alts = catMaybes $ fmap go (IM.keys subCaps)
+          where
+            go dst = do
+              guard $ dst /= netSrc
+              guard $ dst `notElem` pre
+              let (fl, cap) = getFlowCap dst
+              guard $ cap > fl
+              pure (src, dst)
+        pre' = IM.union pre (IM.fromList $ fmap swap alts)
+        q'' = q' Seq.>< Seq.fromList (fmap snd alts)
+    findAugPath caps netSrc netDst flow pre' q''

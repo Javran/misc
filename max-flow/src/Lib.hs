@@ -13,5 +13,5 @@ main = do
   raw <- T.readFile fnData
   let Right nr = parseFromRaw raw
   print nr
-  print (checkAndBuildCapacity nr)
+  print (prepare nr)
   pure ()
