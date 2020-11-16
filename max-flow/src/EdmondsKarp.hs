@@ -1,13 +1,17 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
 module EdmondsKarp where
 
 import Control.Monad.Except
-import qualified Data.Map.Strict as M
+import qualified Data.IntMap.Strict as IM
+import Data.Monoid
 import Types
 
-checkAndBuildCapacity :: NetworkRep -> Either String (M.Map (Int, Int) Int)
+type NetworkConsts = IM.IntMap (IM.IntMap Int)
+
+checkAndBuildCapacity :: NetworkRep -> Either String NetworkConsts
 checkAndBuildCapacity NetworkRep {nrArcCount, nrArcs, nrNodeCount} = runExcept $ do
   unless (length nrArcs == nrArcCount) $
     throwError "arc count mismatched."
@@ -31,15 +35,24 @@ checkAndBuildCapacity NetworkRep {nrArcCount, nrArcs, nrNodeCount} = runExcept $
         unless (dst > 0 && dst <= nrNodeCount) $
           throwError "invalid arc src node"
   mapM_ checkArc nrArcs
-  let allArcs = nrArcs <> fmap revArc nrArcs
+  let allArcs :: [((Int, Int), Int)]
+      allArcs = nrArcs <> fmap revArc nrArcs
         where
           revArc ((src, dst), _) = ((dst, src), 0)
-      capa = M.fromList allArcs
+      capa :: NetworkConsts
+      capa = foldr go IM.empty allArcs
+        where
+          go ((src, dst), cap) =
+            IM.alter
+              (\case
+                 Nothing -> Just $ IM.singleton dst cap
+                 Just m -> Just $ IM.insert dst cap m)
+              src
   {-
     for each pair (u,v) we expect it to be unique and (v,u) to not be
     a part of the same network. If this expectation is not met,
     an error will be raised.
    -}
-  unless (M.size capa == nrArcCount * 2) $
+  unless (getSum (foldMap (Sum . IM.size) capa) == nrArcCount * 2) $
     throwError "capacity map size mismatch"
   pure capa
