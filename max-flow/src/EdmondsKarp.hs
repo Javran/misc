@@ -10,6 +10,7 @@ where
 
 import Control.Monad.Except
 import qualified Data.IntMap.Strict as IM
+import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
@@ -68,13 +69,27 @@ prepare NetworkRep {nrArcCount, nrArcs, nrNodeCount} = runExcept $ do
     throwError "capacity map size mismatch"
   pure (capa, initFlow)
 
+-- TODO: not tested yet.
+findAugPath
+  :: Consts
+  -> Int
+  -> Int
+  -> Flow
+  -> IM.IntMap (Int, Int)
+  -> Seq.Seq Int
+  -> Maybe ([(Int, Int)], Int)
 findAugPath caps netSrc netDst flow pre q = case Seq.viewl q of
   Seq.EmptyL -> do
     guard $ netDst `IM.member` pre
-    -- TODO: construct augmenting path.
-    Nothing
+    let paths = unfoldr go netDst
+          where
+            go cur = do
+              (src, diff) <- pre IM.!? cur
+              pure (((src, cur), diff), src)
+        flowImp = minimum (fmap snd paths)
+    pure (fmap fst paths, flowImp)
   src Seq.:< q' -> do
-    subCaps <- caps M.!? src
+    subCaps <- caps IM.!? src
     let getFlowCap dst =
           ( if cap > 0
               then flow M.! (src, dst)
