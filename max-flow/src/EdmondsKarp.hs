@@ -11,7 +11,15 @@ checkAndBuildCapacity :: NetworkRep -> Either String (M.Map (Int, Int) Int)
 checkAndBuildCapacity NetworkRep {nrArcCount, nrArcs, nrNodeCount} = runExcept $ do
   unless (length nrArcs == nrArcCount) $
     throwError "arc count mismatched."
-  let checkArc ((src, dst), _) = do
+  let checkArc ((src, dst), cap) = do
+        {-
+          by making sure that capacity is positive in the original graph,
+          we can be sure whenever an arc (u,v) with 0 capacity shows up,
+          the actual flow goes in the opposite direction.
+          (i.e. the actual flow is from v to u with a positive capacity)
+         -}
+        unless (cap > 0) $
+          throwError "capacity must be positive."
         {-
           check each arc and make sure they are not self-linking (src == dst)
           and is within range.
