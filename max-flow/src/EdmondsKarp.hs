@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE TupleSections #-}
 
 module EdmondsKarp
   ( prepare
@@ -69,7 +70,7 @@ prepare NetworkRep {nrArcCount, nrArcs, nrNodeCount} = runExcept $ do
 
 findAugPath caps netSrc netDst flow pre q = case Seq.viewl q of
   Seq.EmptyL -> do
-    guard $ netDst `elem` pre
+    guard $ netDst `IM.member` pre
     -- TODO: construct augmenting path.
     Nothing
   src Seq.:< q' -> do
@@ -87,10 +88,13 @@ findAugPath caps netSrc netDst flow pre q = case Seq.viewl q of
           where
             go dst = do
               guard $ dst /= netSrc
-              guard $ dst `notElem` pre
+              guard $ dst `IM.notMember` pre
               let (fl, cap) = getFlowCap dst
               guard $ cap > fl
-              pure (src, dst)
-        pre' = IM.union pre (IM.fromList $ fmap swap alts)
-        q'' = q' Seq.>< Seq.fromList (fmap snd alts)
+              pure (dst, cap - fl)
+        pre' :: IM.IntMap (Int, Int)
+        pre' =
+          -- pre: pairs of (dst, (src, diff)), where diff is cap - fl
+          IM.union pre (IM.fromList $ fmap (\(dst, diff) -> (dst, (src, diff))) alts)
+        q'' = q' Seq.>< Seq.fromList (fmap fst alts)
     findAugPath caps netSrc netDst flow pre' q''
