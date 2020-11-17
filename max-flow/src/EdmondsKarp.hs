@@ -5,6 +5,7 @@
 
 module EdmondsKarp
   ( prepare
+  , experiment
   )
 where
 
@@ -15,7 +16,6 @@ import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
 import qualified Data.Sequence as Seq
-import Data.Tuple
 import Types
 
 type Consts = IM.IntMap (IM.IntMap Int)
@@ -68,6 +68,18 @@ prepare NetworkRep {nrArcCount, nrArcs, nrNodeCount} = runExcept $ do
   unless (getSum (foldMap (Sum . IM.size) capa) == nrArcCount * 2) $
     throwError "capacity map size mismatch"
   pure (capa, initFlow)
+
+experiment :: NetworkRep -> Maybe ([(Int, Int)], Int)
+experiment nr@NetworkRep {nrSource, nrSink} =
+  findAugPath
+    nConsts
+    nrSource
+    nrSink
+    initFlow
+    IM.empty
+    (Seq.singleton nrSource)
+  where
+    Right (nConsts, initFlow) = prepare nr
 
 -- TODO: not tested yet.
 findAugPath
