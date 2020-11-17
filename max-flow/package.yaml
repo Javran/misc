@@ -14,6 +14,7 @@ dependencies:
 - attoparsec
 - mtl
 - containers
+- transformers
 
 data-files:
   - data/simple.dimacs

@@ -10,6 +10,7 @@ module EdmondsKarp
 where
 
 import Control.Monad.Except
+import Control.Monad.Trans.RWS.CPS
 import qualified Data.IntMap.Strict as IM
 import Data.List
 import qualified Data.Map.Strict as M
@@ -18,11 +19,15 @@ import Data.Monoid
 import qualified Data.Sequence as Seq
 import Types
 
-type Consts = IM.IntMap (IM.IntMap Int)
+type CapacityMap = IM.IntMap (IM.IntMap Int)
 
 type Flow = M.Map (Int, Int) Int
 
-prepare :: NetworkRep -> Either String (Consts, Flow)
+type M = RWST (NetworkRep, CapacityMap) () Flow (Except String)
+
+type AugPath = ([(Int, Int)], Int)
+
+prepare :: NetworkRep -> Either String (CapacityMap, Flow)
 prepare NetworkRep {nrArcCount, nrArcs, nrNodeCount} = runExcept $ do
   unless (length nrArcs == nrArcCount) $
     throwError "arc count mismatched."
@@ -51,7 +56,7 @@ prepare NetworkRep {nrArcCount, nrArcs, nrNodeCount} = runExcept $ do
         where
           revArc ((src, dst), _) = ((dst, src), 0)
       initFlow = M.fromList $ fmap (\(p, _) -> (p, 0)) nrArcs
-      capa :: Consts
+      capa :: CapacityMap
       capa = foldr go IM.empty allArcs
         where
           go ((src, dst), cap) =
@@ -83,13 +88,13 @@ experiment nr@NetworkRep {nrSource, nrSink} =
 
 -- TODO: not tested yet.
 findAugPath
-  :: Consts
+  :: CapacityMap
   -> Int
   -> Int
   -> Flow
   -> IM.IntMap (Int, Int)
   -> Seq.Seq Int
-  -> Maybe ([(Int, Int)], Int)
+  -> Maybe AugPath
 findAugPath caps netSrc netDst flow pre q = case Seq.viewl q of
   Seq.EmptyL -> do
     guard $ netDst `IM.member` pre
@@ -125,3 +130,21 @@ findAugPath caps netSrc netDst flow pre q = case Seq.viewl q of
           IM.union pre (IM.fromList $ fmap (\(dst, diff) -> (dst, (src, diff))) alts)
         q'' = q' Seq.>< Seq.fromList (fmap fst alts)
     findAugPath caps netSrc netDst flow pre' q''
+
+findAugPathM :: M (Maybe AugPath)
+findAugPathM = do
+  (NetworkRep {nrSource, nrSink}, cMap) <- ask
+  curFlow <- get
+  pure $ findAugPath cMap nrSource nrSink curFlow IM.empty (Seq.singleton nrSource)
+
+applyAugPathM :: AugPath -> M ()
+applyAugPathM (xs, diff) = mapM_ applyDiff xs
+  where
+    applyDiff :: (Int, Int) -> M ()
+    applyDiff (src, dst) = do
+      cMap <- asks snd
+      let c = (cMap IM.! src) IM.! dst
+      modify $
+        if c == 0
+          then M.alter (\(Just v) -> Just $ v - diff) (dst, src)
+          else M.alter (\(Just v) -> Just $ v + diff) (src, dst)
