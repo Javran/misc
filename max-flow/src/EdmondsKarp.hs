@@ -25,7 +25,7 @@ type CapacityMap = IM.IntMap (IM.IntMap Int)
 
 type Flow = M.Map (Int, Int) Int
 
-type M = RWST (NetworkRep, CapacityMap) () Flow (Except String)
+type M = RWST (NetworkRep, CapacityMap) (Sum Int) Flow (Except String)
 
 type AugPath = ([(Int, Int)], Int)
 
@@ -139,7 +139,9 @@ findAugPathM = do
   pure $ findAugPath cMap nrSource nrSink curFlow IM.empty (Seq.singleton nrSource)
 
 applyAugPathM :: AugPath -> M ()
-applyAugPathM (xs, diff) = mapM_ applyDiff xs
+applyAugPathM (xs, diff) = do
+  mapM_ applyDiff xs
+  tell $ Sum diff
   where
     applyDiff :: (Int, Int) -> M ()
     applyDiff (src, dst) = do
@@ -150,9 +152,9 @@ applyAugPathM (xs, diff) = mapM_ applyDiff xs
           then M.alter (\(Just v) -> Just $ v - diff) (dst, src)
           else M.alter (\(Just v) -> Just $ v + diff) (src, dst)
 
-maxFlow :: NetworkRep -> Either String Flow
+maxFlow :: NetworkRep -> Either String (Int, Flow)
 maxFlow nr =
-  second (\((), flow, ()) -> flow) $
+  second (\((), flow, Sum v) -> (v, flow)) $
     runExcept $
       runRWST
         (fix $ \loop -> do
