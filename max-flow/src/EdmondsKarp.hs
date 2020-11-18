@@ -162,19 +162,22 @@ applyAugPathM (xs, diff) = do
           then M.alter (\(Just v) -> Just $ v - diff) (dst, src)
           else M.alter (\(Just v) -> Just $ v + diff) (src, dst)
 
-maxFlow :: NetworkRep -> Either String (Int, Flow)
+{-
+  TODO: this isn't good since log is only carried when it succeeds.
+ -}
+maxFlow :: NetworkRep -> Either String ((Int, Flow), [T.Text])
 maxFlow nr =
-  second (\((), flow, Sum v) -> (v, flow)) $
-    runExcept $
-      fmap fst $
-        runWriterT $
-          (runRWST
-             (fix $ \loop -> do
-                r <- findAugPathM
-                case r of
-                  Nothing -> pure ()
-                  Just augPath -> applyAugPathM augPath >> loop)
-             (nr, nConsts)
-             initFlow)
+  runExcept $ do
+    (((), flow, Sum v), w) <-
+      runWriterT $
+        (runRWST
+           (fix $ \loop -> do
+              r <- findAugPathM
+              case r of
+                Nothing -> pure ()
+                Just augPath -> applyAugPathM augPath >> loop)
+           (nr, nConsts)
+           initFlow)
+    pure ((v, flow), DL.toList w)
   where
     Right (nConsts, initFlow) = prepare nr
