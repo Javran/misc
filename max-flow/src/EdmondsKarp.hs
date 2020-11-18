@@ -12,7 +12,7 @@ where
 
 import Control.Monad.Except
 import Control.Monad.Trans.RWS.CPS
-import Control.Monad.Trans.Writer.CPS hiding (tell)
+import Control.Monad.Trans.Writer.CPS
 import Data.Bifunctor
 import qualified Data.DList as DL
 import qualified Data.IntMap.Strict as IM
@@ -35,7 +35,7 @@ type Flow = M.Map (Int, Int) Int
   which isn't really ideal.
  -}
 type M =
-  WriterT (DL.DList T.Text) (RWST (NetworkRep, CapacityMap) (Sum Int) Flow (Except String))
+  RWST (NetworkRep, CapacityMap) (Sum Int) Flow ((WriterT (DL.DList T.Text)) (Except String))
 
 type AugPath = ([(Int, Int)], Int)
 
@@ -144,38 +144,37 @@ findAugPath caps netSrc netDst flow pre q = case Seq.viewl q of
 
 findAugPathM :: M (Maybe AugPath)
 findAugPathM = do
-  (NetworkRep {nrSource, nrSink}, cMap) <- lift ask
-  curFlow <- lift get
+  (NetworkRep {nrSource, nrSink}, cMap) <- ask
+  curFlow <- get
   pure $ findAugPath cMap nrSource nrSink curFlow IM.empty (Seq.singleton nrSource)
 
 applyAugPathM :: AugPath -> M ()
 applyAugPathM (xs, diff) = do
   mapM_ applyDiff xs
-  lift (tell $ Sum diff)
+  Control.Monad.Trans.RWS.CPS.tell $ Sum diff
   where
     applyDiff :: (Int, Int) -> M ()
     applyDiff (src, dst) = do
-      cMap <- lift $ asks snd
+      cMap <- asks snd
       let c = (cMap IM.! src) IM.! dst
-      lift $
-        modify $
-          if c == 0
-            then M.alter (\(Just v) -> Just $ v - diff) (dst, src)
-            else M.alter (\(Just v) -> Just $ v + diff) (src, dst)
+      modify $
+        if c == 0
+          then M.alter (\(Just v) -> Just $ v - diff) (dst, src)
+          else M.alter (\(Just v) -> Just $ v + diff) (src, dst)
 
 maxFlow :: NetworkRep -> Either String (Int, Flow)
 maxFlow nr =
   second (\((), flow, Sum v) -> (v, flow)) $
     runExcept $
-      runRWST
-        (fmap fst $
-           runWriterT $
+      fmap fst $
+        runWriterT $
+          (runRWST
              (fix $ \loop -> do
                 r <- findAugPathM
                 case r of
                   Nothing -> pure ()
-                  Just augPath -> applyAugPathM augPath >> loop))
-        (nr, nConsts)
-        initFlow
+                  Just augPath -> applyAugPathM augPath >> loop)
+             (nr, nConsts)
+             initFlow)
   where
     Right (nConsts, initFlow) = prepare nr
