@@ -15,6 +15,7 @@ dependencies:
 - mtl
 - containers
 - transformers
+- dlist
 
 data-files:
   - data/simple.dimacs

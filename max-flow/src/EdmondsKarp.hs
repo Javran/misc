@@ -12,20 +12,30 @@ where
 
 import Control.Monad.Except
 import Control.Monad.Trans.RWS.CPS
+import Control.Monad.Trans.Writer.CPS hiding (tell)
 import Data.Bifunctor
+import qualified Data.DList as DL
 import qualified Data.IntMap.Strict as IM
 import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
 import qualified Data.Sequence as Seq
+import qualified Data.Text as T
 import Types
 
 type CapacityMap = IM.IntMap (IM.IntMap Int)
 
 type Flow = M.Map (Int, Int) Int
 
-type M = RWST (NetworkRep, CapacityMap) (Sum Int) Flow (Except String)
+{-
+  We can certainly extend Sum Int to (DList Text, Sum Int)
+  to support logging, which is awkward because every `tell` call will
+  then consist of wrapping and unwrapping, with placeholder values (mempty),
+  which isn't really ideal.
+ -}
+type M =
+  WriterT (DL.DList T.Text) (RWST (NetworkRep, CapacityMap) (Sum Int) Flow (Except String))
 
 type AugPath = ([(Int, Int)], Int)
 
@@ -134,34 +144,37 @@ findAugPath caps netSrc netDst flow pre q = case Seq.viewl q of
 
 findAugPathM :: M (Maybe AugPath)
 findAugPathM = do
-  (NetworkRep {nrSource, nrSink}, cMap) <- ask
-  curFlow <- get
+  (NetworkRep {nrSource, nrSink}, cMap) <- lift ask
+  curFlow <- lift get
   pure $ findAugPath cMap nrSource nrSink curFlow IM.empty (Seq.singleton nrSource)
 
 applyAugPathM :: AugPath -> M ()
 applyAugPathM (xs, diff) = do
   mapM_ applyDiff xs
-  tell $ Sum diff
+  lift (tell $ Sum diff)
   where
     applyDiff :: (Int, Int) -> M ()
     applyDiff (src, dst) = do
-      cMap <- asks snd
+      cMap <- lift $ asks snd
       let c = (cMap IM.! src) IM.! dst
-      modify $
-        if c == 0
-          then M.alter (\(Just v) -> Just $ v - diff) (dst, src)
-          else M.alter (\(Just v) -> Just $ v + diff) (src, dst)
+      lift $
+        modify $
+          if c == 0
+            then M.alter (\(Just v) -> Just $ v - diff) (dst, src)
+            else M.alter (\(Just v) -> Just $ v + diff) (src, dst)
 
 maxFlow :: NetworkRep -> Either String (Int, Flow)
 maxFlow nr =
   second (\((), flow, Sum v) -> (v, flow)) $
     runExcept $
       runRWST
-        (fix $ \loop -> do
-           r <- findAugPathM
-           case r of
-             Nothing -> pure ()
-             Just augPath -> applyAugPathM augPath >> loop)
+        (fmap fst $
+           runWriterT $
+             (fix $ \loop -> do
+                r <- findAugPathM
+                case r of
+                  Nothing -> pure ()
+                  Just augPath -> applyAugPathM augPath >> loop))
         (nr, nConsts)
         initFlow
   where
