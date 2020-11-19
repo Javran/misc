@@ -44,7 +44,7 @@ type M =
         (Writer (DL.DList T.Text))
     )
 
-type AugPath = ([(Int, Int)], Int)
+type AugPath = ([((Int, Int), Bool)], Int)
 
 prepare :: NetworkRep -> Either String (CapacityMap, Flow)
 prepare NetworkRep {nrArcCount, nrArcs, nrNodeCount} = runExcept $ do
@@ -93,12 +93,14 @@ prepare NetworkRep {nrArcCount, nrArcs, nrNodeCount} = runExcept $ do
     throwError "capacity map size mismatch"
   pure (capa, initFlow)
 
+type PreInfo = (Int, Int, Bool {- whether the actual direction is reversed -})
+
 findAugPath
   :: CapacityMap
   -> Int
   -> Int
   -> Flow
-  -> IM.IntMap (Int, Int)
+  -> IM.IntMap PreInfo
   -> Seq.Seq Int
   -> Maybe AugPath
 findAugPath caps netSrc netDst flow pre q = case Seq.viewl q of
@@ -107,8 +109,8 @@ findAugPath caps netSrc netDst flow pre q = case Seq.viewl q of
     let paths = unfoldr go netDst
           where
             go cur = do
-              (src, diff) <- pre IM.!? cur
-              pure (((src, cur), diff), src)
+              (src, diff, rev) <- pre IM.!? cur
+              pure ((((src, cur), rev), diff), src)
         flowImp = minimum (fmap snd paths)
     pure (fmap fst paths, flowImp)
   src Seq.:< q' -> do
@@ -121,7 +123,7 @@ findAugPath caps netSrc netDst flow pre q = case Seq.viewl q of
           )
           where
             cap = subCaps IM.! dst
-        alts :: [(Int, Int)]
+        alts :: [(Int, Int, Bool)]
         alts = catMaybes $ fmap go (IM.keys subCaps)
           where
             go dst = do
@@ -129,12 +131,12 @@ findAugPath caps netSrc netDst flow pre q = case Seq.viewl q of
               guard $ dst `IM.notMember` pre
               let (fl, cap) = getFlowCap dst
               guard $ cap > fl
-              pure (dst, cap - fl)
-        pre' :: IM.IntMap (Int, Int)
+              pure (dst, cap - fl, cap == 0)
+        pre' :: IM.IntMap PreInfo
         pre' =
           -- pre: pairs of (dst, (src, diff)), where diff is cap - fl
-          IM.union pre (IM.fromList $ fmap (\(dst, diff) -> (dst, (src, diff))) alts)
-        q'' = q' Seq.>< Seq.fromList (fmap fst alts)
+          IM.union pre (IM.fromList $ fmap (\(dst, diff, rev) -> (dst, (src, diff, rev))) alts)
+        q'' = q' Seq.>< Seq.fromList (fmap (\(v, _, _) -> v) alts)
     findAugPath caps netSrc netDst flow pre' q''
 
 findAugPathM :: M (Maybe AugPath)
@@ -156,8 +158,8 @@ applyAugPathM (xs, diff) = do
     let msg = "error: augmenting path should not be empty"
     logM (T.pack msg)
     lift $ throwError msg
-  let (_, sinkNode):_ = xs
-      nodes = reverse (fmap fst xs) <> [sinkNode]
+  let ((_, sinkNode),_) : _ = xs
+      nodes = reverse (fmap (fst . fst) xs) <> [sinkNode]
       pathVis = intercalate " --> " (fmap show nodes)
   mapM_ applyDiff xs
   Control.Monad.Trans.RWS.CPS.tell $ Sum diff
@@ -167,12 +169,10 @@ applyAugPathM (xs, diff) = do
       <> ", with capacity "
       <> T.pack (show diff)
   where
-    applyDiff :: (Int, Int) -> M ()
-    applyDiff (src, dst) = do
-      cMap <- asks snd
-      let c = (cMap IM.! src) IM.! dst
+    applyDiff :: ((Int, Int), Bool) -> M ()
+    applyDiff ((src, dst), rev) = do
       modify $
-        if c == 0
+        if rev
           then M.alter (\(Just v) -> Just $ v - diff) (dst, src)
           else M.alter (\(Just v) -> Just $ v + diff) (src, dst)
 
