@@ -160,7 +160,6 @@ applyAugPathM (xs, diff) = do
     lift $ throwError msg
   let ((_, sinkNode), _) : _ = xs
       nodeVis ((srcNode, _), rev) =
-        -- TODO: for now nothing is covering this "-r>" yet.
         show srcNode <> if rev then " -r> " else " --> "
       pathVis = concatMap nodeVis (reverse xs) <> show sinkNode
   mapM_ applyDiff xs

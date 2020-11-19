@@ -12,8 +12,9 @@ main :: IO ()
 main = do
   fnData <-
     getDataFileName
-      -- "data/simple.dimacs"
-      "data/wash-t10.dimacs.txt"
+    -- "data/simple.dimacs"
+    -- "data/wash-t10.dimacs.txt"
+    "data/wikipedia.dimacs"
   raw <- T.readFile fnData
   let Right nr = parseFromRaw raw
   print nr
