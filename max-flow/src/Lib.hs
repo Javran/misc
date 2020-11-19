@@ -13,5 +13,7 @@ main = do
   raw <- T.readFile fnData
   let Right nr = parseFromRaw raw
   print nr
-  print (maxFlow nr)
+  let (result, logs) = maxFlow nr
+  print result
+  mapM_ T.putStrLn logs
   pure ()

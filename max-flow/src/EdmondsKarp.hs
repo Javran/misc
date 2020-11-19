@@ -6,7 +6,6 @@
 
 module EdmondsKarp
   ( prepare
-  , experiment
   , maxFlow
   )
 where
@@ -94,18 +93,6 @@ prepare NetworkRep {nrArcCount, nrArcs, nrNodeCount} = runExcept $ do
     throwError "capacity map size mismatch"
   pure (capa, initFlow)
 
-experiment :: NetworkRep -> Maybe ([(Int, Int)], Int)
-experiment nr@NetworkRep {nrSource, nrSink} =
-  findAugPath
-    nConsts
-    nrSource
-    nrSink
-    initFlow
-    IM.empty
-    (Seq.singleton nrSource)
-  where
-    Right (nConsts, initFlow) = prepare nr
-
 findAugPath
   :: CapacityMap
   -> Int
@@ -164,7 +151,10 @@ applyAugPathM (xs, diff) = do
     lift $
       Control.Monad.Trans.Writer.CPS.tell $
         DL.singleton $
-          T.pack "augmenting path: " <> T.pack (show xs) <> ", with capacity " <> T.pack (show diff)
+          T.pack "augmenting path: "
+            <> T.pack (show (reverse xs))
+            <> ", with capacity "
+            <> T.pack (show diff)
   where
     applyDiff :: (Int, Int) -> M ()
     applyDiff (src, dst) = do
