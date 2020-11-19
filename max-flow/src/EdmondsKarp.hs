@@ -143,18 +143,29 @@ findAugPathM = do
   curFlow <- get
   pure $ findAugPath cMap nrSource nrSink curFlow IM.empty (Seq.singleton nrSource)
 
-applyAugPathM :: AugPath -> M ()
-applyAugPathM (xs, diff) = do
-  mapM_ applyDiff xs
-  Control.Monad.Trans.RWS.CPS.tell $ Sum diff
+logM :: T.Text -> M ()
+logM t =
   lift $
     lift $
       Control.Monad.Trans.Writer.CPS.tell $
-        DL.singleton $
-          T.pack "augmenting path: "
-            <> T.pack (show (reverse xs))
-            <> ", with capacity "
-            <> T.pack (show diff)
+        DL.singleton t
+
+applyAugPathM :: AugPath -> M ()
+applyAugPathM (xs, diff) = do
+  when (null xs) $ do
+    let msg = "error: augmenting path should not be empty"
+    logM (T.pack msg)
+    lift $ throwError msg
+  let (_, sinkNode):_ = xs
+      nodes = reverse (fmap fst xs) <> [sinkNode]
+      pathVis = intercalate " --> " (fmap show nodes)
+  mapM_ applyDiff xs
+  Control.Monad.Trans.RWS.CPS.tell $ Sum diff
+  logM $
+    T.pack "augmenting path: "
+      <> T.pack pathVis
+      <> ", with capacity "
+      <> T.pack (show diff)
   where
     applyDiff :: (Int, Int) -> M ()
     applyDiff (src, dst) = do
