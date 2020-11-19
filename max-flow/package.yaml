@@ -19,6 +19,7 @@ dependencies:
 
 data-files:
   - data/simple.dimacs
+  - data/wash-t10.dimacs.txt
 
 library:
   generated-exposed-modules: Paths_max_flow
