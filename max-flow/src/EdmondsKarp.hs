@@ -158,9 +158,11 @@ applyAugPathM (xs, diff) = do
     let msg = "error: augmenting path should not be empty"
     logM (T.pack msg)
     lift $ throwError msg
-  let ((_, sinkNode),_) : _ = xs
-      nodes = reverse (fmap (fst . fst) xs) <> [sinkNode]
-      pathVis = intercalate " --> " (fmap show nodes)
+  let ((_, sinkNode), _) : _ = xs
+      nodeVis ((srcNode, _), rev) =
+        -- TODO: for now nothing is covering this "-r>" yet.
+        show srcNode <> if rev then " -r> " else " --> "
+      pathVis = concatMap nodeVis (reverse xs) <> show sinkNode
   mapM_ applyDiff xs
   Control.Monad.Trans.RWS.CPS.tell $ Sum diff
   logM $
@@ -170,7 +172,7 @@ applyAugPathM (xs, diff) = do
       <> T.pack (show diff)
   where
     applyDiff :: ((Int, Int), Bool) -> M ()
-    applyDiff ((src, dst), rev) = do
+    applyDiff ((src, dst), rev) =
       modify $
         if rev
           then M.alter (\(Just v) -> Just $ v - diff) (dst, src)
