@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
 module EdmondsKarp
@@ -159,6 +160,11 @@ applyAugPathM :: AugPath -> M ()
 applyAugPathM (xs, diff) = do
   mapM_ applyDiff xs
   Control.Monad.Trans.RWS.CPS.tell $ Sum diff
+  lift $
+    lift $
+      Control.Monad.Trans.Writer.CPS.tell $
+        DL.singleton $
+          T.pack "augmenting path: " <> T.pack (show xs) <> ", with capacity " <> T.pack (show diff)
   where
     applyDiff :: (Int, Int) -> M ()
     applyDiff (src, dst) = do
