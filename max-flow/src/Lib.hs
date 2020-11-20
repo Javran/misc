@@ -15,11 +15,15 @@ main = do
   case args of
     [fName] -> do
       raw <- T.readFile fName
-      let Right nr = parseFromRaw raw
-      print nr
-      let (result, logs) = maxFlow nr
-      mapM_ T.putStrLn logs
-      print result
+      case  parseFromRaw raw of
+        Left msg -> do
+          putStrLn $ "parse error: " <> msg
+          exitFailure
+        Right nr -> do
+          print nr
+          let (result, logs) = maxFlow nr
+          mapM_ T.putStrLn logs
+          print result
     _ -> do
       putStrLn "<prog> <data file>"
       exitFailure
