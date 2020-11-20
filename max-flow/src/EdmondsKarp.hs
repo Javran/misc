@@ -179,17 +179,18 @@ applyAugPathM (xs, diff) = do
 
 maxFlow :: NetworkRep -> (Either String (Int, Flow), [T.Text])
 maxFlow nr =
-  second DL.toList $
-    runWriter $
-      fmap (second (\((), flow, Sum v) -> (v, flow))) $
-        runExceptT $
-          (runRWST
-             (fix $ \loop -> do
-                r <- findAugPathM
-                case r of
-                  Nothing -> pure ()
-                  Just augPath -> applyAugPathM augPath >> loop)
-             (nr, nConsts)
-             initFlow)
-  where
-    Right (nConsts, initFlow) = prepare nr
+  case prepare nr of
+    Left errMsg -> (Left errMsg, [])
+    Right (cMap, initFlow) -> do
+      second DL.toList $
+        runWriter $
+          fmap (second (\((), flow, Sum v) -> (v, flow))) $
+            runExceptT $
+              (runRWST
+                 (fix $ \loop -> do
+                    r <- findAugPathM
+                    case r of
+                      Nothing -> pure ()
+                      Just augPath -> applyAugPathM augPath >> loop)
+                 (nr, cMap)
+                 initFlow)
