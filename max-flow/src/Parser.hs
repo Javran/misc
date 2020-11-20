@@ -31,8 +31,18 @@ data RawLine
  -}
 rawLine :: P.Parser RawLine
 rawLine =
-  commentLine <|> problemLine <|> nodeDescLine <|> arcLine
+  emptyLine
+    <|> commentLine
+    <|> problemLine
+    <|> nodeDescLine
+    <|> arcLine
   where
+    emptyLine = do
+      _ <- P.takeWhile (\ch -> isSpace ch && ch /= '\n')
+      next <- P.peekChar
+      case next of
+        Just '\n' -> pure $ RComment ""
+        _ -> fail "invalid line"
     commentLine = do
       _ <- "c"
       next <- P.peekChar
@@ -85,7 +95,7 @@ parseNetwork = do
             convert t = throwError $ "not an arc: " <> show t
         nrArcs <- mapM convert arcDescs
         pure NetworkRep {nrNodeCount, nrArcCount, nrSource, nrSink, nrArcs}
-    _ -> throwError "invalid initial input lines"
+    _ -> throwError $ "invalid initial input lines (comments ignored): " <> show xs
 
 parseFromRaw :: T.Text -> Either String NetworkRep
 parseFromRaw raw = runExcept $ do
