@@ -15,7 +15,7 @@ main = do
   case args of
     [fName] -> do
       raw <- T.readFile fName
-      case  parseFromRaw raw of
+      case parseFromRaw raw of
         Left msg -> do
           putStrLn $ "parse error: " <> msg
           exitFailure

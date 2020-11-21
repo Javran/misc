@@ -214,7 +214,7 @@ applyAugPathM (xs, diff) = do
 
 maxFlow :: NetworkRep -> (Either String (Int, Flow), [T.Text])
 maxFlow nr =
-  case prepare nr of
+  case  prepare (normalize nr) of
     Left errMsg -> (Left errMsg, [])
     Right (cMap, initFlow) -> do
       second DL.toList $
