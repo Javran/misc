@@ -21,6 +21,7 @@ import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
 import qualified Data.Sequence as Seq
+import qualified Data.Set as S
 import qualified Data.Text as T
 import Types
 
@@ -48,7 +49,8 @@ type AugPath = ([((Int, Int), Bool)], Int)
 
 prepare :: NetworkRep -> Either String (CapacityMap, Flow)
 prepare NetworkRep {nrArcCount, nrArcs, nrNodeCount} = runExcept $ do
-  unless (length nrArcs == nrArcCount) $
+  let szArcs = length nrArcs
+  unless (szArcs == nrArcCount) $
     throwError "arc count mismatched."
   let checkArc ((src, dst), cap) = do
         {-
@@ -89,8 +91,13 @@ prepare NetworkRep {nrArcCount, nrArcs, nrNodeCount} = runExcept $ do
     a part of the same network. If this expectation is not met,
     an error will be raised.
    -}
-  unless (getSum (foldMap (Sum . IM.size) capa) == nrArcCount * 2) $
-    throwError "capacity map size mismatch"
+  unless (getSum (foldMap (Sum . IM.size) capa) == nrArcCount * 2) $ do
+    let pairs = S.fromList $ fmap ((\p@(x, y) -> if x <= y then p else (y, x)) . fst) nrArcs
+    throwError $
+      "capacity map size mismatch: unique: "
+        <> show (S.size pairs)
+        <> ", total: "
+        <> show szArcs
   pure (capa, initFlow)
 
 type PreInfo = (Int, Int, Bool {- whether the actual direction is reversed -})
