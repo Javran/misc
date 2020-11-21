@@ -47,6 +47,34 @@ type M =
 
 type AugPath = ([((Int, Int), Bool)], Int)
 
+normalize :: NetworkRep -> NetworkRep
+normalize nr@NetworkRep {nrArcs} =
+  nr
+    { nrArcCount = M.size tmpCapMap
+    , nrArcs =
+        fmap (\(p@(x, y), Sum v) -> if v > 0 then (p, v) else ((y, x), - v)) $
+          M.toList tmpCapMap
+    }
+  where
+    {-
+      produce a map whose arcs are normalized (smaller one always go first) and capacity combined.
+      the value is non-zero, for a key (x,y), a positive value v means capacity v going from x to y,
+      and a negative value v means capacity -v going from y to x.
+     -}
+    tmpCapMap =
+      M.filter (\(Sum x) -> x /= 0) $
+        M.fromListWith (<>) $ mapMaybe norm nrArcs
+      where
+        norm (p@(x, y), v) = case compare x y of
+          EQ ->
+            {-
+              self-link does not carry any capacity.
+              (it could, just that it's not very useful)
+             -}
+            Nothing
+          LT -> Just (p, Sum v)
+          GT -> Just ((y, x), Sum (- v))
+
 prepare :: NetworkRep -> Either String (CapacityMap, Flow)
 prepare NetworkRep {nrArcCount, nrArcs, nrNodeCount} = runExcept $ do
   let szArcs = length nrArcs
