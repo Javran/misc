@@ -18,9 +18,7 @@ dependencies:
 - dlist
 
 data-files:
-  - data/simple.dimacs
-  - data/wash-t10.dimacs.txt
-  - data/wikipedia.dimacs
+  - data/*
 
 library:
   generated-exposed-modules: Paths_max_flow
