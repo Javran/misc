@@ -4,7 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
-module EdmondsKarp
+module Javran.MaxFlow.EdmondsKarp
   ( prepare
   , maxFlow
   )
@@ -23,7 +23,7 @@ import Data.Monoid
 import qualified Data.Sequence as Seq
 import qualified Data.Set as S
 import qualified Data.Text as T
-import Types
+import Javran.MaxFlow.Types
 
 type CapacityMap = IM.IntMap (IM.IntMap Int)
 
@@ -214,7 +214,7 @@ applyAugPathM (xs, diff) = do
 
 maxFlow :: NetworkRep -> (Either String (Int, Flow), [T.Text])
 maxFlow nr =
-  case  prepare (normalize nr) of
+  case prepare (normalize nr) of
     Left errMsg -> (Left errMsg, [])
     Right (cMap, initFlow) -> do
       second DL.toList $

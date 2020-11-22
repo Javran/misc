@@ -1,4 +1,4 @@
-module Types
+module Javran.MaxFlow.Types
   ( NetworkRep (..)
   )
 where

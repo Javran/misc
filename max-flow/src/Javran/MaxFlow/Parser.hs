@@ -4,7 +4,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Parser
+module Javran.MaxFlow.Parser
   ( NetworkRep (..)
   , parseFromRaw
   )
@@ -16,7 +16,7 @@ import Control.Monad.State
 import qualified Data.Attoparsec.Text as P
 import Data.Char
 import qualified Data.Text as T
-import Types
+import Javran.MaxFlow.Types
 
 data RawLine
   = RComment T.Text
@@ -25,6 +25,12 @@ data RawLine
   | RArc (Int, Int) Int
   deriving (Show)
 
+{-
+  The format is specified in: http://lpsolve.sourceforge.net/5.5/DIMACS_maxf.htm
+
+  in addition, lines with just spaces are treated as if it's an empty comment line,
+  this behavior is not specified by the format, but we do have those lines from generated examples.
+ -}
 {-
   parsing a line without consuming the '\n' in the end
   which might or might not (if it is the last line) present.
