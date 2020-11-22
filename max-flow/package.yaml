@@ -16,6 +16,8 @@ dependencies:
 - containers
 - transformers
 - dlist
+- directory
+- filepath
 
 data-files:
   - data/*
