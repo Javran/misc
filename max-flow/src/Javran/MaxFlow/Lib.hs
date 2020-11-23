@@ -20,9 +20,19 @@ batchProcess pBase = do
       listDirectory pBase
         >>= mapM_ (batchProcess . (pBase </>))
     else do
-      -- TODO: process a file
-      print pBase
-      pure ()
+      let fName = pBase
+      putStr $ pBase <> ": "
+      raw <- T.readFile fName
+      case parseFromRaw raw of
+        Left msg -> do
+          putStrLn $ "parse error: " <> msg
+        Right nr -> do
+          let (result, _logs) = maxFlow nr
+          case result of
+            Left msg -> do
+              putStrLn $ "error: " <> msg
+            Right (v, _arcs) -> do
+              putStrLn $ "max flow: " <> show v
 
 main :: IO ()
 main = do
@@ -57,5 +67,5 @@ main = do
           exitFailure
     _ -> do
       putStrLn "<prog> dev <data file>: run on a single dimacs file."
-      putStrLn "<prog> batch <base path>: batch-process a directory of files"
+      putStrLn "<prog> batch <base path>: batch-process files."
       exitFailure
