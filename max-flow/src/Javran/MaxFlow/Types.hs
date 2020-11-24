@@ -36,4 +36,23 @@ data NetworkRep = NetworkRep
  -}
 type CapacityMap = IM.IntMap (IM.IntMap Int)
 
+{-
+  Resulting flow produced by the solver.
+  This piece of information must be consistent with the company CapacityMap:
+
+  - an element keyed by (u,v) exists in this map if and only if (u,v) maps to a non-zero capacity
+    in the company CapacityMap.
+
+  - the value of all elements must be:
+
+    + non-negative.
+    + less or equal to its corresponding max capacity in CapacityMap.
+
+  Other constraints apply, but most of those are not enforced by type system.
+  See https://en.wikipedia.org/wiki/Maximum_flow_problem#Definition for details on those constraints.
+
+  (TODO: we will have a verification module to ensure that the max-flow produced by solvers are compliant with
+  those constraints)
+
+ -}
 type Flow = M.Map (Int, Int) Int
