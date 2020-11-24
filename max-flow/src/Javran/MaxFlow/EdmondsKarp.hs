@@ -44,6 +44,15 @@ type M =
 
 type AugPath = ([((Int, Int), Bool)], Int)
 
+{-
+  To normalize a NetworkRep is to remove and combine arcs in it so that:
+
+  - there is no self-link, meaning (u,u) does not exist in the arcs for any u.
+  - arcs are combined if their set of source and destionation are shared.
+    say ((u,v),c0), ((v,u),c1) is combined into ((u,v),c0-c1) if c0-c1 > 0
+  - there is only positive capacity in resulting NetworkRep.
+
+ -}
 normalize :: NetworkRep -> NetworkRep
 normalize nr@NetworkRep {nrArcs} =
   nr

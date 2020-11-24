@@ -8,6 +8,16 @@ where
 import qualified Data.IntMap.Strict as IM
 import qualified Data.Map.Strict as M
 
+{-
+  Represents all information of this network, this includes:
+
+  - nrNodeCount, represention number of nodes. the id of all notes range from 1 to nrNodeCount.
+  - nrArcCount, which must be the length of nrArcs
+  - nrSource / nrSink / nrArcs are obvious, with node id range constraints.
+
+  This is a loose representation in the sense that it doesn't put much restriction on network itself.
+
+ -}
 data NetworkRep = NetworkRep
   { nrNodeCount :: Int
   , nrArcCount :: Int
