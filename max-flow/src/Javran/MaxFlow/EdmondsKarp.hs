@@ -25,9 +25,6 @@ import qualified Data.Set as S
 import qualified Data.Text as T
 import Javran.MaxFlow.Types
 
-type CapacityMap = IM.IntMap (IM.IntMap Int)
-
-type Flow = M.Map (Int, Int) Int
 
 {-
   We can certainly extend Sum Int to (DList Text, Sum Int)
