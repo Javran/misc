@@ -7,6 +7,7 @@
 module Javran.MaxFlow.EdmondsKarp
   ( prepare
   , maxFlow
+  , normalize
   )
 where
 
@@ -24,7 +25,6 @@ import qualified Data.Sequence as Seq
 import qualified Data.Set as S
 import qualified Data.Text as T
 import Javran.MaxFlow.Types
-
 
 {-
   We can certainly extend Sum Int to (DList Text, Sum Int)
@@ -218,9 +218,12 @@ applyAugPathM (xs, diff) = do
           then M.alter (\(Just v) -> Just $ v - diff) (dst, src)
           else M.alter (\(Just v) -> Just $ v + diff) (src, dst)
 
+{-
+  Note that this function expects a normalized NetworkRep
+ -}
 maxFlow :: NetworkRep -> (Either String (Int, Flow), [T.Text])
 maxFlow nr =
-  case prepare (normalize nr) of
+  case prepare nr of
     Left errMsg -> (Left errMsg, [])
     Right (cMap, initFlow) -> do
       second DL.toList $

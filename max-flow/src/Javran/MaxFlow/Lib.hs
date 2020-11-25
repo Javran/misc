@@ -44,7 +44,8 @@ main = do
         Left msg -> do
           putStrLn $ "parse error: " <> msg
           exitFailure
-        Right nr -> do
+        Right nrRaw -> do
+          let nr = normalize nrRaw
           print nr
           let (result, logs) = maxFlow nr
           mapM_ T.putStrLn logs
