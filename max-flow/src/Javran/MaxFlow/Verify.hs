@@ -7,7 +7,10 @@ import qualified Data.Map.Strict as M
 import Data.Monoid
 import Javran.MaxFlow.Types
 
-verify :: Int -> Int -> CapacityMap -> Flow -> Except String ()
+{-
+  verify flow property and return total flow.
+ -}
+verify :: Int -> Int -> CapacityMap -> Flow -> Except String Int
 verify sourceNode sinkNode cMap fl = do
   {-
     verify edges, make sure capacities are within correct ranges,
@@ -25,7 +28,10 @@ verify sourceNode sinkNode cMap fl = do
           Nothing ->
             throwError $ "arc " <> show (u, v) <> " is not assigned."
   {-
-    TODO: we should verify on CapacityMap that nothing flows into source and nothing flows out of sink.
+    According to https://en.wikipedia.org/wiki/Maximum_flow_problem#Definition,
+    it is actually unspecfied whether it is allowed for an arc to flow into source or flow out of sink.
+    This might just be implied somewhere (by flow definition or by max-flow property), but for now let's
+    just verify what definition says and nothing more.
    -}
   let allNodeNets = foldr go (IM.map (const 0) cMap) (M.toList fl)
         where
@@ -39,6 +45,9 @@ verify sourceNode sinkNode cMap fl = do
       nodeNets = IM.delete sourceNode $ IM.delete sinkNode allNodeNets
   when (srcNet + sinkNet /= 0) $
     throwError "unbalanced source and sink net flow."
+  when (srcNet > 0) $
+    throwError "source node should not receive flow"
   forM_ (IM.toList nodeNets) $ \(u, c) ->
     when (c /= 0) $
       throwError $ "node " <> show u <> " has a non-zero net flow of value " <> show c
+  pure $ getSum sinkNet
