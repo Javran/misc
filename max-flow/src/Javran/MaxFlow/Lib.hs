@@ -31,7 +31,7 @@ batchProcess pBase = do
           case result of
             Left msg -> do
               putStrLn $ "error: " <> msg
-            Right (v, _arcs) -> do
+            Right (v, _arcs, _) -> do
               putStrLn $ "max flow: " <> show v
 
 main :: IO ()
@@ -53,7 +53,7 @@ main = do
             Left msg -> do
               putStrLn $ "error: " <> msg
               exitFailure
-            Right (v, arcs) -> do
+            Right (v, arcs, _cMap) -> do
               putStrLn $ "max flow: " <> show v
               putStrLn $
                 "non zero assignments: "

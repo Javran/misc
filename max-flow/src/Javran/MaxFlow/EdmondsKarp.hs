@@ -221,14 +221,14 @@ applyAugPathM (xs, diff) = do
 {-
   Note that this function expects a normalized NetworkRep
  -}
-maxFlow :: NetworkRep -> (Either String (Int, Flow), [T.Text])
+maxFlow :: NetworkRep -> (Either String (Int, Flow, CapacityMap), [T.Text])
 maxFlow nr =
   case prepare nr of
     Left errMsg -> (Left errMsg, [])
     Right (cMap, initFlow) -> do
       second DL.toList $
         runWriter $
-          fmap (second (\((), flow, Sum v) -> (v, flow))) $
+          fmap (second (\((), flow, Sum v) -> (v, flow, cMap))) $
             runExceptT $
               (runRWST
                  (fix $ \loop -> do
