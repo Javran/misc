@@ -1,12 +1,16 @@
+{-# LANGUAGE NamedFieldPuns #-}
+
 module Javran.MaxFlow.Lib
   ( main
   )
 where
 
+import Control.Monad.Except
 import qualified Data.Map.Strict as M
 import qualified Data.Text.IO as T
 import Javran.MaxFlow.EdmondsKarp
 import Javran.MaxFlow.Parser
+import Javran.MaxFlow.Verify
 import System.Directory
 import System.Environment
 import System.Exit
@@ -45,7 +49,7 @@ main = do
           putStrLn $ "parse error: " <> msg
           exitFailure
         Right nrRaw -> do
-          let nr = normalize nrRaw
+          let nr@NetworkRep {nrSource, nrSink} = normalize nrRaw
           print nr
           let (result, logs) = maxFlow nr
           mapM_ T.putStrLn logs
@@ -53,12 +57,15 @@ main = do
             Left msg -> do
               putStrLn $ "error: " <> msg
               exitFailure
-            Right (v, arcs, _cMap) -> do
+            Right (v, arcs, cMap) -> do
               putStrLn $ "max flow: " <> show v
               putStrLn $
                 "non zero assignments: "
                   <> show
                     (filter ((/= 0) . snd) $ M.toList arcs)
+              putStrLn $
+                "verification: "
+                  <> (show $ runExcept $ verify nrSource nrSink cMap arcs)
     ["batch", basePath] -> do
       p <- doesPathExist basePath
       if p
