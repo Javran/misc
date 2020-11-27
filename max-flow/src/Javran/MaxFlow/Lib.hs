@@ -23,20 +23,21 @@ batchProcess pBase = do
     then
       listDirectory pBase
         >>= mapM_ (batchProcess . (pBase </>))
-    else do
-      let fName = pBase
-      putStr $ pBase <> ": "
-      raw <- T.readFile fName
-      case parseFromRaw raw of
-        Left msg -> do
-          putStrLn $ "parse error: " <> msg
-        Right nr -> do
-          let (result, _logs) = maxFlow (normalize nr)
-          case result of
-            Left msg -> do
-              putStrLn $ "error: " <> msg
-            Right (v, _arcs, _) -> do
-              putStrLn $ "max flow: " <> show v
+    else when (takeExtension pBase == ".dimacs") $
+      do
+        let fName = pBase
+        putStr $ pBase <> ": "
+        raw <- T.readFile fName
+        case parseFromRaw raw of
+          Left msg -> do
+            putStrLn $ "parse error: " <> msg
+          Right nr -> do
+            let (result, _logs) = maxFlow (normalize nr)
+            case result of
+              Left msg -> do
+                putStrLn $ "error: " <> msg
+              Right (v, _arcs, _) -> do
+                putStrLn $ "max flow: " <> show v
 
 main :: IO ()
 main = do
