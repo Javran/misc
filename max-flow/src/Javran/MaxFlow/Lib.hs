@@ -10,6 +10,7 @@ import qualified Data.Map.Strict as M
 import qualified Data.Text.IO as T
 import Javran.MaxFlow.EdmondsKarp
 import Javran.MaxFlow.Parser
+import Javran.MaxFlow.TestData
 import Javran.MaxFlow.Verify
 import System.Directory
 import System.Environment
@@ -74,6 +75,8 @@ main = do
         else do
           putStrLn "path does not exist"
           exitFailure
+    ["embed"] -> do
+      print (fst <$> (packSimple <> packGenetic <> packHandmade <> packRandomBest))
     _ -> do
       putStrLn "<prog> dev <data file>: run on a single dimacs file."
       putStrLn "<prog> batch <base path>: batch-process files."

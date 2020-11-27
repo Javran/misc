@@ -18,9 +18,11 @@ dependencies:
 - dlist
 - directory
 - filepath
+- file-embed
+- bytestring
 
-data-files:
-  - data/*
+extra-source-files:
+  - embed/**/*.dimacs
 
 library:
   generated-exposed-modules: Paths_max_flow
