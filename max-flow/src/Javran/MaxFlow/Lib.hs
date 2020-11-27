@@ -31,7 +31,7 @@ batchProcess pBase = do
         Left msg -> do
           putStrLn $ "parse error: " <> msg
         Right nr -> do
-          let (result, _logs) = maxFlow nr
+          let (result, _logs) = maxFlow (normalize nr)
           case result of
             Left msg -> do
               putStrLn $ "error: " <> msg
