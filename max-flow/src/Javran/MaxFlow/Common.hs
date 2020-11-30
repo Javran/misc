@@ -2,6 +2,8 @@
 
 module Javran.MaxFlow.Common
   ( normalize
+  , getNR
+  , NormalizedNetwork
   )
 where
 
@@ -9,6 +11,10 @@ import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
 import Javran.MaxFlow.Types
+
+newtype NormalizedNetwork = NormalizedNetwork
+  { getNR :: NetworkRep
+  }
 
 {-
   To normalize a NetworkRep is to remove and combine arcs in it so that:
@@ -19,14 +25,15 @@ import Javran.MaxFlow.Types
   - there is only positive capacity in resulting NetworkRep.
 
  -}
-normalize :: NetworkRep -> NetworkRep
+normalize :: NetworkRep -> NormalizedNetwork
 normalize nr@NetworkRep {nrArcs} =
-  nr
-    { nrArcCount = M.size tmpCapMap
-    , nrArcs =
-        fmap (\(p@(x, y), Sum v) -> if v > 0 then (p, v) else ((y, x), - v)) $
-          M.toList tmpCapMap
-    }
+  NormalizedNetwork $
+    nr
+      { nrArcCount = M.size tmpCapMap
+      , nrArcs =
+          fmap (\(p@(x, y), Sum v) -> if v > 0 then (p, v) else ((y, x), - v)) $
+            M.toList tmpCapMap
+      }
   where
     {-
       produce a map whose arcs are normalized (smaller one always go first) and capacity combined.

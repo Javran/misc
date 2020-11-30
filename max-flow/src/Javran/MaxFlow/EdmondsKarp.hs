@@ -1,3 +1,4 @@
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -5,8 +6,7 @@
 {-# LANGUAGE TupleSections #-}
 
 module Javran.MaxFlow.EdmondsKarp
-  ( prepare
-  , maxFlow
+  ( maxFlow
   )
 where
 
@@ -184,8 +184,8 @@ applyAugPathM (xs, diff) = do
 {-
   Note that this function expects a normalized NetworkRep
  -}
-maxFlow :: NetworkRep -> (Either String (Int, Flow, CapacityMap), [T.Text])
-maxFlow nr =
+maxFlow :: NormalizedNetwork -> (Either String (Int, Flow, CapacityMap), [T.Text])
+maxFlow (getNR -> nr) =
   case prepare nr of
     Left errMsg -> (Left errMsg, [])
     Right (cMap, initFlow) -> do

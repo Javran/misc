@@ -52,9 +52,10 @@ main = do
           putStrLn $ "parse error: " <> msg
           exitFailure
         Right nrRaw -> do
-          let nr@NetworkRep {nrSource, nrSink} = normalize nrRaw
+          let nn = normalize nrRaw
+              nr@NetworkRep {nrSource, nrSink} = getNR nn
           print nr
-          let (result, logs) = maxFlow nr
+          let (result, logs) = maxFlow nn
           mapM_ T.putStrLn logs
           case result of
             Left msg -> do
