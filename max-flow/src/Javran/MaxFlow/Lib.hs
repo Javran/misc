@@ -41,35 +41,40 @@ batchProcess pBase = do
               Right (v, _arcs, _) -> do
                 putStrLn $ "max flow: " <> show v
 
+-- load, parse, and normalize a network from FilePath.
+loadNetwork :: FilePath -> IO NormalizedNetwork
+loadNetwork fName = do
+  raw <- T.readFile fName
+  case parseFromRaw raw of
+    Left msg -> do
+      putStrLn $ "parse error: " <> msg
+      exitFailure
+    Right nrRaw -> do
+      pure $ normalize nrRaw
+
 main :: IO ()
 main = do
   args <- getArgs
   case args of
-    ["dev", fName] -> do
-      raw <- T.readFile fName
-      case parseFromRaw raw of
+    ["run", fName] -> do
+      nn <- loadNetwork fName
+      let nr@NetworkRep {nrSource, nrSink} = getNR nn
+      print nr
+      let (result, logs) = maxFlow nn
+      mapM_ T.putStrLn logs
+      case result of
         Left msg -> do
-          putStrLn $ "parse error: " <> msg
+          putStrLn $ "error: " <> msg
           exitFailure
-        Right nrRaw -> do
-          let nn = normalize nrRaw
-              nr@NetworkRep {nrSource, nrSink} = getNR nn
-          print nr
-          let (result, logs) = maxFlow nn
-          mapM_ T.putStrLn logs
-          case result of
-            Left msg -> do
-              putStrLn $ "error: " <> msg
-              exitFailure
-            Right (v, arcs, cMap) -> do
-              putStrLn $ "max flow: " <> show v
-              putStrLn $
-                "non zero assignments: "
-                  <> show
-                    (filter ((/= 0) . snd) $ M.toList arcs)
-              putStrLn $
-                "verification: "
-                  <> (show $ runExcept $ verify nrSource nrSink cMap arcs)
+        Right (v, arcs, cMap) -> do
+          putStrLn $ "max flow: " <> show v
+          putStrLn $
+            "non zero assignments: "
+              <> show
+                (filter ((/= 0) . snd) $ M.toList arcs)
+          putStrLn $
+            "verification: "
+              <> (show $ runExcept $ verify nrSource nrSink cMap arcs)
     ["batch", basePath] -> do
       p <- doesPathExist basePath
       if p
@@ -80,6 +85,6 @@ main = do
     ["embed"] -> do
       print (fst <$> (packSimple <> packGenetic <> packHandmade <> packRandomBest))
     _ -> do
-      putStrLn "<prog> dev <data file>: run on a single dimacs file."
+      putStrLn "<prog> run <data file>: run on a single dimacs file."
       putStrLn "<prog> batch <base path>: batch-process files."
       exitFailure
