@@ -3,8 +3,6 @@
 module Javran.MaxFlow.Dinitz () where
 
 import Control.Monad.Except
-import Control.Monad.RWS ()
-import Control.Monad.Trans.Except ()
 import Control.Monad.Trans.RWS.CPS
 import Control.Monad.Trans.Writer.CPS
 import qualified Data.DList as DL
@@ -24,7 +22,7 @@ type RInfo = (NetworkRep, CapacityMap)
 
 type M =
   RWST
-    (NetworkRep, CapacityMap)
+    RInfo
     (Sum Int)
     Flow
     ( ExceptT
