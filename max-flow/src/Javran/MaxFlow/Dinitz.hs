@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Javran.MaxFlow.Dinitz () where
+module Javran.MaxFlow.Dinitz where
 
 import Control.Monad.Except
 import Control.Monad.Trans.RWS.CPS
@@ -14,6 +14,7 @@ import qualified Data.IntSet as IS
 import qualified Data.Map.Strict as M
 import Data.Monoid
 import qualified Data.Text as T
+import Javran.MaxFlow.Common
 import Javran.MaxFlow.Types
 
 {-
@@ -90,6 +91,7 @@ expandLayer cMap fl discovered curLayer@(eSet, _) = do
   guard $ not $ IS.null $ fst result
   pure result
 
+-- TODO: this is constructed but in reversed order.
 buildLayered :: M [Layer]
 buildLayered = do
   (NetworkRep {nrSource}, cMap) <- ask
@@ -104,3 +106,8 @@ buildLayered = do
     initLayer
     (IS.singleton nrSource)
     [initLayer]
+
+experiment nn = runWriter $ runExceptT $ runRWST buildLayered (nr, cMap) initFlow
+  where
+    Right (cMap, initFlow) = prepare (getNR nn)
+    nr@NetworkRep {} = getNR nn

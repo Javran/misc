@@ -17,6 +17,7 @@ import System.Directory
 import System.Environment
 import System.Exit
 import System.FilePath.Posix
+import qualified Javran.MaxFlow.Dinitz as Dinitz
 
 batchProcess :: FilePath -> IO ()
 batchProcess pBase = do
@@ -56,6 +57,10 @@ main :: IO ()
 main = do
   args <- getArgs
   case args of
+    ["dev", fName] -> do
+      nn <- loadNetwork fName
+      let nr@NetworkRep {nrSource, nrSink} = getNR nn
+      print (Dinitz.experiment nn)
     ["run", fName] -> do
       nn <- loadNetwork fName
       let nr@NetworkRep {nrSource, nrSink} = getNR nn
