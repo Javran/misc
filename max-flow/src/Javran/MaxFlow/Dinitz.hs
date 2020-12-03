@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Javran.MaxFlow.Dinitz () where
 
@@ -7,6 +8,7 @@ import Control.Monad.Trans.RWS.CPS
 import Control.Monad.Trans.Writer.CPS
 import qualified Data.DList as DL
 import qualified Data.IntMap.Strict as IM
+import qualified Data.IntSet as IS
 import qualified Data.Map.Strict as M
 import Data.Monoid
 import qualified Data.Text as T
@@ -65,3 +67,21 @@ getArc p = do
       let msg = "lookup failed for edge " <> show p
       logM (T.pack msg)
       lift $ throwError msg
+
+type Layer = (IS.IntSet, [(Int, Int)]) -- (<vertex set, arc set>)
+
+expandLayer :: CapacityMap -> Flow -> IS.IntSet -> Layer -> Maybe Layer
+expandLayer cMap fl discovered curLayer@(eSet, _) = do
+  let getResidual u v = (\(cur, cap) -> cap - cur) <$> lookupArc cMap fl (u, v)
+      nextNodes :: Int -> IS.IntSet
+      nextNodes s = IS.filter hasResidual vs
+        where
+          -- all directly connected vertices except those that has been discovered.
+          vs = IS.fromList (IM.keys (cMap IM.! s)) `IS.difference` discovered
+          hasResidual v = case getResidual s v of
+            Nothing -> False
+            Just r -> r > 0
+  (nexts :: [(IS.IntSet, [(Int, Int)])]) <- forM (IS.toList eSet) $ \u -> do
+    let arcs = [(u, v) | v <- IS.toList (nextNodes u)]
+    pure (IS.fromList (snd <$> arcs), arcs)
+  pure (mconcat nexts)
