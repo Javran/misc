@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -7,6 +8,7 @@ import Control.Monad.Except
 import Control.Monad.Trans.RWS.CPS
 import Control.Monad.Trans.Writer.CPS
 import qualified Data.DList as DL
+import Data.Function
 import qualified Data.IntMap.Strict as IM
 import qualified Data.IntSet as IS
 import qualified Data.Map.Strict as M
@@ -84,4 +86,21 @@ expandLayer cMap fl discovered curLayer@(eSet, _) = do
   (nexts :: [(IS.IntSet, [(Int, Int)])]) <- forM (IS.toList eSet) $ \u -> do
     let arcs = [(u, v) | v <- IS.toList (nextNodes u)]
     pure (IS.fromList (snd <$> arcs), arcs)
-  pure (mconcat nexts)
+  let result = mconcat nexts
+  guard $ not $ IS.null $ fst result
+  pure result
+
+buildLayered :: M [Layer]
+buildLayered = do
+  (NetworkRep {nrSource}, cMap) <- ask
+  fl <- get
+  let initLayer = (IS.singleton nrSource, [])
+  fix
+    (\loop curLayer discovered layers ->
+       case expandLayer cMap fl discovered curLayer of
+         Nothing -> pure layers
+         Just nextLayer@(vs, _) -> do
+           loop nextLayer (discovered <> vs) (nextLayer : layers))
+    initLayer
+    (IS.singleton nrSource)
+    [initLayer]
