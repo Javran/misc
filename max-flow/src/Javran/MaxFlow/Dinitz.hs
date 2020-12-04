@@ -73,8 +73,8 @@ getArc p = do
 
 type Layer = (IS.IntSet, [(Int, Int)]) -- (<vertex set, arc set>)
 
--- expandLayer :: CapacityMap -> Flow -> IS.IntSet -> Layer -> Maybe Layer
-expandLayer nextNodes discovered curLayer@(eSet, _) = do
+expandLayer :: (Int -> IS.IntSet) -> Layer -> Maybe Layer
+expandLayer nextNodes curLayer@(eSet, _) = do
   (nexts :: [(IS.IntSet, [(Int, Int)])]) <- forM (IS.toList eSet) $ \u -> do
     let arcs = [(u, v) | v <- IS.toList (nextNodes u)]
     pure (IS.fromList (snd <$> arcs), arcs)
@@ -99,7 +99,7 @@ buildLayeredM = do
                 hasResidual v = case getResidual s v of
                   Nothing -> False
                   Just r -> r > 0
-        case expandLayer nextNodes discovered curLayer of
+        case expandLayer nextNodes curLayer of
           Nothing -> pure layers
           Just nextLayer@(vs, _) -> do
            loop nextLayer (discovered <> vs) (nextLayer : layers))
