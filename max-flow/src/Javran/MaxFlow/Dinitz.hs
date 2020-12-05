@@ -86,35 +86,40 @@ expandLayer nextNodes eSet = do
   pure result
 
 -- TODO: this is constructed but in reversed order.
-buildLayeredM :: M [Layer]
+buildLayeredM :: M ([Layer], IM.IntMap [Int])
 buildLayeredM = do
   (NetworkRep {nrSource}, cMap) <- ask
   fl <- get
   let initLayer = (IS.singleton nrSource, [])
-  fix
-    (\loop eSet discovered layers -> do
-       let getResidual u v = (\(cur, cap) -> cap - cur) <$> lookupArc cMap fl (u, v)
-           nextNodes :: Int -> IS.IntSet
-           nextNodes s = IS.filter hasResidual vs
-             where
-               -- all directly connected vertices except those that has been discovered.
-               vs = IS.fromList (IM.keys (cMap IM.! s)) `IS.difference` discovered
-               hasResidual v = case getResidual s v of
-                 Nothing -> False
-                 Just r -> r > 0
-       case expandLayer nextNodes eSet of
-         Nothing -> pure layers
-         Just nextLayer@(vs, _) -> do
-           loop vs (discovered <> vs) (nextLayer : layers))
-    (fst initLayer)
-    (IS.singleton nrSource)
-    [initLayer]
+  layers <-
+    fix
+      (\loop eSet discovered layers -> do
+         let getResidual u v = (\(cur, cap) -> cap - cur) <$> lookupArc cMap fl (u, v)
+             nextNodes :: Int -> IS.IntSet
+             nextNodes s = IS.filter hasResidual vs
+               where
+                 -- all directly connected vertices except those that has been discovered.
+                 vs = IS.fromList (IM.keys (cMap IM.! s)) `IS.difference` discovered
+                 hasResidual v = case getResidual s v of
+                   Nothing -> False
+                   Just r -> r > 0
+         case expandLayer nextNodes eSet of
+           Nothing -> pure layers
+           Just nextLayer@(vs, _) -> do
+             loop vs (discovered <> vs) (nextLayer : layers))
+      (fst initLayer)
+      (IS.singleton nrSource)
+      [initLayer]
+  let revMap :: IM.IntMap [Int]
+      revMap = IM.fromListWith (<>) $ fmap (\(u,v) -> (v ,[u])) $ concatMap snd layers
+  pure (layers, revMap)
 
 experiment :: NormalizedNetwork -> IO ()
 experiment nn = do
-  let (Right (v, _, _), _) =
+  let (Right ((layers, revMap), _, _), _) =
         runWriter $ runExceptT $ runRWST buildLayeredM (nr, cMap) initFlow
-  mapM_ print (zip [0 ..] (reverse v))
+  mapM_ print (zip [0 ..] (reverse layers))
+  print revMap
   where
     Right (cMap, initFlow) = prepare (getNR nn)
     nr@NetworkRep {} = getNR nn
