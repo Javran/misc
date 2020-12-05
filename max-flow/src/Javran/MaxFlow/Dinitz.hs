@@ -8,7 +8,6 @@ import Control.Monad.Except
 import Control.Monad.Trans.RWS.CPS
 import Control.Monad.Trans.Writer.CPS
 import qualified Data.DList as DL
-import Data.Function
 import qualified Data.IntMap.Strict as IM
 import qualified Data.IntSet as IS
 import qualified Data.Map.Strict as M
@@ -73,8 +72,12 @@ getArc p = do
 
 type Layer = (IS.IntSet, [(Int, Int)]) -- (<vertex set, arc set>)
 
-expandLayer :: (Int -> IS.IntSet) -> Layer -> Maybe Layer
-expandLayer nextNodes curLayer@(eSet, _) = do
+{-
+  expandLayer <nextNodes> <eSet>,
+  where <nextNodes> gives the set of next nodes and <eSet> is the set of vertices present in current layer.
+ -}
+expandLayer :: (Int -> IS.IntSet) -> IS.IntSet -> Maybe Layer
+expandLayer nextNodes eSet = do
   (nexts :: [(IS.IntSet, [(Int, Int)])]) <- forM (IS.toList eSet) $ \u -> do
     let arcs = [(u, v) | v <- IS.toList (nextNodes u)]
     pure (IS.fromList (snd <$> arcs), arcs)
@@ -89,25 +92,29 @@ buildLayeredM = do
   fl <- get
   let initLayer = (IS.singleton nrSource, [])
   fix
-    (\loop curLayer discovered layers -> do
-        let getResidual u v = (\(cur, cap) -> cap - cur) <$> lookupArc cMap fl (u, v)
-            nextNodes :: Int -> IS.IntSet
-            nextNodes s = IS.filter hasResidual vs
-              where
-                -- all directly connected vertices except those that has been discovered.
-                vs = IS.fromList (IM.keys (cMap IM.! s)) `IS.difference` discovered
-                hasResidual v = case getResidual s v of
-                  Nothing -> False
-                  Just r -> r > 0
-        case expandLayer nextNodes curLayer of
-          Nothing -> pure layers
-          Just nextLayer@(vs, _) -> do
-           loop nextLayer (discovered <> vs) (nextLayer : layers))
-    initLayer
+    (\loop eSet discovered layers -> do
+       let getResidual u v = (\(cur, cap) -> cap - cur) <$> lookupArc cMap fl (u, v)
+           nextNodes :: Int -> IS.IntSet
+           nextNodes s = IS.filter hasResidual vs
+             where
+               -- all directly connected vertices except those that has been discovered.
+               vs = IS.fromList (IM.keys (cMap IM.! s)) `IS.difference` discovered
+               hasResidual v = case getResidual s v of
+                 Nothing -> False
+                 Just r -> r > 0
+       case expandLayer nextNodes eSet of
+         Nothing -> pure layers
+         Just nextLayer@(vs, _) -> do
+           loop vs (discovered <> vs) (nextLayer : layers))
+    (fst initLayer)
     (IS.singleton nrSource)
     [initLayer]
 
-experiment nn = runWriter $ runExceptT $ runRWST buildLayeredM (nr, cMap) initFlow
+experiment :: NormalizedNetwork -> IO ()
+experiment nn = do
+  let (Right (v, _, _), _) =
+        runWriter $ runExceptT $ runRWST buildLayeredM (nr, cMap) initFlow
+  mapM_ print (zip [0 ..] (reverse v))
   where
     Right (cMap, initFlow) = prepare (getNR nn)
     nr@NetworkRep {} = getNR nn

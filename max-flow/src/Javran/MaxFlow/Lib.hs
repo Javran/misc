@@ -60,7 +60,7 @@ main = do
     ["dev", fName] -> do
       nn <- loadNetwork fName
       let nr@NetworkRep {nrSource, nrSink} = getNR nn
-      print (Dinitz.experiment nn)
+      Dinitz.experiment nn
     ["run", fName] -> do
       nn <- loadNetwork fName
       let nr@NetworkRep {nrSource, nrSink} = getNR nn
