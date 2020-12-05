@@ -111,7 +111,14 @@ buildLayeredM = do
       (IS.singleton nrSource)
       [initLayer]
   let revMap :: IM.IntMap [Int]
-      revMap = IM.fromListWith (<>) $ fmap (\(u,v) -> (v ,[u])) $ concatMap snd layers
+      revMap =
+        {-
+          built from layered network with all arcs reversed.
+         -}
+        IM.fromListWith (<>) $ do
+          (_, ps) <- layers
+          (\(u, v) -> (v, [u])) <$> ps
+
   pure (layers, revMap)
 
 experiment :: NormalizedNetwork -> IO ()
