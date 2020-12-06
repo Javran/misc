@@ -77,10 +77,16 @@ buildLayered nrSource nextNodes =
   fix
     (\loop eSet discovered layers -> do
        let expandedLayer = do
-             (nexts :: [(IS.IntSet, [(Int, Int)])]) <- forM (IS.toList eSet) $ \u -> do
-               let arcs = [(u, v) | v <- IS.toList (nextNodes u `IS.difference` discovered)]
-               pure (IS.fromList (snd <$> arcs), arcs)
-             let result = mconcat nexts
+             let nexts =
+                   fmap
+                     (\u ->
+                        let arcs =
+                              [ (u, v)
+                              | v <- IS.toList (nextNodes u `IS.difference` discovered)
+                              ]
+                         in (IS.fromList (snd <$> arcs), arcs))
+                     (IS.toList eSet)
+                 result = mconcat nexts
              guard $ not $ IS.null $ fst result
              pure result
        case expandedLayer of
