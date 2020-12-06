@@ -72,18 +72,35 @@ getArc p = do
 
 type Layer = (IS.IntSet, [(Int, Int)]) -- (<vertex set, arc set>)
 
-{-
-  expandLayer <nextNodes> <eSet>,
-  where <nextNodes> gives the set of next nodes and <eSet> is the set of vertices present in current layer.
- -}
-expandLayer :: (Int -> IS.IntSet) -> IS.IntSet -> Maybe Layer
-expandLayer nextNodes eSet = do
-  (nexts :: [(IS.IntSet, [(Int, Int)])]) <- forM (IS.toList eSet) $ \u -> do
-    let arcs = [(u, v) | v <- IS.toList (nextNodes u)]
-    pure (IS.fromList (snd <$> arcs), arcs)
-  let result = mconcat nexts
-  guard $ not $ IS.null $ fst result
-  pure result
+buildLayered :: Int -> CapacityMap -> Flow -> Layer -> [Layer]
+buildLayered nrSource cMap fl initLayer =
+  fix
+    (\loop eSet discovered layers -> do
+       let getResidual u v = (\(cur, cap) -> cap - cur) <$> lookupArc cMap fl (u, v)
+           nextNodes :: Int -> IS.IntSet
+           nextNodes s = IS.filter hasResidual vs
+             where
+               -- all directly connected vertices except those that has been discovered.
+               vs = IS.fromList (IM.keys (cMap IM.! s)) `IS.difference` discovered
+               hasResidual v = case getResidual s v of
+                 Nothing -> False
+                 Just r -> r > 0
+       case expandLayer nextNodes eSet of
+         Nothing -> layers
+         Just nextLayer@(vs, _) -> do
+           loop vs (discovered <> vs) (nextLayer : layers))
+    (fst initLayer)
+    (IS.singleton nrSource)
+    [initLayer]
+  where
+    expandLayer :: (Int -> IS.IntSet) -> IS.IntSet -> Maybe Layer
+    expandLayer nextNodes eSet = do
+      (nexts :: [(IS.IntSet, [(Int, Int)])]) <- forM (IS.toList eSet) $ \u -> do
+        let arcs = [(u, v) | v <- IS.toList (nextNodes u)]
+        pure (IS.fromList (snd <$> arcs), arcs)
+      let result = mconcat nexts
+      guard $ not $ IS.null $ fst result
+      pure result
 
 -- TODO: this is constructed but in reversed order.
 buildLayeredM :: M ([Layer], IM.IntMap [Int])
@@ -91,26 +108,8 @@ buildLayeredM = do
   (NetworkRep {nrSource}, cMap) <- ask
   fl <- get
   let initLayer = (IS.singleton nrSource, [])
-  layers <-
-    fix
-      (\loop eSet discovered layers -> do
-         let getResidual u v = (\(cur, cap) -> cap - cur) <$> lookupArc cMap fl (u, v)
-             nextNodes :: Int -> IS.IntSet
-             nextNodes s = IS.filter hasResidual vs
-               where
-                 -- all directly connected vertices except those that has been discovered.
-                 vs = IS.fromList (IM.keys (cMap IM.! s)) `IS.difference` discovered
-                 hasResidual v = case getResidual s v of
-                   Nothing -> False
-                   Just r -> r > 0
-         case expandLayer nextNodes eSet of
-           Nothing -> pure layers
-           Just nextLayer@(vs, _) -> do
-             loop vs (discovered <> vs) (nextLayer : layers))
-      (fst initLayer)
-      (IS.singleton nrSource)
-      [initLayer]
-  let revMap :: IM.IntMap [Int]
+      layers = buildLayered nrSource cMap fl initLayer
+      revMap :: IM.IntMap [Int]
       revMap =
         {-
           built from layered network with all arcs reversed.
