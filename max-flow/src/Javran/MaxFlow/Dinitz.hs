@@ -10,6 +10,7 @@ import Control.Monad.Trans.Writer.CPS
 import qualified Data.DList as DL
 import qualified Data.IntMap.Strict as IM
 import qualified Data.IntSet as IS
+import Data.List
 import qualified Data.Map.Strict as M
 import Data.Monoid
 import qualified Data.Text as T
@@ -73,33 +74,29 @@ getArc p = do
 type Layer = (IS.IntSet, [(Int, Int)]) -- (<vertex set, arc set>)
 
 buildLayered :: Int -> (Int -> IS.IntSet) -> [Layer]
-buildLayered nrSource nextNodes =
-  fix
-    (\loop eSet discovered layers -> do
-       let expandedLayer = do
-             let nexts =
-                   fmap
-                     (\u ->
-                        let arcs =
-                              [ (u, v)
-                              | v <- IS.toList (nextNodes u `IS.difference` discovered)
-                              ]
-                         in (IS.fromList (snd <$> arcs), arcs))
-                     (IS.toList eSet)
-                 result = mconcat nexts
-             guard $ not $ IS.null $ fst result
-             pure result
-       case expandedLayer of
-         Nothing -> layers
-         Just nextLayer@(vs, _) -> do
-           loop vs (discovered <> vs) (nextLayer : layers))
-    (fst initLayer)
-    (IS.singleton nrSource)
-    [initLayer]
+buildLayered nrSource nextNodes = initLayer : unfoldr expand (srcSet, srcSet)
   where
-    initLayer = (IS.singleton nrSource, [])
+    srcSet = IS.singleton nrSource
+    {-
+      - frontVertices are vertices in the current (front) layer, that we need to expand from.
+      - discovered are set of vertices that we have discovered (for BFS)
+     -}
+    expand (frontVertices, discovered) = do
+      let nexts =
+            fmap
+              (\u ->
+                 let arcs =
+                       [ (u, v)
+                       | v <- IS.toList (nextNodes u `IS.difference` discovered)
+                       ]
+                  in (IS.fromList (snd <$> arcs), arcs))
+              (IS.toList frontVertices)
+          expandedLayer :: Layer
+          expandedLayer@(vs, _) = mconcat nexts
+      guard $ not $ IS.null $ vs
+      pure (expandedLayer, (vs, discovered <> vs))
+    initLayer = (srcSet, [])
 
--- TODO: this is constructed but in reversed order.
 buildLayeredM :: M ([Layer], IM.IntMap [Int])
 buildLayeredM = do
   (NetworkRep {nrSource}, cMap) <- ask
@@ -128,7 +125,7 @@ experiment :: NormalizedNetwork -> IO ()
 experiment nn = do
   let (Right ((layers, revMap), _, _), _) =
         runWriter $ runExceptT $ runRWST buildLayeredM (nr, cMap) initFlow
-  mapM_ print (zip [0 ..] (reverse layers))
+  mapM_ print (zip [0 ..] layers)
   print revMap
   where
     Right (cMap, initFlow) = prepare (getNR nn)
