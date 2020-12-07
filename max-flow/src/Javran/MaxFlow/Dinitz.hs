@@ -12,6 +12,7 @@ import qualified Data.IntMap.Strict as IM
 import qualified Data.IntSet as IS
 import Data.List
 import qualified Data.Map.Strict as M
+import Data.Maybe
 import Data.Monoid
 import qualified Data.Text as T
 import Javran.MaxFlow.Common
@@ -82,24 +83,23 @@ buildLayered nrSource nextNodes = initLayer : unfoldr expand (srcSet, srcSet)
       - discovered are set of vertices that we have discovered (for BFS)
      -}
     expand (frontVertices, discovered) = do
-      let nexts =
-            fmap
-              (\u ->
-                 let arcs =
-                       [ (u, v)
-                       | v <- IS.toList (nextNodes u `IS.difference` discovered)
-                       ]
-                  in (IS.fromList (snd <$> arcs), arcs))
-              (IS.toList frontVertices)
-          expandedLayer :: Layer
-          expandedLayer@(vs, _) = mconcat nexts
+      let expandedLayer :: Layer
+          expandedLayer@(vs, _) = foldMap go (IS.toList frontVertices)
+            where
+              go u =
+                let arcs =
+                      [ (u, v)
+                      | v <- IS.toList (nextNodes u `IS.difference` discovered)
+                      ]
+                 in (IS.fromList (snd <$> arcs), arcs)
+
       guard $ not $ IS.null $ vs
       pure (expandedLayer, (vs, discovered <> vs))
     initLayer = (srcSet, [])
 
-buildLayeredM :: M ([Layer], IM.IntMap [Int])
+buildLayeredM :: M ([Layer], [Layer])
 buildLayeredM = do
-  (NetworkRep {nrSource}, cMap) <- ask
+  (NetworkRep {nrSource, nrSink}, cMap) <- ask
   fl <- get
   let getResidual u v = (\(cur, cap) -> cap - cur) <$> lookupArc cMap fl (u, v)
       nextNodes :: Int -> IS.IntSet
@@ -119,14 +119,15 @@ buildLayeredM = do
         IM.fromListWith (<>) $ do
           (_, ps) <- layers
           (\(u, v) -> (v, [u])) <$> ps
-  pure (layers, revMap)
+      layers' = buildLayered nrSink (\u -> IS.fromList $ fromMaybe [] (revMap IM.!? u))
+  pure (layers, layers')
 
 experiment :: NormalizedNetwork -> IO ()
 experiment nn = do
-  let (Right ((layers, revMap), _, _), _) =
+  let (Right ((layers, r), _, _), _) =
         runWriter $ runExceptT $ runRWST buildLayeredM (nr, cMap) initFlow
   mapM_ print (zip [0 ..] layers)
-  print revMap
+  print r
   where
     Right (cMap, initFlow) = prepare (getNR nn)
     nr@NetworkRep {} = getNR nn
