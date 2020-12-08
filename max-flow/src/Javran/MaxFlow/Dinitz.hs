@@ -126,8 +126,10 @@ experiment :: NormalizedNetwork -> IO ()
 experiment nn = do
   let (Right ((layers, r), _, _), _) =
         runWriter $ runExceptT $ runRWST buildLayeredM (nr, cMap) initFlow
+  putStrLn "layered:"
   mapM_ print (zip [0 ..] layers)
-  print r
+  putStrLn "pruned backwards:"
+  mapM_ print (zip [0 ..] r)
   where
     Right (cMap, initFlow) = prepare (getNR nn)
     nr@NetworkRep {} = getNR nn
