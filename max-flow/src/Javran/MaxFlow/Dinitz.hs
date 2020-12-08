@@ -74,6 +74,8 @@ getArc p = do
 
 type Layer = (IS.IntSet, [(Int, Int)]) -- (<vertex set, arc set>)
 
+type Layer' = (IS.IntSet, IM.IntMap [Int]) -- (<vertex set, arc set>)
+
 buildLayered :: Int -> (Int -> IS.IntSet) -> [Layer]
 buildLayered nrSource nextNodes = initLayer : unfoldr expand (srcSet, srcSet)
   where
@@ -96,6 +98,15 @@ buildLayered nrSource nextNodes = initLayer : unfoldr expand (srcSet, srcSet)
       guard $ not $ IS.null $ vs
       pure (expandedLayer, (vs, discovered <> vs))
     initLayer = (srcSet, [])
+
+{-
+  TODO:
+
+  - PathFinding on reversed (pruned) layered network
+  - FlowChange to apply flow changes and obtain Sat, the set of saturated arcs
+  - arc removal from layered network, RightPass and LeftPass for cleanup.
+
+ -}
 
 buildLayeredM :: M ([Layer], [Layer])
 buildLayeredM = do
@@ -122,14 +133,19 @@ buildLayeredM = do
       layers' = buildLayered nrSink (\u -> IS.fromList $ fromMaybe [] (revMap IM.!? u))
   pure (layers, layers')
 
+-- re-structure reversed layered network to allow easy path finding.
+processRevLayer :: Layer -> Layer'
+processRevLayer (vs, es) = (vs, IM.fromListWith (<>) $ fmap (\(v, u) -> (u, [v])) es)
+
 experiment :: NormalizedNetwork -> IO ()
 experiment nn = do
-  let (Right ((layers, r), _, _), _) =
+  let (Right ((layers, l'), _, _), _) =
         runWriter $ runExceptT $ runRWST buildLayeredM (nr, cMap) initFlow
+      revLayers = fmap processRevLayer l'
   putStrLn "layered:"
   mapM_ print (zip [0 ..] layers)
   putStrLn "pruned backwards:"
-  mapM_ print (zip [0 ..] r)
+  mapM_ print (zip [0 ..] revLayers)
   where
     Right (cMap, initFlow) = prepare (getNR nn)
     nr@NetworkRep {} = getNR nn
