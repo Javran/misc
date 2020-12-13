@@ -14,6 +14,7 @@ import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
+import Data.Ord
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Javran.MaxFlow.Common
@@ -106,8 +107,6 @@ buildLayered nrSource nextNodes = initLayer : unfoldr expand (srcSet, srcSet)
 {-
   TODO:
 
-  - PathFinding on reversed (pruned) layered network
-  - FlowChange to apply flow changes and obtain Sat, the set of saturated arcs
   - arc removal from layered network, RightPass and LeftPass for cleanup.
 
  -}
@@ -149,7 +148,50 @@ buildLayeredM = do
   mapM_ showM (zip [0 :: Int ..] layers)
   logM "pruned network:"
   showM pruned
-  showM $ findPath nrSource pruned
+  {-
+    TODO: this function shouldn't be called here as the purpose of this function is just building the pruned network.
+    but for now we lack a better place to place this...
+   -}
+  _ <- augment pruned
+  pure ()
+
+{-
+  It is assumed that `path` is non-empty and contains source as first element and sink as last one.
+ -}
+flowChange :: [Int] -> M [(Int, Int)]
+flowChange path = do
+  let arcs = zip path (tail path)
+  arcsAndResiduals <- forM arcs $ \arc -> do
+    (fl, cap) <- getArc arc
+    logM . T.pack $ show arc <> ": " <> show fl <> "/" <> show cap <> " (" <> show (cap - fl) <> ")"
+    pure (arc, cap - fl)
+  let (_, val) = minimumBy (comparing snd) arcsAndResiduals
+      saturated = [arc | (arc, r) <- arcsAndResiduals, r == val]
+  forM_ arcs $ \arc@(x, y) -> do
+    (_, cap) <- getArc arc
+    modify $
+      if cap == 0
+        then M.alter (\(Just v) -> Just $ v - val) (y, x)
+        else M.alter (\(Just v) -> Just $ v + val) arc
+  Control.Monad.Trans.RWS.CPS.tell (Sum val)
+  logM $ "push value: " <> T.pack (show val) <> ", saturated: " <> T.pack (intercalate ", " (fmap show saturated))
+  pure saturated
+
+-- find and push flow change based on pruned layered network.
+augment :: IM.IntMap [Int] -> M (IM.IntMap [Int])
+augment g = do
+  (NetworkRep {nrSource, nrSink}, _) <- ask
+  let path =
+        -- note that return value is non-empty as starting point is always included.
+        findPath nrSource g
+  if last path == nrSink
+    then do
+      logM $ "path: " <> T.intercalate " -> " (fmap (T.pack . show) path)
+      flowChange path
+      pure g
+    else do
+      logM "no path found."
+      pure g
 
 findPath :: Int -> IM.IntMap [Int] -> [Int]
 findPath srcNode g = srcNode : unfoldr go srcNode
@@ -160,10 +202,12 @@ findPath srcNode g = srcNode : unfoldr go srcNode
 
 experiment :: NormalizedNetwork -> IO ()
 experiment nn = do
-  let (Right ((), _, _), ls) =
+  let (Right ((), fl, Sum maxVal), ls) =
         runWriter $ runExceptT $ runRWST buildLayeredM (nr, cMap) initFlow
   putStrLn "logs:"
   mapM_ T.putStrLn ls
+  putStrLn $ "total value: " <> show maxVal
+  putStrLn $ "flow: " <> show fl
   where
     Right (cMap, initFlow) = prepare (getNR nn)
     nr@NetworkRep {} = getNR nn
