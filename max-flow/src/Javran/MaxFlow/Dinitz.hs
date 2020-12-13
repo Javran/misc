@@ -136,7 +136,7 @@ buildLayeredM = do
           (\(u, v) -> (v, [u])) <$> ps
       layers' = buildLayered nrSink (\u -> IS.fromList $ fromMaybe [] (revMap IM.!? u))
       pruned :: IM.IntMap [Int]
-      pruned =  IM.fromListWith (<>) $ do
+      pruned = IM.fromListWith (<>) $ do
         {-
           since in a layered network, archs always move forward to next layer of nodes,
           merging all of them into a single bundle of archs does not change its correctness.
@@ -149,6 +149,14 @@ buildLayeredM = do
   mapM_ showM (zip [0 :: Int ..] layers)
   logM "pruned network:"
   showM pruned
+  showM $ findPath nrSource pruned
+
+findPath :: Int -> IM.IntMap [Int] -> [Int]
+findPath srcNode g = srcNode : unfoldr go srcNode
+  where
+    go curNode = do
+      (next : _) <- g IM.!? curNode
+      pure (next, next)
 
 experiment :: NormalizedNetwork -> IO ()
 experiment nn = do
