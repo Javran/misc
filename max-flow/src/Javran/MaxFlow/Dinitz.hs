@@ -187,8 +187,8 @@ augment g = do
   if last path == nrSink
     then do
       logM $ "path: " <> T.intercalate " -> " (fmap (T.pack . show) path)
-      flowChange path
-      pure g
+      sat <- flowChange path
+      pure $ foldr removeArc g sat
     else do
       logM "no path found."
       pure g
@@ -199,6 +199,27 @@ findPath srcNode g = srcNode : unfoldr go srcNode
     go curNode = do
       (next : _) <- g IM.!? curNode
       pure (next, next)
+
+-- remove an arc from the graph, and ensure no entity has an empty list as value.
+removeArc :: (Int, Int) -> IM.IntMap [Int] -> IM.IntMap [Int]
+removeArc p@(u,v) = IM.alter alt u
+  where
+    alt Nothing = error $ "arc " <> show p <> " does not exist."
+    alt (Just xs) = do
+      xs'@(_:_) <- pure $ delete v xs
+      pure xs'
+
+rightPass :: IM.IntMap [Int] -> [(Int, Int)] -> M ()
+rightPass lyd initQ = do
+  let -- build up a reverse map for RightPass
+      revLyd :: IM.IntMap [Int]
+      revLyd = IM.fromListWith (<>) $ do
+        (u, vs) <- IM.toList lyd
+        v <- vs
+        pure (v, [u])
+  -- WIP.
+  fix (\loop q -> loop q) initQ
+  pure ()
 
 experiment :: NormalizedNetwork -> IO ()
 experiment nn = do
