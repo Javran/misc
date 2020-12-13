@@ -17,6 +17,7 @@ import Data.Monoid
 import Data.Ord
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import Data.Tuple
 import Javran.MaxFlow.Common
 import Javran.MaxFlow.Types
 
@@ -174,11 +175,21 @@ flowChange path = do
         then M.alter (\(Just v) -> Just $ v - val) (y, x)
         else M.alter (\(Just v) -> Just $ v + val) arc
   Control.Monad.Trans.RWS.CPS.tell (Sum val)
-  logM $ "push value: " <> T.pack (show val) <> ", saturated: " <> T.pack (intercalate ", " (fmap show saturated))
+  logM $
+    "push value: " <> T.pack (show val)
+      <> ", saturated: "
+      <> T.pack (intercalate ", " (fmap show saturated))
   pure saturated
 
+{-
+  pruned layered network.
+  all entities should have non-empty list as value and
+  no duplicated elements in that list.
+ -}
+type PLN = IM.IntMap [Int]
+
 -- find and push flow change based on pruned layered network.
-augment :: IM.IntMap [Int] -> M (IM.IntMap [Int])
+augment :: PLN -> M PLN
 augment g = do
   (NetworkRep {nrSource, nrSink}, _) <- ask
   let path =
@@ -188,12 +199,15 @@ augment g = do
     then do
       logM $ "path: " <> T.intercalate " -> " (fmap (T.pack . show) path)
       sat <- flowChange path
-      pure $ foldr removeArc g sat
+      let g1 = foldr removeArc g sat
+      g2 <- rightPass g1 sat
+      g3 <- leftPass g2 sat
+      pure g3
     else do
       logM "no path found."
       pure g
 
-findPath :: Int -> IM.IntMap [Int] -> [Int]
+findPath :: Int -> PLN -> [Int]
 findPath srcNode g = srcNode : unfoldr go srcNode
   where
     go curNode = do
@@ -201,25 +215,68 @@ findPath srcNode g = srcNode : unfoldr go srcNode
       pure (next, next)
 
 -- remove an arc from the graph, and ensure no entity has an empty list as value.
-removeArc :: (Int, Int) -> IM.IntMap [Int] -> IM.IntMap [Int]
-removeArc p@(u,v) = IM.alter alt u
+removeArc :: (Int, Int) -> PLN -> PLN
+removeArc (u, v) = IM.alter alt u
   where
-    alt Nothing = error $ "arc " <> show p <> " does not exist."
+    alt Nothing =
+      Nothing
     alt (Just xs) = do
-      xs'@(_:_) <- pure $ delete v xs
+      xs'@(_ : _) <- pure $ delete v xs
       pure xs'
 
-rightPass :: IM.IntMap [Int] -> [(Int, Int)] -> M ()
-rightPass lyd initQ = do
+rightPass :: PLN -> [(Int, Int)] -> M PLN
+rightPass initLyd initQ = do
   let -- build up a reverse map for RightPass
-      revLyd :: IM.IntMap [Int]
-      revLyd = IM.fromListWith (<>) $ do
-        (u, vs) <- IM.toList lyd
+      initRevLyd :: PLN
+      initRevLyd = IM.fromListWith (<>) $ do
+        (u, vs) <- IM.toList initLyd
         v <- vs
         pure (v, [u])
-  -- WIP.
-  fix (\loop q -> loop q) initQ
-  pure ()
+  fix
+    (\loop q lyd revLyd -> case q of
+       [] -> pure lyd
+       (_u, v) : q' -> case revLyd IM.!? v of
+         Just _ -> loop q' lyd revLyd
+         Nothing -> do
+           -- v has no incoming edges, we remove all its outgoing edges and enqueue them.
+           let removeArcs = fromMaybe [] $ do
+                 ys <- lyd IM.!? v
+                 pure [(v, y) | y <- ys]
+               lyd' = foldr removeArc lyd removeArcs
+               revLyd' = foldr (\p m -> removeArc (swap p) m) revLyd removeArcs
+           unless (null removeArcs) $
+             logM $ "RightPass: remove arcs: " <> T.pack (intercalate "," (fmap show removeArcs))
+           loop (q' <> removeArcs) lyd' revLyd')
+    initQ
+    initLyd
+    initRevLyd
+
+leftPass :: PLN -> [(Int, Int)] -> M PLN
+leftPass initLyd initQ = do
+  let -- build up a reverse map for LeftPass
+      initRevLyd :: PLN
+      initRevLyd = IM.fromListWith (<>) $ do
+        (u, vs) <- IM.toList initLyd
+        v <- vs
+        pure (v, [u])
+  fix
+    (\loop q lyd revLyd -> case q of
+       [] -> pure lyd
+       (u, _v) : q' -> case lyd IM.!? u of
+         Just _ -> loop q' lyd revLyd
+         Nothing -> do
+           -- u has no outgoing edges, we remove all its incoming edges and enqueue them.
+           let removeArcs = fromMaybe [] $ do
+                 ys <- revLyd IM.!? u
+                 pure [(y, u) | y <- ys]
+               lyd' = foldr removeArc lyd removeArcs
+               revLyd' = foldr (\p m -> removeArc (swap p) m) revLyd removeArcs
+           unless (null removeArcs) $
+             logM $ "LeftPass: remove arcs: " <> T.pack (intercalate "," (fmap show removeArcs))
+           loop (q' <> removeArcs) lyd' revLyd')
+    initQ
+    initLyd
+    initRevLyd
 
 experiment :: NormalizedNetwork -> IO ()
 experiment nn = do
