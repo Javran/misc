@@ -62,6 +62,9 @@ logM t =
       Control.Monad.Trans.Writer.CPS.tell $
         DL.singleton t
 
+showM :: Show a => a -> M ()
+showM = logM . T.pack . show
+
 getArc :: (Int, Int) -> M (Int, Int)
 getArc p = do
   cMap <- asks snd
@@ -132,15 +135,20 @@ buildLayeredM = do
           (_, ps) <- layers
           (\(u, v) -> (v, [u])) <$> ps
       layers' = buildLayered nrSink (\u -> IS.fromList $ fromMaybe [] (revMap IM.!? u))
-      revLayers = fmap processRevLayer layers'
+      pruned :: IM.IntMap [Int]
+      pruned =  IM.fromListWith (<>) $ do
+        {-
+          since in a layered network, archs always move forward to next layer of nodes,
+          merging all of them into a single bundle of archs does not change its correctness.
+          (or in other words, the algorithm is still correct but now the concept of layer is implicit.)
+         -}
+        (_, es) <- layers'
+        (v, u) <- es
+        pure (u, [v])
   logM "layered:"
-  mapM_ (logM . T.pack . show) (zip [0 :: Int ..] layers)
-  logM "pruned backwards:"
-  mapM_ (logM . T.pack . show) (zip [0 :: Int ..] revLayers)
-
--- re-structure reversed layered network to allow easy path finding.
-processRevLayer :: Layer -> Layer'
-processRevLayer (vs, es) = (vs, IM.fromListWith (<>) $ fmap (\(v, u) -> (u, [v])) es)
+  mapM_ showM (zip [0 :: Int ..] layers)
+  logM "pruned network:"
+  showM pruned
 
 experiment :: NormalizedNetwork -> IO ()
 experiment nn = do
