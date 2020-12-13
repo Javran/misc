@@ -15,6 +15,7 @@ import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import Javran.MaxFlow.Common
 import Javran.MaxFlow.Types
 
@@ -108,7 +109,7 @@ buildLayered nrSource nextNodes = initLayer : unfoldr expand (srcSet, srcSet)
 
  -}
 
-buildLayeredM :: M ([Layer], [Layer])
+buildLayeredM :: M ()
 buildLayeredM = do
   (NetworkRep {nrSource, nrSink}, cMap) <- ask
   fl <- get
@@ -131,7 +132,11 @@ buildLayeredM = do
           (_, ps) <- layers
           (\(u, v) -> (v, [u])) <$> ps
       layers' = buildLayered nrSink (\u -> IS.fromList $ fromMaybe [] (revMap IM.!? u))
-  pure (layers, layers')
+      revLayers = fmap processRevLayer layers'
+  logM "layered:"
+  mapM_ (logM . T.pack . show) (zip [0 :: Int ..] layers)
+  logM "pruned backwards:"
+  mapM_ (logM . T.pack . show) (zip [0 :: Int ..] revLayers)
 
 -- re-structure reversed layered network to allow easy path finding.
 processRevLayer :: Layer -> Layer'
@@ -139,13 +144,10 @@ processRevLayer (vs, es) = (vs, IM.fromListWith (<>) $ fmap (\(v, u) -> (u, [v])
 
 experiment :: NormalizedNetwork -> IO ()
 experiment nn = do
-  let (Right ((layers, l'), _, _), _) =
+  let (Right ((), _, _), ls) =
         runWriter $ runExceptT $ runRWST buildLayeredM (nr, cMap) initFlow
-      revLayers = fmap processRevLayer l'
-  putStrLn "layered:"
-  mapM_ print (zip [0 ..] layers)
-  putStrLn "pruned backwards:"
-  mapM_ print (zip [0 ..] revLayers)
+  putStrLn "logs:"
+  mapM_ T.putStrLn ls
   where
     Right (cMap, initFlow) = prepare (getNR nn)
     nr@NetworkRep {} = getNR nn
