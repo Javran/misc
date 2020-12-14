@@ -22,7 +22,7 @@ import Javran.MaxFlow.Common
 import Javran.MaxFlow.Types
 
 {-
-  TODO: implementation of original Dinitz Algorithm as described in:
+  Implementation of the original Dinitz Algorithm as described in:
 
   http://www.cs.bgu.ac.il/~dinitz/Papers/Dinitz_alg.pdf
  -}
@@ -105,14 +105,7 @@ buildLayered nrSource nextNodes = initLayer : unfoldr expand (srcSet, srcSet)
       pure (expandedLayer, (vs, discovered <> vs))
     initLayer = (srcSet, [])
 
-{-
-  TODO:
-
-  - arc removal from layered network, RightPass and LeftPass for cleanup.
-
- -}
-
-buildLayeredM :: M ()
+buildLayeredM :: M PLN
 buildLayeredM = do
   (NetworkRep {nrSource, nrSink}, cMap) <- ask
   fl <- get
@@ -149,12 +142,7 @@ buildLayeredM = do
   mapM_ showM (zip [0 :: Int ..] layers)
   logM "pruned network:"
   showM pruned
-  {-
-    TODO: this function shouldn't be called here as the purpose of this function is just building the pruned network.
-    but for now we lack a better place to place this...
-   -}
-  _ <- augment pruned
-  pure ()
+  pure pruned
 
 {-
   It is assumed that `path` is non-empty and contains source as first element and sink as last one.
@@ -189,7 +177,7 @@ flowChange path = do
 type PLN = IM.IntMap [Int]
 
 -- find and push flow change based on pruned layered network.
-augment :: PLN -> M PLN
+augment :: PLN -> M (Maybe PLN)
 augment g = do
   (NetworkRep {nrSource, nrSink}, _) <- ask
   let path =
@@ -202,10 +190,11 @@ augment g = do
       let g1 = foldr removeArc g sat
       g2 <- rightPass g1 sat
       g3 <- leftPass g2 sat
-      pure g3
+      pure (Just g3)
     else do
       logM "no path found."
-      pure g
+      -- report vanishing
+      pure Nothing
 
 findPath :: Int -> PLN -> [Int]
 findPath srcNode g = srcNode : unfoldr go srcNode
@@ -278,10 +267,26 @@ leftPass initLyd initQ = do
     initLyd
     initRevLyd
 
+maxFlowM :: M ()
+maxFlowM = do
+  initLyd <- buildLayeredM
+  r <- augment initLyd
+  case r of
+    Nothing -> pure ()
+    Just lyd' -> do
+      fix
+        (\loop curLyd -> do
+           r' <- augment curLyd
+           case r' of
+             Nothing -> pure ()
+             Just nextLyd -> loop nextLyd)
+        lyd'
+      maxFlowM
+
 experiment :: NormalizedNetwork -> IO ()
 experiment nn = do
   let (Right ((), fl, Sum maxVal), ls) =
-        runWriter $ runExceptT $ runRWST buildLayeredM (nr, cMap) initFlow
+        runWriter $ runExceptT $ runRWST maxFlowM (nr, cMap) initFlow
   putStrLn "logs:"
   mapM_ T.putStrLn ls
   putStrLn $ "total value: " <> show maxVal
