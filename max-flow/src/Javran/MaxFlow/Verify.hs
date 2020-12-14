@@ -10,8 +10,8 @@ import Javran.MaxFlow.Types
 {-
   verify flow property and return total flow.
  -}
-verify :: Int -> Int -> CapacityMap -> Flow -> Except String Int
-verify sourceNode sinkNode cMap fl = do
+verify :: Int -> Int -> CapacityMap -> Flow -> Either String Int
+verify sourceNode sinkNode cMap fl = runExcept $ do
   {-
     verify edges, make sure capacities are within correct ranges,
     and every arc is assigned a capacity (even if it is assigned 0)

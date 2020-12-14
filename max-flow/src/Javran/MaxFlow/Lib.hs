@@ -79,7 +79,7 @@ main = do
                 (filter ((/= 0) . snd) $ M.toList arcs)
           putStrLn $
             "verification: "
-              <> (show $ runExcept $ verify nrSource nrSink cMap arcs)
+              <> (show $ verify nrSource nrSink cMap arcs)
     ["batch", basePath] -> do
       p <- doesPathExist basePath
       if p
