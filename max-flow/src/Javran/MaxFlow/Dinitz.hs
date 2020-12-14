@@ -271,12 +271,11 @@ runPhaseM :: M (Maybe ())
 runPhaseM = do
   logM $ "New phase."
   initLyd <- buildLayeredM
-  r <- augment initLyd
-  case r of
-    Nothing -> do
-      logM $ "No progress made in this phase."
+  if IM.null initLyd
+    then do
+      logM $ "Pruned layered network empty, done."
       pure Nothing
-    Just lyd' -> do
+    else
       fix
         (\loop curLyd -> do
            r' <- augment curLyd
@@ -285,7 +284,7 @@ runPhaseM = do
                logM $ "Layered network vanished."
                pure $ Just ()
              Just nextLyd -> loop nextLyd)
-        lyd'
+        initLyd
 
 maxFlowM :: M ()
 maxFlowM = do
