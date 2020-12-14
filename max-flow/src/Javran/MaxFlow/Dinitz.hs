@@ -267,21 +267,32 @@ leftPass initLyd initQ = do
     initLyd
     initRevLyd
 
-maxFlowM :: M ()
-maxFlowM = do
+runPhaseM :: M (Maybe ())
+runPhaseM = do
+  logM $ "New phase."
   initLyd <- buildLayeredM
   r <- augment initLyd
   case r of
-    Nothing -> pure ()
+    Nothing -> do
+      logM $ "No progress made in this phase."
+      pure Nothing
     Just lyd' -> do
       fix
         (\loop curLyd -> do
            r' <- augment curLyd
            case r' of
-             Nothing -> pure ()
+             Nothing -> do
+               logM $ "Layered network vanished."
+               pure $ Just ()
              Just nextLyd -> loop nextLyd)
         lyd'
-      maxFlowM
+
+maxFlowM :: M ()
+maxFlowM = do
+  r <- runPhaseM
+  case r of
+    Nothing -> pure ()
+    Just () -> maxFlowM
 
 experiment :: NormalizedNetwork -> IO ()
 experiment nn = do
