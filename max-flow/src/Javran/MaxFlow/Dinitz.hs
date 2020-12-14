@@ -20,6 +20,7 @@ import qualified Data.Text.IO as T
 import Data.Tuple
 import Javran.MaxFlow.Common
 import Javran.MaxFlow.Types
+import Javran.MaxFlow.Verify
 
 {-
   Implementation of the original Dinitz Algorithm as described in:
@@ -301,6 +302,7 @@ experiment nn = do
   mapM_ T.putStrLn ls
   putStrLn $ "total value: " <> show maxVal
   putStrLn $ "flow: " <> show fl
+  print $ verify nrSource nrSink cMap fl
   where
     Right (cMap, initFlow) = prepare (getNR nn)
-    nr@NetworkRep {} = getNR nn
+    nr@NetworkRep {nrSource, nrSink} = getNR nn
