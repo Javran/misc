@@ -64,9 +64,31 @@ main :: IO ()
 main = do
   args <- getArgs
   case args of
-    ["dev", fName] -> do
-      nn <- loadNetwork fName
-      Dinitz.experiment nn
+    ["dev", basePath] -> do
+      let visit nrPre = do
+            let nn = normalize nrPre
+                NetworkRep {nrSource, nrSink} = getNR nn
+                {-
+                  Assuming that this will always succeed,
+                  we will only examine whether algorithms agree on the max flow value
+                  rather than comparing the flow itself - since algorithms are free to
+                  assign flows as long as the maximum is reached.
+                 -}
+                (Right (_, fl0, cm0), _) = EdmondsKarp.maxFlow nn
+                (Right (_, fl1, cm1), _) = Dinitz.maxFlow nn
+                Right r0 = verify nrSource nrSink cm0 fl0
+                Right r1 = verify nrSource nrSink cm1 fl1
+            if r0 == r1
+              then
+                putStrLn "agree"
+              else
+                print (r0, r1)
+      p <- doesPathExist basePath
+      if p
+        then visitDimacsFiles visit basePath
+        else do
+          putStrLn "path does not exist"
+          exitFailure
     ["run", fName] -> do
       nn <- loadNetwork fName
       let nr@NetworkRep {nrSource, nrSink} = getNR nn
