@@ -1,12 +1,14 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Javran.MaxFlow.Dinitz where
 
 import Control.Monad.Except
 import Control.Monad.Trans.RWS.CPS
 import Control.Monad.Trans.Writer.CPS
+import Data.Bifunctor
 import qualified Data.DList as DL
 import qualified Data.IntMap.Strict as IM
 import qualified Data.IntSet as IS
@@ -306,3 +308,10 @@ experiment nn = do
   where
     Right (cMap, initFlow) = prepare (getNR nn)
     nr@NetworkRep {nrSource, nrSink} = getNR nn
+
+maxFlow :: MaxFlowSolver
+maxFlow (getNR -> nr) = (second (\((), fl, Sum v) -> (v, fl, cMap)) result, DL.toList logs)
+  where
+    Right (cMap, initFlow) = prepare nr
+    (result, logs) =
+      runWriter $ runExceptT $ runRWST maxFlowM (nr, cMap) initFlow

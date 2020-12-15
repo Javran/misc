@@ -7,6 +7,7 @@ module Javran.MaxFlow.Common
   , getNR
   , NormalizedNetwork
   , prepare
+  , MaxFlowSolver
   )
 where
 
@@ -16,11 +17,15 @@ import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
 import qualified Data.Set as S
+import qualified Data.Text as T
 import Javran.MaxFlow.Types
 
 newtype NormalizedNetwork = NormalizedNetwork
   { getNR :: NetworkRep
   }
+
+type MaxFlowSolver =
+  NormalizedNetwork -> (Either String (Int, Flow, CapacityMap), [T.Text])
 
 {-
   To normalize a NetworkRep is to remove and combine arcs in it so that:
