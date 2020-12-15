@@ -3,7 +3,11 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Javran.MaxFlow.Dinitz where
+module Javran.MaxFlow.Dinitz
+  ( maxFlow
+  , experiment
+  )
+where
 
 import Control.Monad.Except
 import Control.Monad.Trans.RWS.CPS
@@ -82,8 +86,6 @@ getArc p = do
       lift $ throwError msg
 
 type Layer = (IS.IntSet, [(Int, Int)]) -- (<vertex set, arc set>)
-
-type Layer' = (IS.IntSet, IM.IntMap [Int]) -- (<vertex set, arc set>)
 
 buildLayered :: Int -> (Int -> IS.IntSet) -> [Layer]
 buildLayered nrSource nextNodes = initLayer : unfoldr expand (srcSet, srcSet)

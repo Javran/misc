@@ -9,7 +9,7 @@ import Control.Monad.Except
 import qualified Data.Map.Strict as M
 import qualified Data.Text.IO as T
 import Javran.MaxFlow.Common
-import Javran.MaxFlow.EdmondsKarp
+import qualified Javran.MaxFlow.EdmondsKarp as EdmondsKarp
 import Javran.MaxFlow.Parser
 import Javran.MaxFlow.TestData
 import Javran.MaxFlow.Verify
@@ -35,7 +35,7 @@ batchProcess pBase = do
           Left msg -> do
             putStrLn $ "parse error: " <> msg
           Right nr -> do
-            let (result, _logs) = maxFlow (normalize nr)
+            let (result, _logs) = EdmondsKarp.maxFlow (normalize nr)
             case result of
               Left msg -> do
                 putStrLn $ "error: " <> msg
@@ -59,13 +59,12 @@ main = do
   case args of
     ["dev", fName] -> do
       nn <- loadNetwork fName
-      let nr@NetworkRep {nrSource, nrSink} = getNR nn
       Dinitz.experiment nn
     ["run", fName] -> do
       nn <- loadNetwork fName
       let nr@NetworkRep {nrSource, nrSink} = getNR nn
       print nr
-      let (result, logs) = maxFlow nn
+      let (result, logs) = EdmondsKarp.maxFlow nn
       mapM_ T.putStrLn logs
       case result of
         Left msg -> do
