@@ -9,6 +9,7 @@ import Control.Monad.Except
 import qualified Data.Map.Strict as M
 import qualified Data.Text.IO as T
 import Javran.MaxFlow.Common
+import qualified Javran.MaxFlow.Dinitz as Dinitz
 import qualified Javran.MaxFlow.EdmondsKarp as EdmondsKarp
 import Javran.MaxFlow.Parser
 import Javran.MaxFlow.TestData
@@ -17,15 +18,14 @@ import System.Directory
 import System.Environment
 import System.Exit
 import System.FilePath.Posix
-import qualified Javran.MaxFlow.Dinitz as Dinitz
 
-batchProcess :: FilePath -> IO ()
-batchProcess pBase = do
+visitDimacsFiles :: (NetworkRep -> IO ()) -> FilePath -> IO ()
+visitDimacsFiles visit pBase = do
   de <- doesDirectoryExist pBase
   if de
     then
       listDirectory pBase
-        >>= mapM_ (batchProcess . (pBase </>))
+        >>= mapM_ (visitDimacsFiles visit . (pBase </>))
     else when (takeExtension pBase == ".dimacs") $
       do
         let fName = pBase
@@ -35,12 +35,19 @@ batchProcess pBase = do
           Left msg -> do
             putStrLn $ "parse error: " <> msg
           Right nr -> do
-            let (result, _logs) = EdmondsKarp.maxFlow (normalize nr)
-            case result of
-              Left msg -> do
-                putStrLn $ "error: " <> msg
-              Right (v, _arcs, _) -> do
-                putStrLn $ "max flow: " <> show v
+            visit nr
+
+batchProcess :: FilePath -> IO ()
+batchProcess pBase =
+  visitDimacsFiles
+    (\nr -> do
+       let (result, _logs) = EdmondsKarp.maxFlow (normalize nr)
+       case result of
+         Left msg -> do
+           putStrLn $ "error: " <> msg
+         Right (v, _arcs, _) -> do
+           putStrLn $ "max flow: " <> show v)
+    pBase
 
 -- load, parse, and normalize a network from FilePath.
 loadNetwork :: FilePath -> IO NormalizedNetwork
