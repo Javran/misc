@@ -9,8 +9,8 @@ import Control.Monad.Except
 import qualified Data.Map.Strict as M
 import qualified Data.Text.IO as T
 import Javran.MaxFlow.Common
-import qualified Javran.MaxFlow.Dinitz as Dinitz
-import qualified Javran.MaxFlow.EdmondsKarp as EdmondsKarp
+import qualified Javran.MaxFlow.Algorithm.Dinitz as Dinitz
+import qualified Javran.MaxFlow.Algorithm.EdmondsKarp as EdmondsKarp
 import Javran.MaxFlow.Parser
 import Javran.MaxFlow.TestData
 import Javran.MaxFlow.Verify

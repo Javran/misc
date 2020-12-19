@@ -5,7 +5,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Javran.MaxFlow.EdmondsKarp
+module Javran.MaxFlow.Algorithm.EdmondsKarp
   ( maxFlow
   )
 where

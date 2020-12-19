@@ -3,7 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Javran.MaxFlow.Dinitz
+module Javran.MaxFlow.Algorithm.Dinitz
   ( maxFlow
   , experiment
   )
