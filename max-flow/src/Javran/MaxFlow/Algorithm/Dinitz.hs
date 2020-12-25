@@ -6,6 +6,10 @@
 module Javran.MaxFlow.Algorithm.Dinitz
   ( maxFlow
   , experiment
+  , M
+  , logM
+  , showM
+  , lookupArc
   )
 where
 
