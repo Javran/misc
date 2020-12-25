@@ -8,10 +8,12 @@ module Javran.MaxFlow.Algorithm.DinitzCherkassky where
  -}
 
 import Control.Monad
+import Control.Monad.Trans.RWS.CPS
+import Control.Monad.Trans.Writer.CPS
 import qualified Data.IntMap.Strict as IM
 import qualified Data.IntSet as IS
 import Data.Maybe
-import Javran.MaxFlow.Algorithm.Dinitz (lookupArc)
+import Javran.MaxFlow.Algorithm.Dinitz (M, lookupArc)
 import Javran.MaxFlow.Common
 import Javran.MaxFlow.Types
 
@@ -47,6 +49,32 @@ computeRanks cMap fl dstNode =
             q' = qRem <> extras
             acc' = IM.union acc (IM.fromList extras)
          in bfs discovered' q' acc'
+
+phase :: M (Maybe ())
+phase = do
+  (NetworkRep {nrSink, nrSource}, cMap) <- ask
+  initFl <- get
+  let ranks = computeRanks cMap initFl nrSink
+  if IM.notMember nrSource ranks
+    then pure Nothing
+    else do
+      let dfs curNode curRank path = do
+            fl <- get
+            let nextRank = Just (curRank -1)
+                notFull v = case lookupArc cMap fl (curNode, v) of
+                  Nothing -> False
+                  Just (cur, cap) -> cap - cur > 0
+                nextNodes =
+                  filter (\v -> (ranks IM.!? v == nextRank) && notFull v)
+                    . IM.keys
+                    . fromMaybe IM.empty
+                    $ cMap IM.!? curNode
+            {-
+              TODO: we need a proper computation context to carry out backtracking
+             -}
+            undefined
+      dfs nrSource (ranks IM.! nrSource) []
+      pure $ Just ()
 
 experiment :: NormalizedNetwork -> IO ()
 experiment nn = do
