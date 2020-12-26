@@ -60,6 +60,20 @@ computeRanks cMap fl dstNode =
   For whatever reason that I haven't get around to read, ListT in standard
   library is too strict so that extra path are explored rather than stopping
   at the first element available. So we'll probably take a look at list-t package.
+
+  Note: what to do in this case?
+
+  say we've found an augmenting path A -> B -> C -> D,
+  and B -> C report vanishing - the expected behavior is
+  that DFS backtracks to node B and resuming to try the edge next to B -> C.
+
+  what we can probably do is to let the function return the vanishing node
+  and DFS only resumes when vanishing node is the node we are visiting.
+
+  at first glance we need only one path therefore Maybe might be sufficient,
+  but then DFS does require that we visit multiple edges from the visiting node
+  - therefore for now I'm thinking about ListT.
+
  -}
 
 phase :: M (Maybe ())
