@@ -50,6 +50,18 @@ computeRanks cMap fl dstNode =
             acc' = IM.union acc (IM.fromList extras)
          in bfs discovered' q' acc'
 
+{-
+  Note: phase DFS is a bit tricky to do here, as the algorithm
+  requires it to resume at the starting node of first vanishing edge.
+  Maybe we can try ListT or even ContT if we want full control of backtracking.
+
+  Additional reading: https://wiki.haskell.org/ListT_done_right
+
+  For whatever reason that I haven't get around to read, ListT in standard
+  library is too strict so that extra path are explored rather than stopping
+  at the first element available. So we'll probably take a look at list-t package.
+ -}
+
 phase :: M (Maybe ())
 phase = do
   (NetworkRep {nrSink, nrSource}, cMap) <- ask
