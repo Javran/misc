@@ -16,6 +16,8 @@ import Data.Maybe
 import Javran.MaxFlow.Algorithm.Dinitz (M, lookupArc)
 import Javran.MaxFlow.Common
 import Javran.MaxFlow.Types
+-- import ListT
+-- import Control.Monad.Trans.Class
 
 computeRanks :: CapacityMap -> Flow -> Int -> IM.IntMap Int
 computeRanks cMap fl dstNode =
@@ -84,22 +86,40 @@ phase = do
   if IM.notMember nrSource ranks
     then pure Nothing
     else do
-      let dfs curNode curRank path = do
+      let dfs :: Int -> Int -> [Int] -> M (Maybe Int)
+          dfs curNode curRank path = do
+            -- note that path should be constructed in reversed order
+            -- with curNode as the first element.
             fl <- get
+            if curNode == nrSink
+              then
+                {-
+                  TODO: augument along this path
+                  and return starting point of the first vanishing edge
+                  (closer to source)
+                 -}
+                undefined
+              else
+                {-
+                  TODO: visit deeper and examine resulting value to see
+                  whether to end the current iteration or keep going.
+                 -}
+                undefined
+            {-
             let nextRank = Just (curRank -1)
                 notFull v = case lookupArc cMap fl (curNode, v) of
                   Nothing -> False
                   Just (cur, cap) -> cap - cur > 0
+                nextNodes :: [Int]
                 nextNodes =
                   filter (\v -> (ranks IM.!? v == nextRank) && notFull v)
                     . IM.keys
                     . fromMaybe IM.empty
-                    $ cMap IM.!? curNode
+                    $ cMap IM.!? curNode -}
             {-
               TODO: we need a proper computation context to carry out backtracking
              -}
-            undefined
-      dfs nrSource (ranks IM.! nrSource) []
+      -- dfs nrSource (ranks IM.! nrSource) []
       pure $ Just ()
 
 experiment :: NormalizedNetwork -> IO ()
