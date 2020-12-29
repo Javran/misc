@@ -20,6 +20,7 @@ dependencies:
 - filepath
 - file-embed
 - bytestring
+- list-t
 
 extra-source-files:
   - embed/**/*.dimacs
