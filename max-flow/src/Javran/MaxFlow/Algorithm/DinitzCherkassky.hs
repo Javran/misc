@@ -16,6 +16,7 @@ import Data.Maybe
 import Javran.MaxFlow.Algorithm.Dinitz (M, lookupArc)
 import Javran.MaxFlow.Common
 import Javran.MaxFlow.Types
+
 -- import ListT
 -- import Control.Monad.Trans.Class
 
@@ -92,33 +93,45 @@ phase = do
             -- with curNode as the first element.
             fl <- get
             if curNode == nrSink
-              then
+              then do
+                let segs :: [((Int, Int), Int)]
+                    segs =
+                      zipWith
+                        (\nFrom nTo -> ((nFrom, nTo), lkup nFrom nTo))
+                        (tail path)
+                        path
+                      where
+                        lkup u v =
+                          let Just (val, cap) = lookupArc cMap fl (u, v)
+                           in cap - val
+                    pushVal =
+                      -- value to push along this path
+                      minimum $ fmap snd segs
                 {-
                   TODO: augument along this path
                   and return starting point of the first vanishing edge
                   (closer to source)
                  -}
                 undefined
-              else
-                {-
-                  TODO: visit deeper and examine resulting value to see
-                  whether to end the current iteration or keep going.
-                 -}
+              else {-
+                     TODO: visit deeper and examine resulting value to see
+                     whether to end the current iteration or keep going.
+                    -}
                 undefined
-            {-
-            let nextRank = Just (curRank -1)
-                notFull v = case lookupArc cMap fl (curNode, v) of
-                  Nothing -> False
-                  Just (cur, cap) -> cap - cur > 0
-                nextNodes :: [Int]
-                nextNodes =
-                  filter (\v -> (ranks IM.!? v == nextRank) && notFull v)
-                    . IM.keys
-                    . fromMaybe IM.empty
-                    $ cMap IM.!? curNode -}
-            {-
-              TODO: we need a proper computation context to carry out backtracking
-             -}
+      {-
+      let nextRank = Just (curRank -1)
+          notFull v = case lookupArc cMap fl (curNode, v) of
+            Nothing -> False
+            Just (cur, cap) -> cap - cur > 0
+          nextNodes :: [Int]
+          nextNodes =
+            filter (\v -> (ranks IM.!? v == nextRank) && notFull v)
+              . IM.keys
+              . fromMaybe IM.empty
+              $ cMap IM.!? curNode -}
+      {-
+        TODO: we need a proper computation context to carry out backtracking
+       -}
       -- dfs nrSource (ranks IM.! nrSource) []
       pure $ Just ()
 
