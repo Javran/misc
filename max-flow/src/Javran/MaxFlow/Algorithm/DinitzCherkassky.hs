@@ -13,12 +13,13 @@ import Control.Monad.Trans.RWS.CPS
 import Control.Monad.Trans.Writer.CPS
 import qualified Data.IntMap.Strict as IM
 import qualified Data.IntSet as IS
+import Data.List
+import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Text as T
 import Javran.MaxFlow.Algorithm.Dinitz (M, getArc, logM, lookupArc)
 import Javran.MaxFlow.Common
 import Javran.MaxFlow.Types
-import qualified Data.Map.Strict as M
 
 -- import ListT
 -- import Control.Monad.Trans.Class
@@ -116,7 +117,10 @@ augment path = do
       if cap == 0
         then M.alter (\(Just v) -> Just $ v - pushVal) (y, x)
         else M.alter (\(Just v) -> Just $ v + pushVal) arc
-  -- TODO: logging.
+  logM . T.pack $
+    "pushed value: " <> show pushVal
+      <> " along path: "
+      <> intercalate " -> " (show <$> path)
   pure btNode
 
 phase :: M (Maybe ())
