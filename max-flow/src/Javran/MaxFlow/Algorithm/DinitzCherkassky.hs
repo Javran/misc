@@ -125,6 +125,7 @@ augment path = do
 
 phase :: M (Maybe ())
 phase = do
+  -- TODO: phase to be tested.
   (NetworkRep {nrSink, nrSource}, cMap) <- ask
   initFl <- get
   let ranks = computeRanks cMap initFl nrSink
@@ -137,34 +138,45 @@ phase = do
             -- with curNode as the first element.
             fl <- get
             if curNode == nrSink
-              then do
-                v <- augment (reverse revPath)
+              then {-
+                       augument along this path
+                       and return starting point of the first vanishing edge
+                       (closer to source)
+                      -}
+
+                Just <$> augment (reverse revPath)
+              else do
                 {-
-                  TODO: augument along this path
-                  and return starting point of the first vanishing edge
-                  (closer to source)
-                 -}
-                pure (Just v)
-              else {-
-                     TODO: visit deeper and examine resulting value to see
-                     whether to end the current iteration or keep going.
-                    -}
-                undefined
-      {-
-      let nextRank = Just (curRank -1)
-          notFull v = case lookupArc cMap fl (curNode, v) of
-            Nothing -> False
-            Just (cur, cap) -> cap - cur > 0
-          nextNodes :: [Int]
-          nextNodes =
-            filter (\v -> (ranks IM.!? v == nextRank) && notFull v)
-              . IM.keys
-              . fromMaybe IM.empty
-              $ cMap IM.!? curNode -}
-      {-
-        TODO: we need a proper computation context to carry out backtracking
-       -}
-      -- dfs nrSource (ranks IM.! nrSource) []
+                 visit deeper and examine resulting value to see
+                 whether to end the current iteration or keep going.
+                -}
+                let nextNodes :: [Int]
+                    nextNodes = do
+                      let nextRank = Just (curRank -1)
+                          notFull v = case lookupArc cMap fl (curNode, v) of
+                            Nothing -> False
+                            Just (cur, cap) -> cap - cur > 0
+                      node <-
+                        IM.keys
+                          . fromMaybe IM.empty
+                          $ cMap IM.!? curNode
+                      guard $ ranks IM.!? node == nextRank && notFull node
+                      pure node
+                fix
+                  (\loop nodes -> case nodes of
+                     [] -> pure Nothing
+                     nextNode : nodes' -> do
+                       result <- dfs nextNode (ranks IM.! nextNode) (nextNode : revPath)
+                       case result of
+                         Nothing ->
+                           -- keep going if a deeper search finds no result.
+                           loop nodes'
+                         Just nResume ->
+                           if nResume == curNode
+                             then loop nodes' -- only resume when we are searching the matching node.
+                             else pure result)
+                  nextNodes
+      dfs nrSource (ranks IM.! nrSource) [nrSource]
       pure $ Just ()
 
 experiment :: NormalizedNetwork -> IO ()
