@@ -8,12 +8,14 @@ module Javran.MaxFlow.Algorithm.DinitzCherkassky where
  -}
 
 import Control.Monad
+import Control.Monad.Except
 import Control.Monad.Trans.RWS.CPS
 import Control.Monad.Trans.Writer.CPS
 import qualified Data.IntMap.Strict as IM
 import qualified Data.IntSet as IS
 import Data.Maybe
-import Javran.MaxFlow.Algorithm.Dinitz (M, lookupArc)
+import qualified Data.Text as T
+import Javran.MaxFlow.Algorithm.Dinitz (M, logM, lookupArc)
 import Javran.MaxFlow.Common
 import Javran.MaxFlow.Types
 
@@ -79,6 +81,32 @@ computeRanks cMap fl dstNode =
 
  -}
 
+{- augment along a path -}
+augment :: [Int] -> M Int
+augment path = do
+  (_, cMap) <- ask
+  fl <- get
+  let segs :: [((Int, Int), Int)]
+      segs =
+        zipWith
+          (\nFrom nTo -> ((nFrom, nTo), lkup nFrom nTo))
+          (tail path)
+          path
+        where
+          lkup u v =
+            let Just (val, cap) = lookupArc cMap fl (u, v)
+             in cap - val
+      pushVal =
+        -- value to push along this path
+        minimum $ fmap snd segs
+  when (pushVal <= 0) $ do
+    let msg =
+          "push value must be positive along this path, while getting "
+            <> show pushVal
+    logM (T.pack msg)
+    lift $ throwError msg
+  pure undefined -- TODO
+
 phase :: M (Maybe ())
 phase = do
   (NetworkRep {nrSink, nrSource}, cMap) <- ask
@@ -88,31 +116,19 @@ phase = do
     then pure Nothing
     else do
       let dfs :: Int -> Int -> [Int] -> M (Maybe Int)
-          dfs curNode curRank path = do
+          dfs curNode curRank revPath = do
             -- note that path should be constructed in reversed order
             -- with curNode as the first element.
             fl <- get
             if curNode == nrSink
               then do
-                let segs :: [((Int, Int), Int)]
-                    segs =
-                      zipWith
-                        (\nFrom nTo -> ((nFrom, nTo), lkup nFrom nTo))
-                        (tail path)
-                        path
-                      where
-                        lkup u v =
-                          let Just (val, cap) = lookupArc cMap fl (u, v)
-                           in cap - val
-                    pushVal =
-                      -- value to push along this path
-                      minimum $ fmap snd segs
+                v <- augment (reverse revPath)
                 {-
                   TODO: augument along this path
                   and return starting point of the first vanishing edge
                   (closer to source)
                  -}
-                undefined
+                pure (Just v)
               else {-
                      TODO: visit deeper and examine resulting value to see
                      whether to end the current iteration or keep going.
