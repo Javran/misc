@@ -15,9 +15,10 @@ import qualified Data.IntMap.Strict as IM
 import qualified Data.IntSet as IS
 import Data.Maybe
 import qualified Data.Text as T
-import Javran.MaxFlow.Algorithm.Dinitz (M, logM, lookupArc)
+import Javran.MaxFlow.Algorithm.Dinitz (M, getArc, logM, lookupArc)
 import Javran.MaxFlow.Common
 import Javran.MaxFlow.Types
+import qualified Data.Map.Strict as M
 
 -- import ListT
 -- import Control.Monad.Trans.Class
@@ -99,13 +100,24 @@ augment path = do
       pushVal =
         -- value to push along this path
         minimum $ fmap snd segs
+      ((btNode, _), _) : _ =
+        -- find starting node of the first vanishing edge.
+        filter ((== pushVal) . snd) segs
   when (pushVal <= 0) $ do
     let msg =
           "push value must be positive along this path, while getting "
             <> show pushVal
     logM (T.pack msg)
     lift $ throwError msg
-  pure undefined -- TODO
+  -- apply flow change
+  forM_ segs $ \(arc@(x, y), _) -> do
+    (_, cap) <- getArc arc
+    modify $
+      if cap == 0
+        then M.alter (\(Just v) -> Just $ v - pushVal) (y, x)
+        else M.alter (\(Just v) -> Just $ v + pushVal) arc
+  -- TODO: logging.
+  pure btNode
 
 phase :: M (Maybe ())
 phase = do
