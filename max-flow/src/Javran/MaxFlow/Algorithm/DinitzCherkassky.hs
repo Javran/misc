@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Javran.MaxFlow.Algorithm.DinitzCherkassky where
 
@@ -12,6 +13,8 @@ import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Trans.RWS.CPS
 import Control.Monad.Trans.Writer.CPS
+import Data.Bifunctor
+import qualified Data.DList as DL
 import qualified Data.IntMap.Strict as IM
 import qualified Data.IntSet as IS
 import Data.List
@@ -20,7 +23,7 @@ import Data.Maybe
 import Data.Monoid
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
-import Javran.MaxFlow.Algorithm.Dinitz (M, getArc, logM, lookupArc, showM)
+import Javran.MaxFlow.Algorithm.Dinitz (M, getArc, logM, lookupArc)
 import Javran.MaxFlow.Common
 import Javran.MaxFlow.Types
 
@@ -139,17 +142,21 @@ phase = do
     else do
       let dfs :: Int -> Int -> [Int] -> M (Maybe Int)
           dfs curNode curRank revPath = do
-            -- note that path should be constructed in reversed order
-            -- with curNode as the first element.
+            {-
+              note that path should be constructed in reversed order
+              with curNode as the first element.
+             -}
             fl <- get
             if curNode == nrSink
-              then {-
-                       augument along this path
-                       and return starting point of the first vanishing edge
-                       (closer to source)
-                      -}
-
-                Just <$> augment (reverse revPath)
+              then
+                Just
+                  <$>
+                  {-
+                     augument along this path
+                     and return starting point of the first vanishing edge
+                     (closer to source)
+                   -}
+                  augment (reverse revPath)
               else do
                 {-
                  visit deeper and examine resulting value to see
@@ -204,3 +211,13 @@ experiment nn = do
       putStrLn $ "total value: " <> show maxVal
       putStrLn $ "flow: " <> show fl
     r -> print r
+
+{-
+  TODO: experiment and maxFlow might be merged with similar functions found in Dinitz module.
+ -}
+maxFlow :: MaxFlowSolver
+maxFlow (getNR -> nr) = (second (\((), fl, Sum v) -> (v, fl, cMap)) result, DL.toList logs)
+  where
+    Right (cMap, initFlow) = prepare nr
+    (result, logs) =
+      runWriter $ runExceptT $ runRWST phaseUntilFix (nr, cMap) initFlow
