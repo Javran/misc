@@ -97,7 +97,7 @@ main = do
       nn <- loadNetwork fName
       let nr@NetworkRep {nrSource, nrSink} = getNR nn
       print nr
-      let (result, logs) = EdmondsKarp.maxFlow nn
+      let (result, logs) = Dinitz.maxFlow nn
       mapM_ T.putStrLn logs
       case result of
         Left msg -> do

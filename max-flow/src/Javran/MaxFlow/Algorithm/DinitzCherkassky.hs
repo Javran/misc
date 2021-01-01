@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TupleSections #-}
 
@@ -124,6 +125,7 @@ augment path = do
         then M.alter (\(Just v) -> Just $ v - pushVal) (y, x)
         else M.alter (\(Just v) -> Just $ v + pushVal) arc
   Control.Monad.Trans.RWS.CPS.tell (Sum pushVal)
+  logM $ T.pack $ "report to resume at node " <> show btNode
   pure btNode
 
 phase :: M (Maybe ())
@@ -177,17 +179,25 @@ phase = do
                          Just nResume ->
                            if nResume == curNode
                              then loop nodes' -- only resume when we are searching the matching node.
-                             else pure result)
+                             else do
+                               logM $ T.pack ("abort subsequence searches at node " <> show curNode)
+                               pure result)
                   nextNodes
       dfs nrSource (ranks IM.! nrSource) [nrSource]
       pure $ Just ()
+
+phaseUntilFix :: M ()
+phaseUntilFix =
+  phase >>= \case
+    Nothing -> pure ()
+    Just () -> phaseUntilFix
 
 experiment :: NormalizedNetwork -> IO ()
 experiment nn = do
   let nr@NetworkRep {nrSink} = getNR nn
       Right (cMap, initFlow) = prepare nr
   print $ computeRanks cMap initFlow nrSink
-  case runWriter $ runExceptT $ runRWST phase (nr, cMap) initFlow of
+  case runWriter $ runExceptT $ runRWST phaseUntilFix (nr, cMap) initFlow of
     (Right (_, fl, Sum maxVal), ls) -> do
       putStrLn "logs:"
       mapM_ T.putStrLn ls
