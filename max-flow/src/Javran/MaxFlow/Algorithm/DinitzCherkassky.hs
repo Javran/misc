@@ -16,8 +16,10 @@ import qualified Data.IntSet as IS
 import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
+import Data.Monoid
 import qualified Data.Text as T
-import Javran.MaxFlow.Algorithm.Dinitz (M, getArc, logM, lookupArc)
+import qualified Data.Text.IO as T
+import Javran.MaxFlow.Algorithm.Dinitz (M, getArc, logM, lookupArc, showM)
 import Javran.MaxFlow.Common
 import Javran.MaxFlow.Types
 
@@ -92,8 +94,8 @@ augment path = do
       segs =
         zipWith
           (\nFrom nTo -> ((nFrom, nTo), lkup nFrom nTo))
-          (tail path)
           path
+          (tail path)
         where
           lkup u v =
             let Just (val, cap) = lookupArc cMap fl (u, v)
@@ -104,6 +106,10 @@ augment path = do
       ((btNode, _), _) : _ =
         -- find starting node of the first vanishing edge.
         filter ((== pushVal) . snd) segs
+  logM . T.pack $
+    "push value: " <> show pushVal
+      <> " along path: "
+      <> intercalate " -> " (show <$> path)
   when (pushVal <= 0) $ do
     let msg =
           "push value must be positive along this path, while getting "
@@ -117,10 +123,6 @@ augment path = do
       if cap == 0
         then M.alter (\(Just v) -> Just $ v - pushVal) (y, x)
         else M.alter (\(Just v) -> Just $ v + pushVal) arc
-  logM . T.pack $
-    "pushed value: " <> show pushVal
-      <> " along path: "
-      <> intercalate " -> " (show <$> path)
   pure btNode
 
 phase :: M (Maybe ())
@@ -182,5 +184,12 @@ phase = do
 experiment :: NormalizedNetwork -> IO ()
 experiment nn = do
   let nr@NetworkRep {nrSink} = getNR nn
-      Right (cMap, fl) = prepare nr
-  print $ computeRanks cMap fl nrSink
+      Right (cMap, initFlow) = prepare nr
+  print $ computeRanks cMap initFlow nrSink
+  case runWriter $ runExceptT $ runRWST phase (nr, cMap) initFlow of
+    (Right (_, fl, Sum maxVal), ls) -> do
+      putStrLn "logs:"
+      mapM_ T.putStrLn ls
+      putStrLn $ "total value: " <> show maxVal
+      putStrLn $ "flow: " <> show fl
+    r -> print r
