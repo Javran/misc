@@ -123,6 +123,7 @@ augment path = do
       if cap == 0
         then M.alter (\(Just v) -> Just $ v - pushVal) (y, x)
         else M.alter (\(Just v) -> Just $ v + pushVal) arc
+  Control.Monad.Trans.RWS.CPS.tell (Sum pushVal)
   pure btNode
 
 phase :: M (Maybe ())
