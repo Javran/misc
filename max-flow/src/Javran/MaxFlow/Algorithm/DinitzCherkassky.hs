@@ -27,9 +27,6 @@ import Javran.MaxFlow.Algorithm.Dinitz (M, getArc, logM, lookupArc)
 import Javran.MaxFlow.Common
 import Javran.MaxFlow.Types
 
--- import ListT
--- import Control.Monad.Trans.Class
-
 computeRanks :: CapacityMap -> Flow -> Int -> IM.IntMap Int
 computeRanks cMap fl dstNode =
   bfs
