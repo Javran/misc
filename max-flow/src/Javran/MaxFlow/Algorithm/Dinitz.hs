@@ -6,9 +6,6 @@
 module Javran.MaxFlow.Algorithm.Dinitz
   ( maxFlow
   , experiment
-  , M
-  , logM
-  , showM
   , lookupArc
   , getArc
   )
@@ -32,6 +29,7 @@ import Data.Tuple
 import Javran.MaxFlow.Common
 import Javran.MaxFlow.Types
 import Javran.MaxFlow.Verify
+import Javran.MaxFlow.Algorithm.Internal
 
 {-
   Implementation of the original Dinitz Algorithm as described in:
@@ -39,20 +37,10 @@ import Javran.MaxFlow.Verify
   http://www.cs.bgu.ac.il/~dinitz/Papers/Dinitz_alg.pdf
  -}
 
-type RInfo = (NetworkRep, CapacityMap)
-
-type M =
-  RWST
-    RInfo
-    (Sum Int)
-    Flow
-    ( ExceptT
-        String
-        (Writer (DL.DList T.Text))
-    )
 
 {-
   Lookup current flow value and capacity of an arc.
+  TODO: getArc should be preferred now that we are sharing M.
  -}
 lookupArc :: CapacityMap -> Flow -> (Int, Int) -> Maybe (Int, Int)
 lookupArc cMap fl p@(u, v) = do
@@ -69,15 +57,6 @@ lookupArc cMap fl p@(u, v) = do
           else fl M.! p
   pure (cur, cap)
 
-logM :: T.Text -> M ()
-logM t =
-  lift $
-    lift $
-      Control.Monad.Trans.Writer.CPS.tell $
-        DL.singleton t
-
-showM :: Show a => a -> M ()
-showM = logM . T.pack . show
 
 getArc :: (Int, Int) -> M (Int, Int)
 getArc p = do

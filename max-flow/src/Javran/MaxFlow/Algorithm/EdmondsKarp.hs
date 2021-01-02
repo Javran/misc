@@ -22,24 +22,9 @@ import Data.Maybe
 import Data.Monoid
 import qualified Data.Sequence as Seq
 import qualified Data.Text as T
+import Javran.MaxFlow.Algorithm.Internal
 import Javran.MaxFlow.Common
 import Javran.MaxFlow.Types
-
-{-
-  We can certainly extend Sum Int to (DList Text, Sum Int)
-  to support logging, which is awkward because every `tell` call will
-  then consist of wrapping and unwrapping, with placeholder values (mempty),
-  which isn't really ideal.
- -}
-type M =
-  RWST
-    (NetworkRep, CapacityMap)
-    (Sum Int)
-    Flow
-    ( ExceptT
-        String
-        (Writer (DL.DList T.Text))
-    )
 
 type AugPath = ([((Int, Int), Bool)], Int)
 
@@ -94,13 +79,6 @@ findAugPathM = do
   (NetworkRep {nrSource, nrSink}, cMap) <- ask
   curFlow <- get
   pure $ findAugPath cMap nrSource nrSink curFlow IM.empty (Seq.singleton nrSource)
-
-logM :: T.Text -> M ()
-logM t =
-  lift $
-    lift $
-      Control.Monad.Trans.Writer.CPS.tell $
-        DL.singleton t
 
 applyAugPathM :: AugPath -> M ()
 applyAugPathM (xs, diff) = do
