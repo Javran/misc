@@ -167,9 +167,13 @@ phase = do
                 let nextNodes :: [Int]
                     nextNodes = do
                       let nextRank = Just (curRank -1)
-                          notFull v = case lookupArc cMap fl (curNode, v) of
-                            Nothing -> False
-                            Just (cur, cap) -> cap - cur > 0
+                          notFull v = cap - cur > 0
+                            where
+                              {-
+                                assuming network is normalized properly,
+                                we will not have a Nothing case to deal with.
+                               -}
+                              Just (cur, cap) = lookupArc cMap fl (curNode, v)
                       node <-
                         IM.keys
                           . fromMaybe IM.empty
