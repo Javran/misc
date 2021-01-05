@@ -11,6 +11,7 @@ module Javran.MaxFlow.Algorithm.DinitzCherkassky where
 
 import Control.Monad
 import Control.Monad.Except
+import Control.Monad.Trans.Cont
 import Control.Monad.Trans.RWS.CPS
 import Control.Monad.Trans.Writer.CPS
 import Data.Bifunctor
@@ -138,13 +139,13 @@ phase = do
   if IM.notMember nrSource ranks
     then pure Nothing
     else do
-      let dfs :: Int -> Int -> [Int] -> M (Maybe Int)
+      let dfs :: Int -> Int -> [Int] -> ContT (Maybe Int) M (Maybe Int)
           dfs curNode curRank revPath = do
             {-
               note that path should be constructed in reversed order
               with curNode as the first element.
              -}
-            fl <- get
+            fl <- lift get
             if curNode == nrSink
               then
                 Just
@@ -154,7 +155,7 @@ phase = do
                      and return starting point of the first vanishing edge
                      (closer to source)
                    -}
-                  augment (reverse revPath)
+                  lift (augment (reverse revPath))
               else do
                 {-
                  visit deeper and examine resulting value to see
@@ -172,23 +173,21 @@ phase = do
                           $ cMap IM.!? curNode
                       guard $ ranks IM.!? node == nextRank && notFull node
                       pure node
-                fix
-                  (\loop nodes -> case nodes of
-                     [] -> pure Nothing
-                     nextNode : nodes' -> do
-                       result <- dfs nextNode (ranks IM.! nextNode) (nextNode : revPath)
-                       case result of
-                         Nothing ->
-                           -- keep going if a deeper search finds no result.
-                           loop nodes'
-                         Just nResume ->
-                           if nResume == curNode
-                             then loop nodes' -- only resume when we are searching the matching node.
-                             else do
-                               logM $ T.pack ("abort subsequence searches at node " <> show curNode)
-                               pure result)
-                  nextNodes
-      dfs nrSource (ranks IM.! nrSource) [nrSource]
+                callCC $ \k -> do
+                  forM_ nextNodes $ \nextNode -> do
+                    result <- dfs nextNode (ranks IM.! nextNode) (nextNode : revPath)
+                    case result of
+                      Nothing ->
+                        -- keep going if a deeper search finds no result.
+                        pure ()
+                      Just nResume ->
+                        if nResume == curNode
+                          then pure () -- only resume when we are searching the matching node.
+                          else do
+                            lift . logM $ T.pack ("abort subsequence searches at node " <> show curNode)
+                            k result
+                  pure Nothing
+      _ <- evalContT $ dfs nrSource (ranks IM.! nrSource) [nrSource]
       pure $ Just ()
 
 phaseUntilFix :: M ()
