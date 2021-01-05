@@ -6,7 +6,11 @@
 module Javran.MaxFlow.Algorithm.DinitzCherkassky where
 
 {-
-  TODO: Dinitz's algorithm improved by Boris Cherkassky.
+  Dinitz's algorithm improved by Boris Cherkassky.
+
+  TODO: for some reason I feel this is slower than other two algorithms
+  despite that this is supposed to be faster - we'll need to look into this
+  and probably setup benchmarks.
  -}
 
 import Control.Monad
@@ -132,7 +136,6 @@ augment path = do
 
 phase :: M (Maybe ())
 phase = do
-  -- TODO: phase to be tested.
   (NetworkRep {nrSink, nrSource}, cMap) <- ask
   initFl <- get
   let ranks = computeRanks cMap initFl nrSink
