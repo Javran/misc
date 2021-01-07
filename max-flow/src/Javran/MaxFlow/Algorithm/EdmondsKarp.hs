@@ -50,21 +50,13 @@ findAugPath caps netSrc netDst flow pre q = case Seq.viewl q of
     pure (fmap fst paths, flowImp)
   src Seq.:< q' -> do
     subCaps <- caps IM.!? src
-    let getFlowCap dst =
-          ( if cap > 0
-              then flow M.! (src, dst)
-              else - (flow M.! (dst, src))
-          , cap
-          )
-          where
-            cap = subCaps IM.! dst
-        alts :: [(Int, Int, Bool)]
+    let alts :: [(Int, Int, Bool)]
         alts = catMaybes $ fmap go (IM.keys subCaps)
           where
             go dst = do
               guard $ dst /= netSrc
               guard $ dst `IM.notMember` pre
-              let (fl, cap) = getFlowCap dst
+              let (fl, cap) = fromJust $ lookupArc caps flow (src, dst)
               guard $ cap > fl
               pure (dst, cap - fl, cap == 0)
         pre' :: IM.IntMap PreInfo
