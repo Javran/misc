@@ -105,9 +105,6 @@ applyAugPathM (xs, diff) = do
           then M.alter (\(Just v) -> Just $ v - diff) (dst, src)
           else M.alter (\(Just v) -> Just $ v + diff) (src, dst)
 
-{-
-  Note that this function expects a normalized NetworkRep
- -}
 maxFlow :: MaxFlowSolver
 maxFlow (getNR -> nr) =
   case prepare nr of
