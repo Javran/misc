@@ -37,38 +37,6 @@ import Javran.MaxFlow.Algorithm.Internal
   http://www.cs.bgu.ac.il/~dinitz/Papers/Dinitz_alg.pdf
  -}
 
-
-{-
-  Lookup current flow value and capacity of an arc.
-  TODO: getArc should be preferred now that we are sharing M.
- -}
-lookupArc :: CapacityMap -> Flow -> (Int, Int) -> Maybe (Int, Int)
-lookupArc cMap fl p@(u, v) = do
-  subCMap <- cMap IM.!? u
-  cap <- subCMap IM.!? v
-  {-
-    direct lookup without fallback.
-    constraint on types should be sufficient to ensure that
-    this lookup won't fail.
-   -}
-  let cur =
-        if cap == 0
-          then - (fl M.! (v, u))
-          else fl M.! p
-  pure (cur, cap)
-
-
-getArc :: (Int, Int) -> M (Int, Int)
-getArc p = do
-  cMap <- asks snd
-  fl <- get
-  case lookupArc cMap fl p of
-    Just v -> pure v
-    Nothing -> do
-      let msg = "lookup failed for edge " <> show p
-      logM (T.pack msg)
-      lift $ throwError msg
-
 type Layer = (IS.IntSet, [(Int, Int)]) -- (<vertex set, arc set>)
 
 buildLayered :: Int -> (Int -> IS.IntSet) -> [Layer]

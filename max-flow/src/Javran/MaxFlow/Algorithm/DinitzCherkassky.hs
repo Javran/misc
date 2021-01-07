@@ -28,7 +28,6 @@ import Data.Maybe
 import Data.Monoid
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
-import Javran.MaxFlow.Algorithm.Dinitz (getArc, lookupArc)
 import Javran.MaxFlow.Algorithm.Internal
 import Javran.MaxFlow.Common
 import Javran.MaxFlow.Types
