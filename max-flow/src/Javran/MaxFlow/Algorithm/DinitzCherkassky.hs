@@ -39,26 +39,20 @@ computeRanks cMap fl dstNode =
     [(dstNode, 0)]
     (IM.singleton dstNode 0)
   where
-    {-
-      reversed map for getting ranks.
-      despite that edge goes in one direction, CapacityMap has keys
-      in both directions so we are not missing any edges here.
-     -}
-    revMap :: IM.IntMap [Int]
-    revMap = IM.fromListWith (<>) $ do
-      (u, vs) <- IM.toList cMap
-      v <- IM.keys vs
-      (cur, cap) <- maybeToList $ lookupArc cMap fl (u, v)
-      guard $ cap - cur > 0
-      pure (v, [u])
-
     bfs discovered q acc = case q of
       [] -> acc
       (curNode, rank) : qRem ->
-        let nextNodes =
-              filter (`IS.notMember` discovered)
-                . fromMaybe []
-                $ revMap IM.!? curNode
+        let nextNodes = do
+              {-
+                query CapacityMap directly. despite the edge goes in one direction,
+                CapacityMap is expected to contain both directions.
+               -}
+              Just nexts <- pure (cMap IM.!? curNode)
+              prevNode <- IM.keys nexts
+              guard $ prevNode `IS.notMember` discovered
+              (cur, cap) <- maybeToList $ lookupArc cMap fl (prevNode, curNode)
+              guard $ cap - cur > 0
+              pure prevNode
             extras = fmap (,rank + 1) nextNodes
             discovered' = IS.union discovered (IS.fromList nextNodes)
             q' = qRem <> extras
