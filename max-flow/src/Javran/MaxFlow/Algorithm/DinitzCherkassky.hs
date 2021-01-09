@@ -154,24 +154,21 @@ phase = do
                   lift (augment (reverse revPath))
               else do
                 {-
-                 visit deeper and examine resulting value to see
-                 whether to end the current iteration or keep going.
+                  visit deeper and examine resulting value to see
+                  whether to end the current iteration or keep going.
                 -}
-                let nextNodes :: [Int]
+                let nextRank = Just (curRank -1)
+                    nextNodes :: [Int]
                     nextNodes = do
-                      let nextRank = Just (curRank -1)
-                          notFull v = cap - cur > 0
-                            where
-                              {-
-                                assuming network is normalized properly,
-                                we will not have a Nothing case to deal with.
-                               -}
-                              Just (cur, cap) = lookupArc cMap fl (curNode, v)
-                      node <-
-                        IM.keys
-                          . fromMaybe IM.empty
-                          $ cMap IM.!? curNode
-                      guard $ ranks IM.!? node == nextRank && notFull node
+                      Just subMap <- pure (cMap IM.!? curNode)
+                      node <- IM.keys subMap
+                      guard $ ranks IM.!? node == nextRank
+                      {-
+                        assuming network is normalized properly,
+                        we will not have a Nothing case to deal with.
+                       -}
+                      let Just (cur, cap) = lookupArc cMap fl (curNode, node)
+                      guard $ cap - cur > 0
                       pure node
                 callCC $ \k -> do
                   forM_ nextNodes $ \nextNode -> do
