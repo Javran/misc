@@ -47,7 +47,7 @@ computeRanks cMap fl dstNode =
                 query CapacityMap directly. despite the edge goes in one direction,
                 CapacityMap is expected to contain both directions.
                -}
-              Just nexts <- pure (cMap IM.!? curNode)
+              let Just nexts = cMap IM.!? curNode
               prevNode <- IM.keys nexts
               guard $ prevNode `IS.notMember` discovered
               (cur, cap) <- maybeToList $ lookupArc cMap fl (prevNode, curNode)
@@ -160,7 +160,7 @@ phase = do
                 let nextRank = Just (curRank -1)
                     nextNodes :: [Int]
                     nextNodes = do
-                      Just subMap <- pure (cMap IM.!? curNode)
+                      let subMap = cMap IM.! curNode
                       node <- IM.keys subMap
                       guard $ ranks IM.!? node == nextRank
                       {-
