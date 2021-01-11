@@ -8,6 +8,9 @@ import Data.Bifunctor
 import qualified Data.ByteString as BS
 import Data.List
 import Data.Text.Encoding (decodeUtf8)
+import qualified Javran.MaxFlow.Algorithm.Dinitz as Dinitz
+import qualified Javran.MaxFlow.Algorithm.DinitzCherkassky as DinitzCherkassky
+import qualified Javran.MaxFlow.Algorithm.EdmondsKarp as EdmondsKarp
 import Javran.MaxFlow.Common
 import Javran.MaxFlow.Parser
 import Javran.MaxFlow.TestData
@@ -35,9 +38,26 @@ pSimple, pGenetic, pHandmade, pRandomBest :: [(String, NormalizedNetwork)]
             where
               Right nr = parseFromRaw $ decodeUtf8 raw
 
-runSolver :: MaxFlowSolver -> [(String, NormalizedNetwork)] -> [(String, (Int, Flow, CapacityMap))]
+runSolver
+  :: MaxFlowSolver
+  -> [(String, NormalizedNetwork)]
+  -> [(String, (Int, Flow, CapacityMap))]
 runSolver solver =
   (fmap . second) (\nn -> let (Right r, _) = solver nn in r)
 
 main :: IO ()
-main = defaultMain []
+main =
+  defaultMain
+    [ maxFlowGroup "Dinitz" (runSolver Dinitz.maxFlow)
+    , maxFlowGroup "DinitzCherkassky" (runSolver DinitzCherkassky.maxFlow)
+    , maxFlowGroup "EdmondsKarp" (runSolver EdmondsKarp.maxFlow)
+    ]
+  where
+    maxFlowGroup bTag solver =
+      bgroup
+        bTag
+        [ bench "simple" $ nf solver pSimple
+        , bench "genetic" $ nf solver pGenetic
+        , bench "handmade" $ nf solver pHandmade
+        , bench "random-best" $ nf solver pRandomBest
+        ]
