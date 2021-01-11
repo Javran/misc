@@ -6,3 +6,5 @@ cradle:
       component: "max-flow:exe:demo"
     - path: "./test"
       component: "max-flow:test:hspec"
+    - path: "./bench"
+      component: "max-flow:bench:criterion"
