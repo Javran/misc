@@ -24,12 +24,10 @@ import Data.Maybe
 import Data.Monoid
 import Data.Ord
 import qualified Data.Text as T
-import qualified Data.Text.IO as T
 import Data.Tuple
+import Javran.MaxFlow.Algorithm.Internal
 import Javran.MaxFlow.Common
 import Javran.MaxFlow.Types
-import Javran.MaxFlow.Verify
-import Javran.MaxFlow.Algorithm.Internal
 
 {-
   Implementation of the original Dinitz Algorithm as described in:
@@ -251,17 +249,7 @@ maxFlowM = do
     Just () -> maxFlowM
 
 experiment :: NormalizedNetwork -> IO ()
-experiment nn = do
-  let (Right ((), fl, Sum maxVal), ls) =
-        runWriter $ runExceptT $ runRWST maxFlowM (nr, cMap) initFlow
-  putStrLn "logs:"
-  mapM_ T.putStrLn ls
-  putStrLn $ "total value: " <> show maxVal
-  putStrLn $ "flow: " <> show fl
-  print $ verify nrSource nrSink cMap fl
-  where
-    Right (cMap, initFlow) = prepare (getNR nn)
-    nr@NetworkRep {nrSource, nrSink} = getNR nn
+experiment = debugRun maxFlowM
 
 maxFlow :: MaxFlowSolver
 maxFlow (getNR -> nr) = (second (\((), fl, Sum v) -> (v, fl, cMap)) result, DL.toList logs)

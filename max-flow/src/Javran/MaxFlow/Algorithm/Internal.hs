@@ -1,3 +1,5 @@
+{-# LANGUAGE NamedFieldPuns #-}
+
 module Javran.MaxFlow.Algorithm.Internal
   ( M
   , RInfo
@@ -5,6 +7,7 @@ module Javran.MaxFlow.Algorithm.Internal
   , showM
   , lookupArc
   , getArc
+  , debugRun
   )
 where
 
@@ -20,7 +23,10 @@ import qualified Data.IntMap.Strict as IM
 import qualified Data.Map.Strict as M
 import Data.Monoid
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
+import Javran.MaxFlow.Common
 import Javran.MaxFlow.Types
+import Javran.MaxFlow.Verify
 
 type RInfo = (NetworkRep, CapacityMap)
 
@@ -80,3 +86,17 @@ getArc p = do
       let msg = "lookup failed for edge " <> show p
       logM (T.pack msg)
       lift $ throwError msg
+
+-- for debugging.
+debugRun :: M () -> NormalizedNetwork -> IO ()
+debugRun solver nn = do
+  let nr@NetworkRep {nrSource, nrSink} = getNR nn
+      Right (cMap, initFlow) = prepare nr
+  case runWriter $ runExceptT $ runRWST solver (nr, cMap) initFlow of
+    (Right (_, fl, Sum maxVal), ls) -> do
+      putStrLn "logs:"
+      mapM_ T.putStrLn ls
+      putStrLn $ "total value: " <> show maxVal
+      putStrLn $ "flow: " <> show fl
+      print $ verify nrSource nrSink cMap fl
+    r -> print r

@@ -27,7 +27,6 @@ import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
 import qualified Data.Text as T
-import qualified Data.Text.IO as T
 import Javran.MaxFlow.Algorithm.Internal
 import Javran.MaxFlow.Common
 import Javran.MaxFlow.Types
@@ -193,18 +192,6 @@ solve =
     Nothing -> pure ()
     Just () -> solve
 
-debugRun :: M () -> NormalizedNetwork -> IO ()
-debugRun solver nn = do
-  let nr@NetworkRep {nrSink} = getNR nn
-      Right (cMap, initFlow) = prepare nr
-  print $ computeRanks cMap initFlow nrSink
-  case runWriter $ runExceptT $ runRWST solver (nr, cMap) initFlow of
-    (Right (_, fl, Sum maxVal), ls) -> do
-      putStrLn "logs:"
-      mapM_ T.putStrLn ls
-      putStrLn $ "total value: " <> show maxVal
-      putStrLn $ "flow: " <> show fl
-    r -> print r
 
 experiment :: NormalizedNetwork -> IO ()
 experiment = debugRun solve
