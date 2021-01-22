@@ -187,24 +187,27 @@ phase = do
       _ <- evalContT $ dfs nrSource (ranks IM.! nrSource) [nrSource]
       pure $ Just ()
 
-phaseUntilFix :: M ()
-phaseUntilFix =
+solve :: M ()
+solve =
   phase >>= \case
     Nothing -> pure ()
-    Just () -> phaseUntilFix
+    Just () -> solve
 
-experiment :: NormalizedNetwork -> IO ()
-experiment nn = do
+debugRun :: M () -> NormalizedNetwork -> IO ()
+debugRun solver nn = do
   let nr@NetworkRep {nrSink} = getNR nn
       Right (cMap, initFlow) = prepare nr
   print $ computeRanks cMap initFlow nrSink
-  case runWriter $ runExceptT $ runRWST phaseUntilFix (nr, cMap) initFlow of
+  case runWriter $ runExceptT $ runRWST solver (nr, cMap) initFlow of
     (Right (_, fl, Sum maxVal), ls) -> do
       putStrLn "logs:"
       mapM_ T.putStrLn ls
       putStrLn $ "total value: " <> show maxVal
       putStrLn $ "flow: " <> show fl
     r -> print r
+
+experiment :: NormalizedNetwork -> IO ()
+experiment = debugRun solve
 
 {-
   TODO: experiment and maxFlow might be merged with similar functions found in Dinitz module.
@@ -214,4 +217,4 @@ maxFlow (getNR -> nr) = (second (\((), fl, Sum v) -> (v, fl, cMap)) result, DL.t
   where
     Right (cMap, initFlow) = prepare nr
     (result, logs) =
-      runWriter $ runExceptT $ runRWST phaseUntilFix (nr, cMap) initFlow
+      runWriter $ runExceptT $ runRWST solve (nr, cMap) initFlow
