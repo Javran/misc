@@ -64,7 +64,10 @@ prepare' nr@NetworkRep {nrSource} = runExcept $ do
       fl =
         -- set all outgoing edges to its capacity in the preflow.
         M.union (M.fromList srcOutArcs) fl0
-      eIns = IM.insert nrSource srcOutArcs (IM.map (const []) cMap)
+      eIns =
+        IM.union
+          (IM.fromList [(v, [item]) | item@((_, v), _) <- srcOutArcs])
+          (IM.map (const []) cMap)
       eOuts = IM.fromList $
         catMaybes $ do
           (u, subMap) <- IM.toList cMap
