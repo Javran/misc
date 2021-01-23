@@ -1,7 +1,15 @@
+{-# LANGUAGE NamedFieldPuns #-}
+
 module Javran.MaxFlow.Algorithm.Karzanov where
 
+import Control.Monad.Except
+import Control.Monad.State
 import qualified Data.IntMap.Strict as IM
+import qualified Data.Map.Strict as M
 import qualified Data.Set as S
+import Javran.MaxFlow.Algorithm.Internal
+import Javran.MaxFlow.Common
+import Javran.MaxFlow.Types
 
 {-
   Karzanov's algorithm according to notes:
@@ -14,6 +22,8 @@ import qualified Data.Set as S
   represents In(v), which is a stack of (<edge>, <value>)
   this value should be non-negative real but here we are only dealing
   with integers.
+
+  - every node will have an entity in this Map.
  -}
 type InStack = IM.IntMap [((Int, Int), Int)]
 
@@ -25,7 +35,7 @@ type InStack = IM.IntMap [((Int, Int), Int)]
     which means all remaining elements are unscanned.
   - I'm actually not sure why this paper asks for double-linked list specifically,
     but it seems like elements prior to active elements are not used so we can simply drop them here
-  - to simplify type definition, if Out(v) is empty, it won't be found in this Map.
+  - every node will have an entity in this Map unless the list of unscanned Out(v) is empty.
 
  -}
 type OutList = IM.IntMap ((Int, Bool), [Int])
@@ -37,3 +47,21 @@ data Extras = Extras
   , eOuts :: OutList
   , eFronzens :: Frozens
   }
+
+-- This solver is the standard one plus an extra layer of Extras as StateT
+-- moreover, Flow might violate some flow constraints in this module,
+-- as we are repurposing that as preflow.
+type MK = StateT Extras M
+
+prepare' :: NetworkRep -> Either String (CapacityMap, Flow, Extras)
+prepare' nr@NetworkRep {nrSource} = runExcept $ do
+  (cMap, fl0) <- liftEither (prepare nr)
+  let srcOutArcs :: [((Int, Int), Int)]
+      srcOutArcs = do
+        (end, cap) <- IM.toList $ IM.filter (> 0) $ cMap IM.! nrSource
+        pure ((nrSource, end), cap)
+      fl =
+        -- set all outgoing edges to its capacity in the preflow.
+        M.union (M.fromList srcOutArcs) fl0
+  -- TOOD: prepare extras.
+  pure (cMap, fl, undefined)
