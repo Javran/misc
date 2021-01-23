@@ -97,6 +97,13 @@ applyAugPathM (xs, diff) = do
           then M.alter (\(Just v) -> Just $ v - diff) (dst, src)
           else M.alter (\(Just v) -> Just $ v + diff) (src, dst)
 
+solve :: M ()
+solve = do
+  r <- findAugPathM
+  case r of
+    Nothing -> pure ()
+    Just augPath -> applyAugPathM augPath >> solve
+
 maxFlow :: MaxFlowSolver
 maxFlow (getNR -> nr) =
   case prepare nr of
@@ -107,10 +114,6 @@ maxFlow (getNR -> nr) =
           fmap (second (\((), flow, Sum v) -> (v, flow, cMap))) $
             runExceptT $
               (runRWST
-                 (fix $ \loop -> do
-                    r <- findAugPathM
-                    case r of
-                      Nothing -> pure ()
-                      Just augPath -> applyAugPathM augPath >> loop)
+                 solve
                  (nr, cMap)
                  initFlow)
