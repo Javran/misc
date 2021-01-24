@@ -8,10 +8,13 @@ import qualified Data.IntMap.Strict as IM
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Set as S
+import Data.Monoid
 import Javran.MaxFlow.Algorithm.Internal
 import Javran.MaxFlow.Common
 import Javran.MaxFlow.Types
-
+import qualified Data.Text.IO as T
+import Control.Monad.Trans.RWS.CPS
+import Control.Monad.Trans.Writer.CPS
 {-
   Karzanov's algorithm according to notes:
   "The preflow algorithm for the maximum flow problem"
@@ -47,7 +50,7 @@ data Extras = Extras
   { eIns :: InStack
   , eOuts :: OutList
   , eFrozens :: Frozens
-  }
+  } deriving (Show)
 
 -- This solver is the standard one plus an extra layer of Extras as StateT
 -- moreover, Flow might violate some flow constraints in this module,
@@ -76,3 +79,20 @@ prepare' nr@NetworkRep {nrSource} = runExcept $ do
           (x : xs) <- pure vs
           pure (Just (u, ((x, False), xs)))
   pure (cMap, fl, Extras {eIns, eOuts, eFrozens = mempty})
+
+solve :: MK ()
+solve = pure ()
+
+experiment :: NormalizedNetwork -> IO ()
+experiment nn = do
+  let nr = getNR nn
+      Right (cMap, initFl, extra) = prepare' nr
+  case runWriter $ runExceptT $ runRWST (runStateT solve extra) (nr, cMap) initFl of
+    (Right (_, fl, Sum maxVal), ls) -> do
+      putStrLn "logs:"
+      mapM_ T.putStrLn ls
+      putStrLn $ "total value: " <> show maxVal
+      putStrLn $ "flow: " <> show fl
+      -- print $ verify nrSource nrSink cMap fl
+    r -> print r
+

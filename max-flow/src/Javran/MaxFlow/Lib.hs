@@ -11,7 +11,7 @@ import qualified Data.Text.IO as T
 import Javran.MaxFlow.Common
 import qualified Javran.MaxFlow.Algorithm.Dinitz as Dinitz
 import qualified Javran.MaxFlow.Algorithm.EdmondsKarp as EdmondsKarp
-import qualified Javran.MaxFlow.Algorithm.DinitzCherkassky as DC
+import qualified Javran.MaxFlow.Algorithm.Karzanov as Karzanov
 import Javran.MaxFlow.Parser
 import Javran.MaxFlow.TestData
 import Javran.MaxFlow.Verify
@@ -67,7 +67,7 @@ main = do
   case args of
     ["dev", fName] -> do
       nn <- loadNetwork fName
-      DC.experiment nn
+      Karzanov.experiment nn
     ["runboth", basePath] -> do
       let visit nrPre = do
             let nn = normalize nrPre
