@@ -10,7 +10,7 @@ import Javran.MaxFlow.Types
 {-
   verify flow property and return total flow.
  -}
-verify :: Int -> Int -> CapacityMap -> Flow -> Either String Int
+verify :: Int -> Int -> CapacityMap -> FlowAssignment -> Either String Int
 verify sourceNode sinkNode cMap fl = runExcept $ do
   {-
     verify edges, make sure capacities are within correct ranges,

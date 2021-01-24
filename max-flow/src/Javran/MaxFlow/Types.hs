@@ -1,7 +1,7 @@
 module Javran.MaxFlow.Types
   ( NetworkRep (..)
   , CapacityMap
-  , Flow
+  , FlowAssignment
   )
 where
 
@@ -47,7 +47,7 @@ data NetworkRep = NetworkRep
 type CapacityMap = IM.IntMap (IM.IntMap Int)
 
 {-
-  Resulting flow produced by the solver.
+  Represents values assigned to all arcs.
   This piece of information must be consistent with the company CapacityMap:
 
   - an element keyed by (u,v) exists in this map if and only if (u,v) maps to a non-zero capacity
@@ -58,11 +58,10 @@ type CapacityMap = IM.IntMap (IM.IntMap Int)
     + non-negative.
     + less or equal to its corresponding max capacity in CapacityMap.
 
-  Other constraints apply, but most of those are not enforced by type system.
+  For a proper flow, extra constrains apply.
   See https://en.wikipedia.org/wiki/Maximum_flow_problem#Definition for details on those constraints.
 
-  (TODO: we will have a verification module to ensure that the max-flow produced by solvers are compliant with
-  those constraints)
-
+  This type can also be used to represent preflows.
+  See https://en.wikipedia.org/wiki/Push%E2%80%93relabel_maximum_flow_algorithm for what is preflow.
  -}
-type Flow = M.Map (Int, Int) Int
+type FlowAssignment = M.Map (Int, Int) Int

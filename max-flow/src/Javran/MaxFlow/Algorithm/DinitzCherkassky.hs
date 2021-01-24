@@ -31,7 +31,7 @@ import Javran.MaxFlow.Algorithm.Internal
 import Javran.MaxFlow.Common
 import Javran.MaxFlow.Types
 
-computeRanks :: CapacityMap -> Flow -> Int -> IM.IntMap Int
+computeRanks :: CapacityMap -> FlowAssignment -> Int -> IM.IntMap Int
 computeRanks cMap fl dstNode =
   bfs
     (IS.singleton dstNode)

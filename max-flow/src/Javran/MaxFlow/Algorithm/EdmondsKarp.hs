@@ -34,7 +34,7 @@ findAugPath
   :: CapacityMap
   -> Int
   -> Int
-  -> Flow
+  -> FlowAssignment
   -> IM.IntMap PreInfo
   -> Seq.Seq Int
   -> Maybe AugPath

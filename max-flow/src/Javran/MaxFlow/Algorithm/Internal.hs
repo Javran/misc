@@ -41,7 +41,7 @@ type M =
   RWST
     RInfo
     (Sum Int)
-    Flow
+    FlowAssignment
     ( ExceptT
         String
         (Writer (DL.DList T.Text))
@@ -61,7 +61,7 @@ showM = logM . T.pack . show
   Lookup current flow value and capacity of an arc.
   TODO: getArc should be preferred now that we are sharing M.
  -}
-lookupArc :: CapacityMap -> Flow -> (Int, Int) -> Maybe (Int, Int)
+lookupArc :: CapacityMap -> FlowAssignment -> (Int, Int) -> Maybe (Int, Int)
 lookupArc cMap fl p@(u, v) = do
   subCMap <- cMap IM.!? u
   cap <- subCMap IM.!? v

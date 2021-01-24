@@ -54,7 +54,7 @@ data Extras = Extras
 -- as we are repurposing that as preflow.
 type MK = StateT Extras M
 
-prepare' :: NetworkRep -> Either String (CapacityMap, Flow, Extras)
+prepare' :: NetworkRep -> Either String (CapacityMap, FlowAssignment, Extras)
 prepare' nr@NetworkRep {nrSource} = runExcept $ do
   (cMap, fl0) <- liftEither (prepare nr)
   let srcOutArcs :: [((Int, Int), Int)]

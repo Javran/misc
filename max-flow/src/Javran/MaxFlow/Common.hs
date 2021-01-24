@@ -25,7 +25,7 @@ newtype NormalizedNetwork = NormalizedNetwork
   }
 
 type MaxFlowSolver =
-  NormalizedNetwork -> (Either String (Int, Flow, CapacityMap), [T.Text])
+  NormalizedNetwork -> (Either String (Int, FlowAssignment, CapacityMap), [T.Text])
 
 {-
   To normalize a NetworkRep is to remove and combine arcs in it so that:
@@ -66,7 +66,7 @@ normalize nr@NetworkRep {nrArcs} =
           GT -> Just ((y, x), Sum (- v))
 
 -- TODO: should accept normalized network
-prepare :: NetworkRep -> Either String (CapacityMap, Flow)
+prepare :: NetworkRep -> Either String (CapacityMap, FlowAssignment)
 prepare NetworkRep {nrArcCount, nrArcs, nrNodeCount} = runExcept $ do
   let szArcs = length nrArcs
   unless (szArcs == nrArcCount) $
