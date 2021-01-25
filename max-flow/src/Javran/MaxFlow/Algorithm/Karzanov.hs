@@ -58,11 +58,11 @@ data Extras = Extras
 type MK = StateT Extras M
 
 {-
-  Note: current normalization isn't sufficient for Karzanov's algorithm.
-  As we need to rearrange nodes to follow a topological order, as required by the algorithm.
-
-  However this reveals a serious problem: to follow a topological order means the network must
-  be acyclic - which isn't a general case - more research required here.
+  TODO:
+  Note that we are not reading the original paper but an extension of it -
+  the preflow algorithm is meant to be applied to a layered network, or more generally
+  any acyclic network, which is not generally the case - maybe run a relabeling by BFS
+  gives us such an acyclic network, but I'd like to take a step back and think carefully.
  -}
 
 prepare' :: NetworkRep -> Either String (CapacityMap, FlowAssignment, Extras)
