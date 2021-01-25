@@ -57,6 +57,14 @@ data Extras = Extras
 -- as we are repurposing that as preflow.
 type MK = StateT Extras M
 
+{-
+  Note: current normalization isn't sufficient for Karzanov's algorithm.
+  As we need to rearrange nodes to follow a topological order, as required by the algorithm.
+
+  However this reveals a serious problem: to follow a topological order means the network must
+  be acyclic - which isn't a general case - more research required here.
+ -}
+
 prepare' :: NetworkRep -> Either String (CapacityMap, FlowAssignment, Extras)
 prepare' nr@NetworkRep {nrSource} = runExcept $ do
   (cMap, fl0) <- liftEither (prepare nr)
