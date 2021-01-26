@@ -8,6 +8,7 @@ import Control.Monad.State hiding (get)
 import Control.Monad.Trans.RWS.CPS
 import Control.Monad.Trans.Writer.CPS
 import qualified Data.IntMap.Strict as IM
+import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
@@ -115,6 +116,19 @@ phase = do
   case ranks IM.!? nrSource of
     Nothing -> pure Nothing
     Just _ -> do
+      let vertices =
+            {-
+              Sort vertices in descending value of rank and ascending value of node
+              Note that the resulting list is just a rearrangement of subset
+              (since some nodes might not present)
+              of all vertices of the network in topological order - the acyclic property of
+              layered network (virtually represented by ranks) allows BFS visit to establish
+              this topological order.
+             -}
+            fmap fst
+              . sortBy (\(v0, r0) (v1, r1) -> compare r1 r0 <> compare v0 v1)
+              $ IM.toList ranks
+      showM vertices
       -- TODO: initialize preflow and compute extra state value
       {-
         TODO: the algorithm requires relabeling,
