@@ -1,9 +1,10 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
 module Javran.MaxFlow.Algorithm.Karzanov where
 
 import Control.Monad.Except
-import Control.Monad.State
+import Control.Monad.State hiding (get)
 import Control.Monad.Trans.RWS.CPS
 import Control.Monad.Trans.Writer.CPS
 import qualified Data.IntMap.Strict as IM
@@ -12,6 +13,7 @@ import Data.Maybe
 import Data.Monoid
 import qualified Data.Set as S
 import qualified Data.Text.IO as T
+import Javran.MaxFlow.Algorithm.DinitzCherkassky (computeRanks)
 import Javran.MaxFlow.Algorithm.Internal
 import Javran.MaxFlow.Common
 import Javran.MaxFlow.Types
@@ -105,8 +107,30 @@ prepare' nr@NetworkRep {nrSource} = runExcept $ do
           pure (Just (u, ((x, False), xs)))
   pure (cMap, fl, Extras {eIns, eOuts, eFrozens = mempty})
 
+phase :: M (Maybe ())
+phase = do
+  (NetworkRep {nrSource, nrSink}, cMap) <- ask
+  fl <- get
+  let ranks = computeRanks cMap fl nrSink
+  case ranks IM.!? nrSource of
+    Nothing -> pure Nothing
+    Just _ -> do
+      -- TODO: initialize preflow and compute extra state value
+      {-
+        TODO: the algorithm requires relabeling,
+        but it seems the only use for this subscription is to ensure a certain order
+        and the actual number doesn't matter. so here we can put together a list of nodes
+        with ranks in descending order (since rank is the distance to the sink)
+        (note that this also excludes unreachable nodes from this layered network),
+        which should hold sufficient information for the algorithm to proceed.
+       -}
+      pure Nothing
+
 solve :: M ()
-solve = pure ()
+solve =
+  phase >>= \case
+    Nothing -> pure ()
+    Just () -> solve
 
 experiment :: NormalizedNetwork -> IO ()
 experiment = debugRun solve
