@@ -4,22 +4,34 @@ module Javran.MaxFlow.Algorithm.Karzanov where
 
 import Control.Monad.Except
 import Control.Monad.State
+import Control.Monad.Trans.RWS.CPS
+import Control.Monad.Trans.Writer.CPS
 import qualified Data.IntMap.Strict as IM
 import qualified Data.Map.Strict as M
 import Data.Maybe
-import qualified Data.Set as S
 import Data.Monoid
+import qualified Data.Set as S
+import qualified Data.Text.IO as T
 import Javran.MaxFlow.Algorithm.Internal
 import Javran.MaxFlow.Common
 import Javran.MaxFlow.Types
-import qualified Data.Text.IO as T
-import Control.Monad.Trans.RWS.CPS
-import Control.Monad.Trans.Writer.CPS
+
 {-
   Karzanov's algorithm according to notes:
   "The preflow algorithm for the maximum flow problem"
 
   TODO: impl
+
+  The algorithm runs in phases.
+
+  For each phase:
+
+  - rank of nodes are computed by doing BFS from sink to source,
+    if source isn't assigned a rank, the algorithm stops.
+  - prepare the initial preflow.
+  - alternative between "pushing" and "balancing" until this phase is done
+  - then proceed to next phase.
+
  -}
 
 {-
@@ -50,7 +62,8 @@ data Extras = Extras
   { eIns :: InStack
   , eOuts :: OutList
   , eFrozens :: Frozens
-  } deriving (Show)
+  }
+  deriving (Show)
 
 -- This solver is the standard one plus an extra layer of Extras as StateT
 -- moreover, Flow might violate some flow constraints in this module,
@@ -88,19 +101,8 @@ prepare' nr@NetworkRep {nrSource} = runExcept $ do
           pure (Just (u, ((x, False), xs)))
   pure (cMap, fl, Extras {eIns, eOuts, eFrozens = mempty})
 
-solve :: MK ()
+solve :: M ()
 solve = pure ()
 
 experiment :: NormalizedNetwork -> IO ()
-experiment nn = do
-  let nr = getNR nn
-      Right (cMap, initFl, extra) = prepare' nr
-  case runWriter $ runExceptT $ runRWST (runStateT solve extra) (nr, cMap) initFl of
-    (Right (_, fl, Sum maxVal), ls) -> do
-      putStrLn "logs:"
-      mapM_ T.putStrLn ls
-      putStrLn $ "total value: " <> show maxVal
-      putStrLn $ "flow: " <> show fl
-      -- print $ verify nrSource nrSink cMap fl
-    r -> print r
-
+experiment = debugRun solve
