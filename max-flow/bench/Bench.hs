@@ -41,7 +41,7 @@ pSimple, pGenetic, pHandmade, pRandomBest :: [(String, NormalizedNetwork)]
 runSolver
   :: MaxFlowSolver
   -> [(String, NormalizedNetwork)]
-  -> [(String, (Int, Flow, CapacityMap))]
+  -> [(String, (Int, FlowAssignment, CapacityMap))]
 runSolver solver =
   (fmap . second) (\nn -> let (Right r, _) = solver nn in r)
 

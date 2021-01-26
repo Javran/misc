@@ -3,7 +3,11 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Javran.MaxFlow.Algorithm.DinitzCherkassky where
+module Javran.MaxFlow.Algorithm.DinitzCherkassky
+  ( maxFlow
+  , computeRanks
+  )
+where
 
 {-
   Dinitz's algorithm improved by Boris Cherkassky.
@@ -191,7 +195,6 @@ solve =
   phase >>= \case
     Nothing -> pure ()
     Just () -> solve
-
 
 experiment :: NormalizedNetwork -> IO ()
 experiment = debugRun solve
