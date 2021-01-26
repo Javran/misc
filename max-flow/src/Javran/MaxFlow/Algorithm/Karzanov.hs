@@ -32,6 +32,10 @@ import Javran.MaxFlow.Types
   - alternative between "pushing" and "balancing" until this phase is done
   - then proceed to next phase.
 
+  Note: the method requires re-labeling nodes to v_1, v_2, ... so that arc `v_i -> v_j` implies `i < j`.
+  This same effect can be achieved by computing a rank from sink (and walking backwards), and
+  test that `v_x -> v_y` iff. `rank(v_x) == rank(v_y) + 1`.
+
  -}
 
 {-
