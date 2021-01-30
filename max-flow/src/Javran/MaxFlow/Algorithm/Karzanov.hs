@@ -114,11 +114,7 @@ phase :: M (Maybe ())
 phase = do
   (NetworkRep {nrSource, nrSink}, cMap) <- ask
   fl <- get
-  let ranks =
-        -- NOTE: computeRanks does not eliminate path that are not originated from source
-        -- as it's after all just a reversed BFS from sink.
-        -- we need another round of BFS from source to eliminate unreachable nodes.
-        computeRanks cMap fl nrSink
+  let ranks = computeRanks cMap fl nrSink
   case ranks IM.!? nrSource of
     Nothing -> pure Nothing
     Just _ -> do
@@ -144,9 +140,23 @@ phase = do
             (val, cap) <- maybeToList $ lookupArc cMap fl (u, v)
             guard $ cap - val > 0
             pure v
-      logM "Ordered vertices and next available vertices:"
-      forM_ vertices $ \v -> do
-        logM $ T.pack (show v) <> ": " <> T.pack (show $ nextVs v)
+      logM "Layered network:"
+      {-
+        Print out the network layer by layer.
+        note that we cannot simply visit `vertices` in that order
+        as that would include path not originated from nrSource.
+       -}
+      fix
+        (\loop q discovered -> case q of
+           [] -> pure ()
+           v : q' -> do
+             let vs = nextVs v
+             logM $ T.pack (show v) <> ": " <> T.pack (show vs)
+             loop
+               (q' <> filter (`S.notMember` discovered) vs)
+               (S.union discovered (S.fromList vs)))
+        [nrSource]
+        (S.singleton nrSource)
       -- TODO: initialize preflow and compute extra state value
       {-
         TODO: the algorithm requires relabeling,
