@@ -116,7 +116,8 @@ phase = do
   case ranks IM.!? nrSource of
     Nothing -> pure Nothing
     Just _ -> do
-      let vertices =
+      let vertices :: [Int]
+          vertices =
             {-
               Sort vertices in descending value of rank and ascending value of node
               Note that the resulting list is just a rearrangement of subset
@@ -128,6 +129,15 @@ phase = do
             fmap fst
               . sortBy (\(v0, r0) (v1, r1) -> compare r1 r0 <> compare v0 v1)
               $ IM.toList ranks
+          nextVs :: Int -> [Int]
+          nextVs u = do
+            -- computes all available arcs from a specific node in the layered network.
+            let rankU = ranks IM.! u
+            v <- IM.keys $ cMap IM.! u
+            guard $ ranks IM.!? v == Just (rankU-1)
+            (val, cap) <- maybeToList $ lookupArc cMap fl (u,v)
+            guard $ cap - val > 0
+            pure v
       showM vertices
       -- TODO: initialize preflow and compute extra state value
       {-
