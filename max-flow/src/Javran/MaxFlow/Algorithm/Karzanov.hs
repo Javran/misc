@@ -14,8 +14,10 @@ import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
 import qualified Data.Set as S
+import qualified Data.Sequence as Seq
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import qualified Data.DList as DL
 import Javran.MaxFlow.Algorithm.DinitzCherkassky (computeRanks)
 import Javran.MaxFlow.Algorithm.Internal
 import Javran.MaxFlow.Common
@@ -146,17 +148,27 @@ phase = do
         note that we cannot simply visit `vertices` in that order
         as that would include path not originated from nrSource.
        -}
-      fix
-        (\loop q discovered -> case q of
-           [] -> pure ()
+      vs <- fix
+        (\loop q discovered acc -> case q of
+           [] -> pure (Seq.fromList (DL.toList acc))
            v : q' -> do
              let vs = nextVs v
+                 nexts = filter (`S.notMember` discovered) vs
              logM $ T.pack (show v) <> ": " <> T.pack (show vs)
              loop
-               (q' <> filter (`S.notMember` discovered) vs)
-               (S.union discovered (S.fromList vs)))
+               (q' <> nexts)
+               (S.union discovered (S.fromList vs))
+               (acc <> DL.fromList nexts)
+        )
         [nrSource]
         (S.singleton nrSource)
+        (DL.singleton nrSource)
+      {-
+        resulting vertices are stored in Seq so that traversal and reverse traversal are fast.
+        the algorithm calls for doubly linked list so that "push" phase can access vertices in traversal
+        and "balance" phase can access vertices in reverse traversal.
+       -}
+      logM $ "vertices: " <> (T.pack (show vs))
       -- TODO: initialize preflow and compute extra state value
       {-
         TODO: the algorithm requires relabeling,
