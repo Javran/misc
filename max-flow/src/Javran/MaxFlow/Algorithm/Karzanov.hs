@@ -13,8 +13,8 @@ import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
-import qualified Data.Set as S
 import qualified Data.Sequence as Seq
+import qualified Data.Set as S
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Javran.MaxFlow.Algorithm.DinitzCherkassky (computeRanks)
@@ -119,20 +119,7 @@ phase = do
   case ranks IM.!? nrSource of
     Nothing -> pure Nothing
     Just _ -> do
-      let vertices :: [Int]
-          vertices =
-            {-
-              Sort vertices in descending value of rank and ascending value of node
-              Note that the resulting list is just a rearrangement of subset
-              (since some nodes might not present)
-              of all vertices of the network in topological order - the acyclic property of
-              layered network (virtually represented by ranks) allows BFS visit to establish
-              this topological order.
-             -}
-            fmap fst
-              . sortBy (\(v0, r0) (v1, r1) -> compare r1 r0 <> compare v0 v1)
-              $ IM.toList ranks
-          nextVs :: Int -> [Int]
+      let nextVs :: Int -> [Int]
           nextVs u = do
             -- computes all available arcs from a specific node in the layered network.
             let rankU = ranks IM.! u
@@ -143,31 +130,29 @@ phase = do
             pure v
       logM "Layered network:"
       {-
-        Print out the network layer by layer.
-        note that we cannot simply visit `vertices` in that order
-        as that would include path not originated from nrSource.
+        Print out the network layer by layer and build up list of vertices.
        -}
-      vs <- fix
-        (\loop q discovered acc -> case q of
-           [] -> pure acc
-           v : q' -> do
-             let vs = nextVs v
-                 nexts = filter (`S.notMember` discovered) vs
-             logM $ T.pack (show v) <> ": " <> T.pack (show vs)
-             loop
-               (q' <> nexts)
-               (S.union discovered (S.fromList vs))
-               (acc <> Seq.fromList nexts)
-        )
-        [nrSource]
-        (S.singleton nrSource)
-        (Seq.singleton nrSource)
+      vertices <-
+        fix
+          (\loop q discovered acc -> case q of
+             [] -> pure acc
+             v : q' -> do
+               let vs = nextVs v
+                   nexts = filter (`S.notMember` discovered) vs
+               logM $ T.pack (show v) <> ": " <> T.pack (show vs)
+               loop
+                 (q' <> nexts)
+                 (S.union discovered (S.fromList vs))
+                 (acc <> Seq.fromList nexts))
+          [nrSource]
+          (S.singleton nrSource)
+          (Seq.singleton nrSource)
       {-
         resulting vertices are stored in Seq so that traversal and reverse traversal are fast.
         the algorithm calls for doubly linked list so that "push" phase can access vertices in traversal
         and "balance" phase can access vertices in reverse traversal.
        -}
-      logM $ "vertices: " <> (T.pack (show vs))
+      logM $ "vertices: " <> (T.pack (show vertices))
       -- TODO: initialize preflow and compute extra state value
       {-
         TODO: the algorithm requires relabeling,
