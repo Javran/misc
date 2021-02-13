@@ -3,6 +3,6 @@ cradle:
     - path: "./src"
       component: "exercism-wizard:lib"
     - path: "./exe"
-      component: "exercism-wizard:exe:demo"
+      component: "exercism-wizard:exe:ew"
     - path: "./test"
       component: "exercism-wizard:test:hspec"

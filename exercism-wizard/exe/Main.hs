@@ -2,4 +2,4 @@ module Main
   ( main
   ) where
 
-import Lib (main)
+import ExercismWizard.Main (main)

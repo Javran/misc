@@ -10,6 +10,9 @@ description: description
 
 dependencies:
 - base
+- turtle
+- text
+- optparse-applicative
 
 library:
   source-dirs: src
@@ -18,7 +21,7 @@ library:
     - -O2
 
 executables:
-  demo:
+  ew:
     main: Main.hs
     source-dirs: exe
     dependencies:
