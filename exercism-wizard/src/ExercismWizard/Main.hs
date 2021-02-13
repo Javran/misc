@@ -8,12 +8,13 @@ module ExercismWizard.Main
 where
 
 import qualified Data.Text as T
+import ExercismWizard.CommandParse
 import ExercismWizard.FSPath
 import System.Exit
 import Turtle.Prelude
 import Prelude hiding (FilePath)
 
-data Cli = Cli
+data ExercismCli = ExercismCli
   { binPath :: FilePath
   , workspace :: FilePath
   }
@@ -23,13 +24,15 @@ data Cli = Cli
   Find infomation on existing exercism cli setup.
   This is also to confirm that the binary is installed and configured.
  -}
-findCli :: IO Cli
+findCli :: IO ExercismCli
 findCli = do
   Just binPath <- which "exercism"
   (ExitSuccess, out) <- procStrict (toText binPath) ["workspace"] ""
   let [fromText -> workspace] = T.lines out
   True <- testdir workspace
-  pure Cli {binPath, workspace}
+  pure ExercismCli {binPath, workspace}
 
 main :: IO ()
-main = findCli >>= print
+main = do
+  findCli >>= print
+  getArgs >>= print
