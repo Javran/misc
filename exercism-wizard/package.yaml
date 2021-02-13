@@ -11,11 +11,13 @@ description: description
 dependencies:
 - base
 - turtle
+- system-filepath
 - text
 - optparse-applicative
 - dhall
 - daemons
 - process
+- safe-exceptions
 
 library:
   source-dirs: src
