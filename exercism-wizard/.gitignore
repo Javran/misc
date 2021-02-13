@@ -1,0 +1,7 @@
+.stack-work/
+exercism-wizard.cabal
+stack.yaml.lock
+*~
+
+private/
+z*
