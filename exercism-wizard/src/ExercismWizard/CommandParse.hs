@@ -1,11 +1,11 @@
 module ExercismWizard.CommandParse
   ( getArgs
+  , Command(..)
   )
 where
 
 import qualified Data.Text as T
 import Options.Applicative
-import Options.Applicative.Types
 import qualified System.Environment as Env
 
 data Command
@@ -13,7 +13,19 @@ data Command
   deriving (Show)
 
 opts :: ParserInfo Command
-opts = undefined
+opts =
+  info
+    (subparser proxyCommand
+       <**> helper)
+    (fullDesc
+       <> header "Exercism Wizard - exercism workflow automation")
+  where
+    proxyCommand =
+      command
+        "proxy"
+        (info
+           (error "CmdProxy should not be reachable from within optparse-applicative framework.")
+           (progDesc "Proxy all following arguments to exercism cli."))
 
 parseArgs :: [String] -> ParserResult Command
 parseArgs xs = case xs of

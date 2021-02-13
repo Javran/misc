@@ -4,11 +4,14 @@ A wrapper around [exercism cli](https://github.com/exercism/cli) to provide unif
 
 Note that most of the stuff are just customized for myself, open to suggestions though.
 
+## Features
+
+Put built binary (which should be called `ew`) somewhere in `$PATH`, then:
+
+- `ew proxy <args...>`: proxy mode, same as executing `exercism <args...>`.
+
 ## Planned features
 
-For now I plan to have a binary called `ew` somewhere on `PATH`, which is planned to support following features:
-
-- `ew proxy <args...>`: proxy mode, same as executing `exercism <args...>`
 - `ew rmignore`: remove "ignore" annotation from tests
 - `ew test`: do whatever command necessary to run tests
 - `ew lint`: run language specific linter
