@@ -13,6 +13,9 @@ dependencies:
 - turtle
 - text
 - optparse-applicative
+- dhall
+- daemons
+- process
 
 library:
   source-dirs: src

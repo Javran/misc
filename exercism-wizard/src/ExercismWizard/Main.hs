@@ -3,9 +3,14 @@ module ExercismWizard.Main
   )
 where
 
+import System.Process
+import System.Posix.Daemon
 {-
   TODO: find exercism binary and run its workspace command.
  -}
 
+runThunar :: IO ()
+runThunar = callProcess "thunar" []
+
 main :: IO ()
-main = pure ()
+main = runDetached Nothing DevNull runThunar
