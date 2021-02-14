@@ -37,3 +37,7 @@ findCli = do
 execute :: ExercismCli -> Command -> IO ()
 execute ExercismCli{binPath} cmd = case cmd of
   CmdProxy args -> proc (toText binPath) args "" >>= exitWith
+  _ -> do
+    putStrLn "Not yet supported:"
+    print cmd
+    exitFailure

@@ -18,6 +18,7 @@ dependencies:
 - daemons
 - process
 - safe-exceptions
+- split
 
 library:
   source-dirs: src

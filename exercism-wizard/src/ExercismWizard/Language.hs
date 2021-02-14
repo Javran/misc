@@ -2,9 +2,21 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module ExercismWizard.Language where
+module ExercismWizard.Language
+  ( LangTrack (..)
+  , go
+  , kotlin
+  , rust
+  )
+where
 
 import Dhall
+
+data LangTrack
+  = Haskell
+  | Kotlin
+  | Rust
+  | Go
 
 data Language = Language
   { name :: Text
