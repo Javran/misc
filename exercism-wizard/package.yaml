@@ -19,6 +19,7 @@ dependencies:
 - process
 - safe-exceptions
 - split
+- filepath
 
 library:
   source-dirs: src
