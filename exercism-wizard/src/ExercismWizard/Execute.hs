@@ -17,8 +17,7 @@ import qualified Data.Text.IO as T
 import ExercismWizard.CommandParse
 import ExercismWizard.FSPath
 import ExercismWizard.Language
-  ( Action (..)
-  , LangTrack
+  ( LangTrack
   , Language (..)
   , getLanguage
   , langName
@@ -125,8 +124,12 @@ execute cli@ExercismCli {binPath, workspace} cmd = case cmd of
       Nothing -> do
         putStrLn $ show action <> " action not supported for this language."
         exitFailure
-  _ -> do
-    print cli
-    putStrLn "Not yet supported:"
-    print cmd
-    exitFailure
+
+{-
+  _ ->
+    do
+      print cli
+      putStrLn "Not yet supported:"
+      print cmd
+      exitFailure
+-}
