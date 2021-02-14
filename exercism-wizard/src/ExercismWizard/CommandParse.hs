@@ -9,6 +9,7 @@ where
 
 import Data.List.Split (splitOn)
 import qualified Data.Text as T
+import ExercismWizard.Language (LangTrack, parseLangTrack)
 import Options.Applicative
 import Options.Applicative.Types
 import qualified System.Environment as Env
@@ -20,7 +21,7 @@ data Command
 
 newtype RawExercise
   = RawExercise
-      ( Maybe T.Text -- language name
+      ( Maybe LangTrack -- language name
       , Maybe T.Text -- exercise name
       )
   deriving (Show)
@@ -42,9 +43,10 @@ rawExercise = do
   RawExercise <$> case fmap T.pack $ splitOn ":" xs of
     ["", ""] -> pure (Nothing, Nothing)
     ["", e] -> pure (Nothing, Just e)
-    [l, ""] -> pure (Just l, Nothing)
+    [l, ""] | Just l' <- parseLangTrack l -> do
+      pure (Just l', Nothing)
     [e] -> pure (Nothing, Just e)
-    [l, e] -> pure (Just l, Just e)
+    [l, e] | Just l' <- parseLangTrack l -> pure (Just l', Just e)
     _ -> readerError "Invalid RawExercise format."
 
 opts :: ParserInfo Command

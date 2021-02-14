@@ -1,15 +1,22 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 
 module ExercismWizard.Language
   ( LangTrack (..)
+  , Language (..)
   , go
   , kotlin
   , rust
+  , haskell
+  , languages
+  , parseLangTrack
   )
 where
 
+import qualified Data.Map.Strict as M
 import Dhall
 
 data LangTrack
@@ -17,21 +24,36 @@ data LangTrack
   | Kotlin
   | Rust
   | Go
+  deriving (FromDhall, Generic, Show)
 
 data Language = Language
   { name :: Text
-  , peekRepo :: Maybe Text
+  , track :: LangTrack
+  , altNames :: [Text]
   , formatCommand :: Maybe Text
   , testCommand :: Maybe Text
   , lintCommand :: Maybe Text
   }
   deriving (FromDhall, Generic)
 
+-- TODO: peekRepo seems common: "https://github.com/exercism/<lang>/tree/main/exercises/practice"
+
+languages :: M.Map Text LangTrack
+languages = M.fromListWith err $ do
+  Language {track, name, altNames} <- [haskell, kotlin, rust, go]
+  (,track) <$> name : altNames
+  where
+    err = error "Conflicting keys"
+
+parseLangTrack :: Text -> Maybe LangTrack
+parseLangTrack = (languages M.!?)
+
 go :: Language
 go =
   Language
     { name = "go"
-    , peekRepo = Just "https://github.com/exercism/go/tree/main/exercises/practice"
+    , track = Go
+    , altNames = []
     , formatCommand = Just "go fmt"
     , testCommand = Just "go test -v --bench . --benchmem"
     , lintCommand = Just "golint"
@@ -41,7 +63,8 @@ kotlin :: Language
 kotlin =
   Language
     { name = "kotlin"
-    , peekRepo = Just "https://github.com/exercism/kotlin/tree/main/exercises/practice"
+    , track = Kotlin
+    , altNames = ["kt"]
     , formatCommand = Nothing
     , testCommand = Nothing
     , lintCommand = Nothing
@@ -51,8 +74,20 @@ rust :: Language
 rust =
   Language
     { name = "rust"
-    , peekRepo = Just "https://github.com/exercism/rust/tree/main/exercises/practice"
+    , track = Rust
+    , altNames = ["rs"]
     , formatCommand = Just "cargo fmt"
     , testCommand = Just "cargo test"
     , lintCommand = Just "cargo clippy --all-targets"
+    }
+
+haskell :: Language
+haskell =
+  Language
+    { name = "haskell"
+    , track = Haskell
+    , altNames = ["hs"]
+    , formatCommand = Nothing
+    , testCommand = Just "stack test"
+    , lintCommand = Nothing
     }

@@ -14,6 +14,7 @@ import Data.Maybe
 import qualified Data.Text as T
 import ExercismWizard.CommandParse
 import ExercismWizard.FSPath
+import ExercismWizard.Language (LangTrack, parseLangTrack)
 import System.Exit
 import System.FilePath.Posix (pathSeparator)
 import Turtle.Prelude
@@ -43,7 +44,7 @@ findCli = do
   pure ExercismCli {binPath, workspace, workspaceReal}
 
 data Exercise = Exercise
-  { langTrack :: T.Text -- TODO: use LangTrack
+  { langTrack :: LangTrack
   , name :: T.Text
   }
   deriving (Show)
@@ -72,15 +73,17 @@ guessExercise ExercismCli {workspaceReal, workspace} = do
         guard $ eSep == pathSeparator
         pure (l, e)
   case lePair of
-    Just (langTrack, name) -> do
+    Just (langTrackRaw, name) -> do
       let checkMeta = True
       e <-
         if checkMeta
           then
-            let projectHome = workspace </> fromText langTrack </> fromText name
+            let projectHome = workspace </> fromText langTrackRaw </> fromText name
              in testdir $ projectHome </> ".exercism"
           else pure True
-      pure $ guard e >> Just Exercise {langTrack, name}
+      pure $ do
+        langTrack <- parseLangTrack langTrackRaw
+        guard e >> Just Exercise {langTrack, name}
     Nothing -> pure Nothing
 
 fillExercise :: ExercismCli -> RawExercise -> IO (Maybe Exercise)

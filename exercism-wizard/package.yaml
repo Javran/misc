@@ -20,6 +20,7 @@ dependencies:
 - safe-exceptions
 - split
 - filepath
+- containers
 
 library:
   source-dirs: src
