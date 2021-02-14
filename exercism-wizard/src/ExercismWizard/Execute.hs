@@ -10,6 +10,7 @@ module ExercismWizard.Execute
 where
 
 import Control.Monad
+import Data.Maybe
 import qualified Data.Text as T
 import ExercismWizard.CommandParse
 import ExercismWizard.FSPath
@@ -44,7 +45,6 @@ findCli = do
 data Exercise = Exercise
   { langTrack :: T.Text -- TODO: use LangTrack
   , name :: T.Text
-  , projectHome :: FilePath
   }
   deriving (Show)
 
@@ -64,7 +64,7 @@ guessExercise ExercismCli {workspaceReal, workspace} = do
            while canonicalized path does not have the trailing path separator.
            The fix is to append an "" after the prefix path.
         -}
-        xs <- stripPrefix (workspaceReal </> "") cwd
+        xs <- stripPrefix (workspaceReal </> "") (cwd </> "")
         lPre : ePre : _ <- pure $ fmap toText $ splitDirectories xs
         (l, lSep) <- T.unsnoc lPre
         guard $ lSep == pathSeparator
@@ -74,20 +74,30 @@ guessExercise ExercismCli {workspaceReal, workspace} = do
   case lePair of
     Just (langTrack, name) -> do
       let checkMeta = True
-      let projectHome = workspace </> fromText langTrack </> fromText name
       e <-
         if checkMeta
-          then testdir $ projectHome </> ".exercism"
+          then
+            let projectHome = workspace </> fromText langTrack </> fromText name
+             in testdir $ projectHome </> ".exercism"
           else pure True
-      pure $ guard e >> Just Exercise {langTrack, name, projectHome}
+      pure $ guard e >> Just Exercise {langTrack, name}
     Nothing -> pure Nothing
+
+fillExercise :: ExercismCli -> RawExercise -> IO (Maybe Exercise)
+fillExercise ec (RawExercise (l, e)) = case (l, e) of
+  (Just l', Just e') -> pure (Just $ Exercise l' e')
+  _ -> do
+    guessed <- guessExercise ec
+    pure $ do
+      Exercise {langTrack = gl, name = gn} <- guessed
+      pure $ Exercise (fromMaybe gl l) (fromMaybe gn e)
 
 execute :: ExercismCli -> Command -> IO ()
 execute e@ExercismCli {binPath} cmd = case cmd of
   CmdProxy args -> proc (toText binPath) args "" >>= exitWith
+  CmdTest rawExer -> fillExercise e rawExer >>= print
   _ -> do
     print e
     putStrLn "Not yet supported:"
     print cmd
-    guessExercise e >>= print
     exitFailure
