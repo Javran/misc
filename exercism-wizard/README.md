@@ -9,12 +9,12 @@ Note that most of the stuff are just customized for myself, open to suggestions 
 Put built binary (which should be called `ew`) somewhere in `$PATH`, then:
 
 - `ew proxy <args...>`: proxy mode, same as executing `exercism <args...>`.
+- `ew test`: Run language-specific test suite.
 
 ## Planned features
 
 Planned features by priority:
 
-- `ew test`: do whatever command necessary to run tests
 - `ew lint`: run language specific linter
 - `ew rmignore`: remove "ignore" annotation from tests
 - `ew fmt`: format source code

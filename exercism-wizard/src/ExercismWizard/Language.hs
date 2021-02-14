@@ -7,13 +7,14 @@
 module ExercismWizard.Language
   ( LangTrack (..)
   , Language (..)
+  , Action (..)
   , go
   , kotlin
   , rust
   , haskell
-  , languages
   , parseLangTrack
   , langName
+  , getLanguage
   )
 where
 
@@ -26,13 +27,13 @@ data LangTrack
   | Kotlin
   | Rust
   | Go
-  deriving (FromDhall, Generic, Show)
+  deriving (FromDhall, Generic, Show, Eq, Ord)
 
 data Action
   = Format
   | Test
   | Lint
-  deriving (FromDhall, Generic, Eq, Ord)
+  deriving (FromDhall, Generic, Eq, Ord, Show)
 
 data Language = Language
   { track :: LangTrack
@@ -46,15 +47,21 @@ langName = T.toLower . T.pack . show
 
 -- TODO: peekRepo seems common: "https://github.com/exercism/<lang>/tree/main/exercises/practice"
 
-languages :: M.Map Text LangTrack
-languages = M.fromListWith err $ do
-  Language {track, altNames} <- [haskell, kotlin, rust, go]
+languages :: [Language]
+languages = [haskell, kotlin, rust, go]
+
+langTracks :: M.Map Text LangTrack
+langTracks = M.fromListWith err $ do
+  Language {track, altNames} <- languages
   (,track) <$> langName track : altNames
   where
     err = error "Conflicting keys"
 
 parseLangTrack :: Text -> Maybe LangTrack
-parseLangTrack = (languages M.!?)
+parseLangTrack = (langTracks M.!?)
+
+getLanguage :: LangTrack -> Language
+getLanguage lt = head $ filter ((== lt) . track) languages
 
 go :: Language
 go =

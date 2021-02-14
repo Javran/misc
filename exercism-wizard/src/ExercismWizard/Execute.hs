@@ -10,12 +10,20 @@ module ExercismWizard.Execute
 where
 
 import Control.Monad
+import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import ExercismWizard.CommandParse
 import ExercismWizard.FSPath
-import ExercismWizard.Language (LangTrack, parseLangTrack)
+import ExercismWizard.Language
+  ( Action (..)
+  , LangTrack
+  , Language (..)
+  , getLanguage
+  , langName
+  , parseLangTrack
+  )
 import System.Exit
 import System.FilePath.Posix (pathSeparator)
 import Turtle.Prelude
@@ -104,11 +112,19 @@ pprExercise Exercise {langTrack, name} =
   T.putStrLn $ T.pack (show langTrack) <> " track, exercise: " <> name
 
 execute :: ExercismCli -> Command -> IO ()
-execute cli@ExercismCli {binPath} cmd = case cmd of
+execute cli@ExercismCli {binPath, workspace} cmd = case cmd of
   CmdProxy args -> proc (toText binPath) args "" >>= exitWith
   CmdTest rawExer -> do
-    e <- fillExercise cli rawExer
+    e@Exercise {langTrack, name} <- fillExercise cli rawExer
     pprExercise e
+    let prjHome = workspace </> fromText (langName langTrack) </> fromText name
+    case actions (getLanguage langTrack) M.!? Test of
+      Just cmd -> do
+        cd prjHome
+        shells cmd ""
+      Nothing -> do
+        putStrLn "Test action not supported for this language."
+        exitFailure
   _ -> do
     print cli
     putStrLn "Not yet supported:"
