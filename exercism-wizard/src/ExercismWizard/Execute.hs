@@ -10,15 +10,19 @@ module ExercismWizard.Execute
 where
 
 import qualified Data.Text as T
-import ExercismWizard.FSPath
 import ExercismWizard.CommandParse
+import ExercismWizard.FSPath
 import System.Exit
 import Turtle.Prelude
 import Prelude hiding (FilePath)
 
 data ExercismCli = ExercismCli
-  { binPath :: FilePath
-  , workspace :: FilePath
+  { -- | Binary path to exercism CLI
+    binPath :: FilePath
+  , -- | Path to exercism workspace
+    workspace :: FilePath
+  , -- | Canonicalized path to exercism workspace
+    workspaceReal :: FilePath
   }
   deriving (Show)
 
@@ -32,12 +36,14 @@ findCli = do
   (ExitSuccess, out) <- procStrict (toText binPath) ["workspace"] ""
   let [fromText -> workspace] = T.lines out
   True <- testdir workspace
-  pure ExercismCli {binPath, workspace}
+  workspaceReal <- realpath workspace
+  pure ExercismCli {binPath, workspace, workspaceReal}
 
 execute :: ExercismCli -> Command -> IO ()
-execute ExercismCli{binPath} cmd = case cmd of
+execute e@ExercismCli {binPath} cmd = case cmd of
   CmdProxy args -> proc (toText binPath) args "" >>= exitWith
   _ -> do
     putStrLn "Not yet supported:"
     print cmd
+    print e
     exitFailure
