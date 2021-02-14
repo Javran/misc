@@ -13,10 +13,12 @@ module ExercismWizard.Language
   , haskell
   , languages
   , parseLangTrack
+  , langName
   )
 where
 
 import qualified Data.Map.Strict as M
+import qualified Data.Text as T
 import Dhall
 
 data LangTrack
@@ -27,8 +29,7 @@ data LangTrack
   deriving (FromDhall, Generic, Show)
 
 data Language = Language
-  { name :: Text
-  , track :: LangTrack
+  { track :: LangTrack
   , altNames :: [Text]
   , formatCommand :: Maybe Text
   , testCommand :: Maybe Text
@@ -36,12 +37,15 @@ data Language = Language
   }
   deriving (FromDhall, Generic)
 
+langName :: LangTrack -> Text
+langName = T.toLower . T.pack . show
+
 -- TODO: peekRepo seems common: "https://github.com/exercism/<lang>/tree/main/exercises/practice"
 
 languages :: M.Map Text LangTrack
 languages = M.fromListWith err $ do
-  Language {track, name, altNames} <- [haskell, kotlin, rust, go]
-  (,track) <$> name : altNames
+  Language {track, altNames} <- [haskell, kotlin, rust, go]
+  (,track) <$> langName track : altNames
   where
     err = error "Conflicting keys"
 
@@ -51,8 +55,7 @@ parseLangTrack = (languages M.!?)
 go :: Language
 go =
   Language
-    { name = "go"
-    , track = Go
+    { track = Go
     , altNames = []
     , formatCommand = Just "go fmt"
     , testCommand = Just "go test -v --bench . --benchmem"
@@ -62,8 +65,7 @@ go =
 kotlin :: Language
 kotlin =
   Language
-    { name = "kotlin"
-    , track = Kotlin
+    { track = Kotlin
     , altNames = ["kt"]
     , formatCommand = Nothing
     , testCommand = Nothing
@@ -73,8 +75,7 @@ kotlin =
 rust :: Language
 rust =
   Language
-    { name = "rust"
-    , track = Rust
+    { track = Rust
     , altNames = ["rs"]
     , formatCommand = Just "cargo fmt"
     , testCommand = Just "cargo test"
@@ -84,8 +85,7 @@ rust =
 haskell :: Language
 haskell =
   Language
-    { name = "haskell"
-    , track = Haskell
+    { track = Haskell
     , altNames = ["hs"]
     , formatCommand = Nothing
     , testCommand = Just "stack test"

@@ -12,6 +12,7 @@ where
 import Control.Monad
 import Data.Maybe
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import ExercismWizard.CommandParse
 import ExercismWizard.FSPath
 import ExercismWizard.Language (LangTrack, parseLangTrack)
@@ -86,21 +87,30 @@ guessExercise ExercismCli {workspaceReal, workspace} = do
         guard e >> Just Exercise {langTrack, name}
     Nothing -> pure Nothing
 
-fillExercise :: ExercismCli -> RawExercise -> IO (Maybe Exercise)
+fillExercise :: ExercismCli -> RawExercise -> IO Exercise
 fillExercise ec (RawExercise (l, e)) = case (l, e) of
-  (Just l', Just e') -> pure (Just $ Exercise l' e')
+  (Just l', Just e') -> pure (Exercise l' e')
   _ -> do
     guessed <- guessExercise ec
-    pure $ do
-      Exercise {langTrack = gl, name = gn} <- guessed
-      pure $ Exercise (fromMaybe gl l) (fromMaybe gn e)
+    case guessed of
+      Nothing -> do
+        putStrLn "Cannot determine track or exericse."
+        exitFailure
+      Just Exercise {langTrack = gl, name = gn} ->
+        pure $ Exercise (fromMaybe gl l) (fromMaybe gn e)
+
+pprExercise :: Exercise -> IO ()
+pprExercise Exercise {langTrack, name} =
+  T.putStrLn $ T.pack (show langTrack) <> " track, exercise: " <> name
 
 execute :: ExercismCli -> Command -> IO ()
-execute e@ExercismCli {binPath} cmd = case cmd of
+execute cli@ExercismCli {binPath} cmd = case cmd of
   CmdProxy args -> proc (toText binPath) args "" >>= exitWith
-  CmdTest rawExer -> fillExercise e rawExer >>= print
+  CmdTest rawExer -> do
+    e <- fillExercise cli rawExer
+    pprExercise e
   _ -> do
-    print e
+    print cli
     putStrLn "Not yet supported:"
     print cmd
     exitFailure
