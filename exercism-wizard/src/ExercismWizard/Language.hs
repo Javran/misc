@@ -1,5 +1,3 @@
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
@@ -20,29 +18,27 @@ where
 
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
-import Dhall
 
 data LangTrack
   = Haskell
   | Kotlin
   | Rust
   | Go
-  deriving (FromDhall, Generic, Show, Eq, Ord)
+  deriving (Show, Eq, Ord)
 
 data Action
   = Format
   | Test
   | Lint
-  deriving (FromDhall, Generic, Eq, Ord, Show)
+  deriving (Eq, Ord, Show)
 
 data Language = Language
   { track :: LangTrack
-  , altNames :: [Text]
-  , actions :: M.Map Action Text -- TODO: Text can be further refined to proc / shell and whether fork() is necessary.
+  , altNames :: [T.Text]
+  , actions :: M.Map Action T.Text -- TODO: Text can be further refined to proc / shell and whether fork() is necessary.
   }
-  deriving (FromDhall, Generic)
 
-langName :: LangTrack -> Text
+langName :: LangTrack -> T.Text
 langName = T.toLower . T.pack . show
 
 -- TODO: peekRepo seems common: "https://github.com/exercism/<lang>/tree/main/exercises/practice"
@@ -50,14 +46,14 @@ langName = T.toLower . T.pack . show
 languages :: [Language]
 languages = [haskell, kotlin, rust, go]
 
-langTracks :: M.Map Text LangTrack
+langTracks :: M.Map T.Text LangTrack
 langTracks = M.fromListWith err $ do
   Language {track, altNames} <- languages
   (,track) <$> langName track : altNames
   where
     err = error "Conflicting keys"
 
-parseLangTrack :: Text -> Maybe LangTrack
+parseLangTrack :: T.Text -> Maybe LangTrack
 parseLangTrack = (langTracks M.!?)
 
 getLanguage :: LangTrack -> Language
