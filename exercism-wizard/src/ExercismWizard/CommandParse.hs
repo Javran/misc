@@ -28,8 +28,7 @@ newtype RawExercise
 {-
   Parses a raw description of an exercise, allowed formats:
 
-  - "<language>:<exercise>"
-  - ":<exercise>"
+  - "[<language>]:[<exercise>]"
   - "<exercise>"
   - ""
 
@@ -42,8 +41,9 @@ rawExercise = do
   xs <- readerAsk
   RawExercise <$> case fmap T.pack $ splitOn ":" xs of
     ["", ""] -> pure (Nothing, Nothing)
-    [e] -> pure (Nothing, Just e)
     ["", e] -> pure (Nothing, Just e)
+    [l, ""] -> pure (Just l, Nothing)
+    [e] -> pure (Nothing, Just e)
     [l, e] -> pure (Just l, Just e)
     _ -> readerError "Invalid RawExercise format."
 
@@ -72,7 +72,8 @@ opts =
                 rawExercise
                 (help
                    "Specifies language track and exercise name. \
-                   \Format: `[lang:]exercise-name`, left any part blank to guess from current directory."
+                   \Format: `[lang]:[exercise-name]`, left any part blank \
+                   \to guess from current directory."
                    <> value (RawExercise (Nothing, Nothing))
                    <> metavar "EXERCISE")
               <**> helper)
