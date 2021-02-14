@@ -28,12 +28,16 @@ data LangTrack
   | Go
   deriving (FromDhall, Generic, Show)
 
+data Action
+  = Format
+  | Test
+  | Lint
+  deriving (FromDhall, Generic, Eq, Ord)
+
 data Language = Language
   { track :: LangTrack
   , altNames :: [Text]
-  , formatCommand :: Maybe Text
-  , testCommand :: Maybe Text
-  , lintCommand :: Maybe Text
+  , actions :: M.Map Action Text -- TODO: Text can be further refined to proc / shell and whether fork() is necessary.
   }
   deriving (FromDhall, Generic)
 
@@ -57,9 +61,12 @@ go =
   Language
     { track = Go
     , altNames = []
-    , formatCommand = Just "go fmt"
-    , testCommand = Just "go test -v --bench . --benchmem"
-    , lintCommand = Just "golint"
+    , actions =
+        M.fromList $
+          [ (Format, "go fmt")
+          , (Test, "go test -v --bench . --benchmem")
+          , (Lint, "golint")
+          ]
     }
 
 kotlin :: Language
@@ -67,9 +74,7 @@ kotlin =
   Language
     { track = Kotlin
     , altNames = ["kt"]
-    , formatCommand = Nothing
-    , testCommand = Nothing
-    , lintCommand = Nothing
+    , actions = M.empty
     }
 
 rust :: Language
@@ -77,9 +82,12 @@ rust =
   Language
     { track = Rust
     , altNames = ["rs"]
-    , formatCommand = Just "cargo fmt"
-    , testCommand = Just "cargo test"
-    , lintCommand = Just "cargo clippy --all-targets"
+    , actions =
+        M.fromList
+          [ (Format, "cargo fmt")
+          , (Test, "cargo test")
+          , (Lint, "cargo clippy --all-targets")
+          ]
     }
 
 haskell :: Language
@@ -87,7 +95,8 @@ haskell =
   Language
     { track = Haskell
     , altNames = ["hs"]
-    , formatCommand = Nothing
-    , testCommand = Just "stack test"
-    , lintCommand = Nothing
+    , actions =
+        M.fromList
+          [ (Test, "stack test")
+          ]
     }
