@@ -9,14 +9,14 @@ where
 
 import Data.List.Split (splitOn)
 import qualified Data.Text as T
-import ExercismWizard.Language (LangTrack, parseLangTrack)
+import ExercismWizard.Language (Action (..), LangTrack, parseLangTrack)
 import Options.Applicative
 import Options.Applicative.Types
 import qualified System.Environment as Env
 
 data Command
   = CmdProxy [T.Text]
-  | CmdTest RawExercise
+  | CmdLangAction Action RawExercise
   deriving (Show)
 
 newtype RawExercise
@@ -54,7 +54,10 @@ opts =
   info
     (subparser
        (proxyCommand
-          <> testCommand)
+          <> langActionCommand Format "fmt" "Format source code."
+          <> langActionCommand Test "test" "Run test suite."
+          <> langActionCommand Lint "lint" "Run Linter."
+       )
        <**> helper)
     (fullDesc
        <> header "Exercism Wizard - exercism workflow automation")
@@ -65,11 +68,11 @@ opts =
         (info
            (error "CmdProxy should not be reachable from within optparse-applicative framework.")
            (progDesc "Proxy all following arguments to exercism cli."))
-    testCommand =
+    langActionCommand act cmdStr cmdDesc =
       command
-        "test"
+        cmdStr
         (info
-           (CmdTest
+           (CmdLangAction act
               <$> argument
                 rawExercise
                 (help
@@ -79,7 +82,7 @@ opts =
                    <> value (RawExercise (Nothing, Nothing))
                    <> metavar "EXERCISE")
               <**> helper)
-           (fullDesc <> progDesc "Run test suite."))
+           (fullDesc <> progDesc cmdDesc))
 
 parseArgs :: [String] -> ParserResult Command
 parseArgs xs = case xs of

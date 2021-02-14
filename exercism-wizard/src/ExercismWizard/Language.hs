@@ -72,7 +72,7 @@ go =
         M.fromList $
           [ (Format, "go fmt")
           , (Test, "go test -v --bench . --benchmem")
-          , (Lint, "golint")
+          , (Lint, "golint") -- TODO: this linter might need a list of files.
           ]
     }
 
