@@ -1,17 +1,21 @@
 {-# LANGUAGE OverloadedStrings #-}
+
 module Lib
   ( main
-  ) where
+  )
+where
 
-import Prelude hiding (FilePath)
+import Control.Monad
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
+import Filesystem.Path.CurrentOS
+import System.Exit
 import Turtle.Prelude
 import Turtle.Shell
-import Filesystem.Path.CurrentOS
-import qualified Data.Text as T
+import Prelude hiding (FilePath)
 
 fpToText :: FilePath -> T.Text
 fpToText = either id id . Filesystem.Path.CurrentOS.toText
-
 
 {-
   Options are passed from environment variables:
@@ -43,9 +47,19 @@ fpToText = either id id . Filesystem.Path.CurrentOS.toText
 
  -}
 
-main :: IO ()
-main = do
+mainFetchAll :: IO ()
+mainFetchAll = do
   Just oldRepo <- fmap fromText <$> need "EXERCISM_OLD_REPO_HASKELL"
   sh $ do
-    z <- ls oldRepo
-    liftIO $ print $ fpToText (filename z)
+    exerRepo <- ls oldRepo
+    let eName = fpToText (filename exerRepo)
+    liftIO $ T.putStrLn $ "Fetching " <> eName
+    (ec, out) <-
+      procStrict "exercism" ["download", "--exercise=" <> eName, "--track=haskell"] ""
+    unless (ec == ExitSuccess) $
+      liftIO $ do
+        print ec
+        T.putStrLn out
+
+main :: IO ()
+main = mainFetchAll
