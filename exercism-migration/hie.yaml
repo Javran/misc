@@ -1,0 +1,8 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "exercism-migration:lib"
+    - path: "./exe"
+      component: "exercism-migration:exe:demo"
+    - path: "./test"
+      component: "exercism-migration:test:hspec"
