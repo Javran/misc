@@ -69,8 +69,8 @@ _mainFetchAll = do
         print ec
         T.putStrLn out
 
-mainVerifyOrMoveAll :: IO ()
-mainVerifyOrMoveAll = do
+_mainVerifyOrMoveAll :: IO ()
+_mainVerifyOrMoveAll = do
   Just oldRepo <- fmap fromText <$> need "EXERCISM_OLD_REPO_HASKELL"
   Just newRepo <- fmap fromText <$> need "EXERCISM_NEW_REPO_HASKELL"
   sh $ do
@@ -117,5 +117,19 @@ mainVerifyOrMoveAll = do
           _ -> liftIO $ putStrLn $ "Found unexpected number of files: " <> show srcFiles
       else liftIO $ T.putStrLn $ "Skipping " <> eName <> ", new path not found."
 
+mainRemoveMigrated :: IO ()
+mainRemoveMigrated = do
+  Just oldRepo <- fmap fromText <$> need "EXERCISM_OLD_REPO_HASKELL"
+  Just newRepo <- fmap fromText <$> need "EXERCISM_NEW_REPO_HASKELL"
+  sh $ do
+    (eName, eOldPath) <- lsExercise oldRepo
+    let eNewPath = newRepo </> fromText eName
+    e <- testdir eNewPath
+    when e $ do
+      marker <- testfile $ eNewPath </> "MIGRATION_MARKER"
+      when marker $ do
+        liftIO $ T.putStrLn $ "Removing: " <> eName
+        rmtree eOldPath
+
 main :: IO ()
-main = mainVerifyOrMoveAll
+main = mainRemoveMigrated
