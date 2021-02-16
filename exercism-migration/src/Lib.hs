@@ -5,11 +5,13 @@ module Lib
   )
 where
 
+import qualified Control.Foldl as Fold
 import Control.Monad
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Filesystem.Path.CurrentOS
 import System.Exit
+import Turtle.Pattern
 import Turtle.Prelude
 import Turtle.Shell
 import Prelude hiding (FilePath)
@@ -47,8 +49,14 @@ fpToText = either id id . Filesystem.Path.CurrentOS.toText
 
  -}
 
-mainFetchAll :: IO ()
-mainFetchAll = do
+lsExercise :: FilePath -> Shell (T.Text, FilePath)
+lsExercise repo = do
+  exerRepo <- ls repo
+  let eName = fpToText (filename exerRepo)
+  pure (eName, exerRepo)
+
+_mainFetchAll :: IO ()
+_mainFetchAll = do
   Just oldRepo <- fmap fromText <$> need "EXERCISM_OLD_REPO_HASKELL"
   sh $ do
     exerRepo <- ls oldRepo
@@ -61,5 +69,53 @@ mainFetchAll = do
         print ec
         T.putStrLn out
 
+mainVerifyOrMoveAll :: IO ()
+mainVerifyOrMoveAll = do
+  Just oldRepo <- fmap fromText <$> need "EXERCISM_OLD_REPO_HASKELL"
+  Just newRepo <- fmap fromText <$> need "EXERCISM_NEW_REPO_HASKELL"
+  sh $ do
+    (eName, eOldPath) <- lsExercise oldRepo
+    let eNewPath = newRepo </> fromText eName
+    e <- testdir eNewPath
+    if e
+      then do
+        liftIO $ T.putStrLn $ "Verifying " <> eName <> "..."
+        srcFiles <- reduce Fold.list $ do
+          oldSrcFile <- find (suffix ".hs") eOldPath
+          [] <- pure $ match (suffix "_test.hs") (fpToText oldSrcFile)
+          pure oldSrcFile
+        case srcFiles of
+          [oldSrcFile] -> do
+            let fName = filename oldSrcFile
+                newSrcFile = newRepo </> fromText eName </> fName
+            b <- testfile newSrcFile
+            if b
+              then do
+                (ec, out) <-
+                  procStrict
+                    "diff"
+                    ["-b", "-B", fpToText oldSrcFile, fpToText newSrcFile]
+                    ""
+                if ec == ExitSuccess
+                  then do
+                    -- at this point: single source file in old dir, no diff.
+                    newTargetSrcFiles <- reduce Fold.list $ ls (eNewPath </> "src")
+                    case newTargetSrcFiles of
+                      [newTargetSrcFile]
+                        | filename newTargetSrcFile == filename oldSrcFile -> do
+                          -- time to perform the move
+                          mv oldSrcFile newTargetSrcFile
+                          rm newSrcFile
+                          liftIO $
+                            T.writeFile
+                              (encodeString $ newRepo </> fromText eName </> "MIGRATION_MARKER")
+                              "TODO: migrated"
+                          pure ()
+                      _ -> echo "  Unexpected: should only have one file or file name differs."
+                  else liftIO $ T.putStrLn out
+              else liftIO $ putStrLn "  New source file not found."
+          _ -> liftIO $ putStrLn $ "Found unexpected number of files: " <> show srcFiles
+      else liftIO $ T.putStrLn $ "Skipping " <> eName <> ", new path not found."
+
 main :: IO ()
-main = mainFetchAll
+main = mainVerifyOrMoveAll
