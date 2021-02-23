@@ -1,6 +1,8 @@
 {
 {-# OPTIONS_GHC -Wno-unused-matches #-}
-module Alex where
+module Alex
+ ( alexScanTokens
+ ) where
 
 import Token
 }
