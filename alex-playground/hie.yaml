@@ -1,0 +1,8 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "alex-playground:lib"
+    - path: "./exe"
+      component: "alex-playground:exe:demo"
+    - path: "./test"
+      component: "alex-playground:test:hspec"
