@@ -11,7 +11,7 @@ import Control.Monad
 -- TODO: project idea: a super verbose tokenizer just to see what can be carried around?
 
 main :: IO ()
-main = print $ runAlex "let x = y in t" parseAll
+main = print $ runAlex "let xzzz = 1234 in ts" parseAll
   where
     parseAll = alexMonadScan >>= \case
       EOF -> pure []

@@ -3,6 +3,8 @@
 module Alex where
 
 import Token
+import qualified Data.ByteString.Lazy.Char8 as BSLC
+
 }
 
 %wrapper "monadUserState-bytestring"
@@ -21,11 +23,11 @@ tokens :-
   in
     { \_ _ -> pure In }
   $digit+
-    { \_ _ -> pure (Int 1) }
+    { \(_, _, xs, _) l -> pure (Int $ read $ BSLC.unpack $ BSLC.take l xs) }
   [\=\+\-\*\/\(\)]
-    { \_ _ -> pure (Sym ' ') }
+    { \(_, _, xs, _) 1 -> pure (Sym $ BSLC.head xs) }
   $alpha [$alpha $digit \_ \']*
-    { \_ _ -> pure (Var "") }
+    { \(_, _, xs, _) l -> pure $ (Var $ BSLC.unpack $ BSLC.take l xs) }
 
 {
 type AlexUserState = ()
