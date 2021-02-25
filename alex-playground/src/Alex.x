@@ -1,13 +1,11 @@
 {
 {-# OPTIONS_GHC -Wno-unused-matches #-}
-module Alex
- ( alexScanTokens
- ) where
+module Alex where
 
 import Token
 }
 
-%wrapper "basic"
+%wrapper "monadUserState-bytestring"
 
 $digit = 0-9
 $alpha = [a-zA-Z]
@@ -19,16 +17,21 @@ tokens :-
   "--".* 
     ;
   let
-    { \s -> Let }
+    { \_ _ -> pure Let }
   in
-    { \s -> In }
+    { \_ _ -> pure In }
   $digit+
-    { \s -> Int (read s) }
+    { \_ _ -> pure (Int 1) }
   [\=\+\-\*\/\(\)]
-    { \s -> Sym (head s) }
+    { \_ _ -> pure (Sym ' ') }
   $alpha [$alpha $digit \_ \']*
-    { \s -> Var s }
+    { \_ _ -> pure (Var "") }
 
 {
--- Token definition is from another module so this part is empty.
+type AlexUserState = ()
+
+alexInitUserState :: AlexUserState
+alexInitUserState = ()
+
+alexEOF = pure EOF
 }

@@ -21,6 +21,7 @@ library:
     - alex
   dependencies:
     - array
+    - bytestring
 
 executables:
   demo:
