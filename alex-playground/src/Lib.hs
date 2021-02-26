@@ -21,7 +21,11 @@ import Data.Functor.Identity
 import Data.Tuple
 import Token
 
--- TODO: project idea: a super verbose tokenizer just to see what can be carried around?
+{-
+  TODO: project idea: a super verbose tokenizer just to see what can be carried around?
+  TODO: it seems both GHC and Agda are not using any wrappers - how does that work?
+  TODO: find a way to use startcode.
+ -}
 
 main :: IO ()
 main = print $ runAlex "let xzzz = 1234 in ts" parseAll

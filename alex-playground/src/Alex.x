@@ -12,6 +12,9 @@ import qualified Data.ByteString.Lazy.Char8 as BSLC
 $digit = 0-9
 $alpha = [a-zA-Z]
 
+
+-- looks like this is how to comment in alex
+
 tokens :-
 
   $white+ 
