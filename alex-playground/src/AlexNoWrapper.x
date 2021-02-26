@@ -1,13 +1,12 @@
 {
 {-# OPTIONS_GHC -Wno-unused-matches #-}
-module Alex where
+{-# LANGUAGE NoMonomorphismRestriction #-}
+module AlexNoWrapper where
 
 import Token
 import qualified Data.ByteString.Lazy.Char8 as BSLC
 
 }
-
-%wrapper "monadUserState-bytestring"
 
 $digit = 0-9
 $alpha = [a-zA-Z]
@@ -33,10 +32,6 @@ tokens :-
     { \(_, _, xs, _) l -> pure $ (Var $ BSLC.unpack $ BSLC.take l xs) }
 
 {
-type AlexUserState = ()
-
-alexInitUserState :: AlexUserState
-alexInitUserState = ()
-
-alexEOF = pure EOF
+type AlexInput = ()
+alexGetByte () = Nothing
 }
