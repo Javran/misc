@@ -26,3 +26,7 @@ spec = do
                   (coerce testFunc) input `shouldBe` expected
   mkSpec "encode" encodeTests encodes
   mkSpec "decode" decodeTests decodes
+  -- TODO: fail when too many bits
+  -- TODO: encodes sets top bit correctly
+  -- TODO: encodes then decodes is identity
+  -- TODO: decodes then encodes is identity
