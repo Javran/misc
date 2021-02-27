@@ -17,6 +17,9 @@
 
 module GenCase
   ( genCase
+  , Case(..)
+  , EncDec(..)
+  , PprHex(..)
   )
 where
 
@@ -103,7 +106,7 @@ type family DisplayWidth i where
   DisplayWidth Word8 = 2
 
 instance (PrintfArg i, Integral i, KnownNat w, w ~ DisplayWidth i) => Show (PprHex i) where
-  show (PprHex xs) = "[" <> intercalate "," (fmap ppr xs) <> "]"
+  show (PprHex xs) = "PprHex [" <> intercalate "," (fmap ppr xs) <> "]"
     where
       ppr = printf "0x%0*X" (fromInteger @i (natVal (Proxy :: Proxy w)))
 
@@ -151,5 +154,5 @@ genCase = do
   let raw = responseBody resp
       Right CanonicalData {cases = caseSets} = eitherDecode' @CanonicalData raw
       (encCases, decCases) = partitionEithers $ toCase <$> concatMap (\CaseSet {cases} -> cases) caseSets
-  mapM_ print encCases
-  mapM_ print decCases
+  print encCases
+  print decCases
