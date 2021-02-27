@@ -1,14 +1,19 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module GenCase
   ( genCase
@@ -17,7 +22,7 @@ where
 
 import Control.Applicative
 import Data.Aeson
-import Data.Char
+import Data.Either
 import Data.List
 import Data.Proxy
 import qualified Data.Text as T
@@ -27,47 +32,42 @@ import GHC.TypeLits
 import Network.HTTP.Client hiding (Proxy)
 import Network.HTTP.Client.TLS
 import Text.Printf
-
-data ToLower
-
-instance StringModifier ToLower where
-  getStringModifier "" = ""
-  getStringModifier (c : xs) = toLower c : xs
+import Vlq
 
 data CanonicalData = CanonicalData
-  { cdExercise :: T.Text
-  , cdComments :: [T.Text]
-  , cdCases :: [CaseSet]
+  { exercise :: T.Text
+  , comments :: [T.Text]
+  , cases :: [CaseSet]
   }
   deriving (Generic, Show)
   deriving
     (FromJSON)
-    via CustomJSON '[FieldLabelModifier (StripPrefix "cd", ToLower)] CanonicalData
+    via CustomJSON '[] CanonicalData
 
 data CaseSet = CaseSet
-  { csDescription :: T.Text
-  , csCases :: [TestCase]
+  { description :: T.Text
+  , cases :: [TestCase]
   }
   deriving (Generic, Show)
   deriving
     (FromJSON)
-    via CustomJSON '[FieldLabelModifier (StripPrefix "cs", ToLower)] CaseSet
+    via CustomJSON '[] CaseSet
 
 data TestCase = TestCase
-  { tcUuid :: T.Text
-  , tcDescription :: T.Text
-  , tcProperty :: T.Text
-  , tcInput :: VlqSeq 'In Int
-  , tcExpected :: CaseExpect Int
+  { uuid :: T.Text
+  , description :: T.Text
+  , property :: T.Text
+  , input :: VlqSeq 'In Int
+  , expected :: CaseExpect Int
   }
   deriving (Generic, Show)
   deriving
     (FromJSON)
-    via CustomJSON '[FieldLabelModifier (StripPrefix "tc", ToLower)] TestCase
+    via CustomJSON '[] TestCase
 
 data Dir = In | Out
 
-newtype VlqSeq (dir :: Dir) int = VlqSeq [int] deriving (Show)
+newtype VlqSeq (dir :: Dir) int = VlqSeq [int] deriving (Show, Functor)
 
 instance FromJSON i => FromJSON (VlqSeq 'In i) where
   parseJSON = withObject "VlqInput" $ \v -> do
@@ -96,15 +96,52 @@ testRawUrl =
   "https://raw.githubusercontent.com/exercism/problem-specifications/\
   \main/exercises/variable-length-quantity/canonical-data.json"
 
-newtype PprHex (width :: Nat) a = PprHex [a]
+newtype PprHex a = PprHex [a]
 
-instance (PrintfArg i, Integral i, KnownNat w) => Show (PprHex w i) where
+type family DisplayWidth i where
+  DisplayWidth Word32 = 8
+  DisplayWidth Word8 = 2
+
+instance (PrintfArg i, Integral i, KnownNat w, w ~ DisplayWidth i) => Show (PprHex i) where
   show (PprHex xs) = "[" <> intercalate "," (fmap ppr xs) <> "]"
     where
       ppr = printf "0x%0*X" (fromInteger @i (natVal (Proxy :: Proxy w)))
 
-z :: PprHex 2 Word8
-z = PprHex [1, 2, 3, 4]
+data EncDec = Enc | Dec
+
+type family CaseInputExpect (ed :: EncDec) where
+  CaseInputExpect 'Enc = (PprHex Word32, PprHex Word8)
+  CaseInputExpect 'Dec = (PprHex Word8, Either DecodeError (PprHex Word32))
+
+data Case ty = Case
+  { uuid :: T.Text
+  , description :: T.Text
+  , inputAndExpected :: CaseInputExpect ty
+  }
+
+deriving instance Show (CaseInputExpect ty) => Show (Case ty)
+
+toCase :: TestCase -> Either (Case 'Enc) (Case 'Dec)
+toCase TestCase {property, uuid, description, input = VlqSeq xs, expected} = case property of
+  "encode" ->
+    let CaseSuccess (VlqSeq ys) = expected
+     in Left Case {uuid, description, inputAndExpected = (PprHex (fromIntegral <$> xs), PprHex (fromIntegral <$> ys))}
+  "decode" ->
+    Right
+      Case
+        { uuid
+        , description
+        , inputAndExpected =
+            ( PprHex (fromIntegral <$> xs)
+            , case expected of
+                CaseSuccess (VlqSeq ys) -> Right $ PprHex (fromIntegral <$> ys)
+                CaseFail msg ->
+                  if msg == "incomplete sequence"
+                    then Left IncompleteSequence
+                    else Left $ error $ "unknown error: " <> T.unpack msg
+            )
+        }
+  _ -> error "unknown property"
 
 genCase :: IO ()
 genCase = do
@@ -112,6 +149,7 @@ genCase = do
   req <- parseRequest testRawUrl
   resp <- httpLbs req mgr
   let raw = responseBody resp
-      Right cData = eitherDecode' @CanonicalData raw
-  print cData
-  print z
+      Right CanonicalData {cases = caseSets} = eitherDecode' @CanonicalData raw
+      (encCases, decCases) = partitionEithers $ toCase <$> concatMap (\CaseSet {cases} -> cases) caseSets
+  mapM_ print encCases
+  mapM_ print decCases

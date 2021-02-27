@@ -18,7 +18,7 @@ import Data.List
 import Data.Word
 
 data DecodeError
-  = UnexpectetOctetSequence
+  = IncompleteSequence
   | TooManyBits
   deriving (Show)
 
@@ -39,7 +39,7 @@ decodeOne :: MonadError DecodeError m => [Word8] -> m Word32
 decodeOne xs = do
   let l = length xs
   when (l == 0 || l > 5) $
-    throwError UnexpectetOctetSequence
+    throwError IncompleteSequence
   when (l == 5 && head xs > 0b1000_1111) $
     throwError TooManyBits
   pure $ foldl (\acc x -> (acc `unsafeShiftL` 7) .|. (fromIntegral x .&. 0b0111_1111)) 0 xs
@@ -52,7 +52,7 @@ mayDecodeNext =
       | (highs, rest) <- span ((/= 0) . (.&. 0b1000_0000)) st ->
         Just
           <$> case rest of
-            [] -> throwError UnexpectetOctetSequence
+            [] -> throwError IncompleteSequence
             low : rest' -> do
               put rest'
               decodeOne (highs <> [low])
