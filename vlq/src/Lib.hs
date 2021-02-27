@@ -4,6 +4,7 @@ module Lib
 where
 
 import Vlq ()
+import GenCase
 
 main :: IO ()
-main = pure ()
+main = genCase

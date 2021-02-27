@@ -11,6 +11,12 @@ description: description
 dependencies:
 - base
 - mtl
+- http-client
+- http-client-tls
+- bytestring
+- aeson
+- deriving-aeson
+- text
 
 library:
   source-dirs: src
