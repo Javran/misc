@@ -17,6 +17,7 @@ dependencies:
 - aeson
 - deriving-aeson
 - text
+- random
 
 library:
   source-dirs: src

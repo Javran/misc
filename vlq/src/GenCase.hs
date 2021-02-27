@@ -101,7 +101,7 @@ testRawUrl =
   "https://raw.githubusercontent.com/exercism/problem-specifications/\
   \main/exercises/variable-length-quantity/canonical-data.json"
 
-newtype PprHex a = PprHex [a] deriving (IsList, Eq)
+newtype PprHex a = PprHex [a] deriving (IsList, Eq, Foldable)
 
 type family DisplayWidth i where
   DisplayWidth Word32 = 8
