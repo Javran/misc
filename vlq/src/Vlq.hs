@@ -20,7 +20,7 @@ import Data.Word
 data DecodeError
   = IncompleteSequence
   | TooManyBits
-  deriving (Show)
+  deriving (Show, Eq)
 
 encodeOne :: Word32 -> [Word8]
 encodeOne 0 = [0]
