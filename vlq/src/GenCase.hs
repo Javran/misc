@@ -4,6 +4,9 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeApplications #-}
 
@@ -15,10 +18,15 @@ where
 import Control.Applicative
 import Data.Aeson
 import Data.Char
+import Data.List
+import Data.Proxy
 import qualified Data.Text as T
+import Data.Word
 import Deriving.Aeson
-import Network.HTTP.Client
+import GHC.TypeLits
+import Network.HTTP.Client hiding (Proxy)
 import Network.HTTP.Client.TLS
+import Text.Printf
 
 data ToLower
 
@@ -59,7 +67,7 @@ data TestCase = TestCase
 
 data Dir = In | Out
 
-newtype VlqSeq (dir :: Dir) int = VlqSeq [int] deriving Show
+newtype VlqSeq (dir :: Dir) int = VlqSeq [int] deriving (Show)
 
 instance FromJSON i => FromJSON (VlqSeq 'In i) where
   parseJSON = withObject "VlqInput" $ \v -> do
@@ -88,11 +96,22 @@ testRawUrl =
   "https://raw.githubusercontent.com/exercism/problem-specifications/\
   \main/exercises/variable-length-quantity/canonical-data.json"
 
+newtype PprHex (width :: Nat) a = PprHex [a]
+
+instance (PrintfArg i, Integral i, KnownNat w) => Show (PprHex w i) where
+  show (PprHex xs) = "[" <> intercalate "," (fmap ppr xs) <> "]"
+    where
+      ppr = printf "0x%0*X" (fromInteger @i (natVal (Proxy :: Proxy w)))
+
+z :: PprHex 2 Word8
+z = PprHex [1, 2, 3, 4]
+
 genCase :: IO ()
 genCase = do
   mgr <- newManager tlsManagerSettings
   req <- parseRequest testRawUrl
   resp <- httpLbs req mgr
   let raw = responseBody resp
-      decoded = eitherDecode' @CanonicalData raw
-  print decoded
+      Right cData = eitherDecode' @CanonicalData raw
+  print cData
+  print z
