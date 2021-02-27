@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -36,6 +37,7 @@ import Network.HTTP.Client hiding (Proxy)
 import Network.HTTP.Client.TLS
 import Text.Printf
 import Vlq
+import GHC.Exts (IsList)
 
 data CanonicalData = CanonicalData
   { exercise :: T.Text
@@ -99,14 +101,14 @@ testRawUrl =
   "https://raw.githubusercontent.com/exercism/problem-specifications/\
   \main/exercises/variable-length-quantity/canonical-data.json"
 
-newtype PprHex a = PprHex [a]
+newtype PprHex a = PprHex [a] deriving (IsList)
 
 type family DisplayWidth i where
   DisplayWidth Word32 = 8
   DisplayWidth Word8 = 2
 
 instance (PrintfArg i, Integral i, KnownNat w, w ~ DisplayWidth i) => Show (PprHex i) where
-  show (PprHex xs) = "PprHex [" <> intercalate "," (fmap ppr xs) <> "]"
+  show (PprHex xs) = "[" <> intercalate "," (fmap ppr xs) <> "]"
     where
       ppr = printf "0x%0*X" (fromInteger @i (natVal (Proxy :: Proxy w)))
 
