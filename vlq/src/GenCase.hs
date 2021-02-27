@@ -1,4 +1,3 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -6,6 +5,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
@@ -18,9 +18,9 @@
 
 module GenCase
   ( genCase
-  , Case(..)
-  , EncDec(..)
-  , PprHex(..)
+  , Case (..)
+  , EncDec (..)
+  , PprHex (..)
   )
 where
 
@@ -32,12 +32,12 @@ import Data.Proxy
 import qualified Data.Text as T
 import Data.Word
 import Deriving.Aeson
+import GHC.Exts (IsList)
 import GHC.TypeLits
 import Network.HTTP.Client hiding (Proxy)
 import Network.HTTP.Client.TLS
 import Text.Printf
 import Vlq
-import GHC.Exts (IsList)
 
 data CanonicalData = CanonicalData
   { exercise :: T.Text
@@ -130,7 +130,13 @@ toCase :: TestCase -> Either (Case 'Enc) (Case 'Dec)
 toCase TestCase {property, uuid, description, input = VlqSeq xs, expected} = case property of
   "encode" ->
     let CaseSuccess (VlqSeq ys) = expected
-     in Left Case {uuid, description, inputAndExpected = (PprHex (fromIntegral <$> xs), PprHex (fromIntegral <$> ys))}
+     in Left
+          Case
+            { uuid
+            , description
+            , inputAndExpected =
+                (PprHex (fromIntegral <$> xs), PprHex (fromIntegral <$> ys))
+            }
   "decode" ->
     Right
       Case
@@ -155,6 +161,11 @@ genCase = do
   resp <- httpLbs req mgr
   let raw = responseBody resp
       Right CanonicalData {cases = caseSets} = eitherDecode' @CanonicalData raw
-      (encCases, decCases) = partitionEithers $ toCase <$> concatMap (\CaseSet {cases} -> cases) caseSets
-  print encCases
-  print decCases
+      allTestCases = concatMap (\CaseSet {cases} -> cases) caseSets
+      (encCases, decCases) = partitionEithers $ toCase <$> allTestCases
+      toLines TestCase {description, uuid} =
+        [ "# " <> T.unpack description
+        , "\"" <> T.unpack uuid <> "\" = true"
+        , ""
+        ]
+  mapM_ putStrLn $ concatMap toLines allTestCases
