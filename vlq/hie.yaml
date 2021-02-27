@@ -1,0 +1,8 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "vlq:lib"
+    - path: "./exe"
+      component: "vlq:exe:demo"
+    - path: "./test"
+      component: "vlq:test:hspec"
