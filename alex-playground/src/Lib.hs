@@ -22,6 +22,14 @@ import Data.Tuple
 import Token
 
 {-
+  Let's do something interesting, say parse Java.
+
+  Latest spec seems to be:
+
+  - https://docs.oracle.com/javase/specs/jls/se15/html/index.html
+ -}
+
+{-
   TODO: project idea: a super verbose tokenizer just to see what can be carried around?
   TODO: it seems both GHC and Agda are not using any wrappers - how does that work?
   TODO: find a way to use startcode.
