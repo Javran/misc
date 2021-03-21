@@ -1,0 +1,52 @@
+name: unicode-data
+version: 0.1.0.0
+github: Javran/unicode-data
+license: BSD3
+author: Javran Cheng
+maintainer: javran.c@gmail.com
+copyright: "Copyright: (c) 2019 Javran Cheng"
+
+description: description
+
+dependencies:
+- base
+- lzma
+- text
+- bytestring
+- containers
+
+library:
+  source-dirs: src
+  ghc-options:
+    - -Wall
+    - -O2
+
+executables:
+  demo:
+    main: Main.hs
+    source-dirs: exe
+    dependencies:
+      - unicode-data
+    ghc-options:
+      - -Wall
+      - -O2
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+
+tests:
+  hspec:
+    main: Spec.hs
+    source-dirs:
+      - test
+    dependencies:
+      - unicode-data
+      - QuickCheck
+      - hspec
+    ghc-options:
+      - -Wall
+      - -O2
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+      - -main-is Spec

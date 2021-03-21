@@ -1,0 +1,8 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "unicode-data:lib"
+    - path: "./exe"
+      component: "unicode-data:exe:demo"
+    - path: "./test"
+      component: "unicode-data:test:hspec"
