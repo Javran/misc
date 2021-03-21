@@ -10,6 +10,7 @@ import Data.Char
 import Data.Function
 import Data.List
 import qualified Data.Map.Strict as M
+import Data.Maybe
 import Data.Ord
 import qualified Data.Set as S
 import qualified Data.Text as T
@@ -50,11 +51,11 @@ query (loArr, hiArr, valArr) ch = toEnum . fromIntegral <$> search lo hi
     search l r =
       if l <= r
         then
-        let mid = (l + r) `quot` 2
-            in case cmp' mid of
-                 EQ -> Just (valArr A.! mid)
-                 LT -> search l (mid-1)
-                 GT -> search (mid+1) r
+          let mid = (l + r) `quot` 2
+           in case cmp' mid of
+                EQ -> Just (valArr A.! mid)
+                LT -> search l (mid -1)
+                GT -> search (mid + 1) r
         else Nothing
 
 main :: IO ()
@@ -111,31 +112,90 @@ main = do
   putStrLn $ "consecutive ranges in total: " <> show (sum (fmap (length . snd) gcGroupped'))
   let revGroups :: [(Either (Int, Int) Int, GeneralCategory)]
       revGroups = concatMap (\(gc, xs) -> [(x, gcTable M.! gc) | x <- xs]) gcGroupped'
-  print (fmap fst revGroups)
+  gcDb <-
+    do
+      let l = length revGroups
+          mkArr prj =
+            A.listArray
+              (0, l -1)
+              (fmap prj revGroups)
+          loArr, hiArr :: A.UArray Int Word32
+          loArr =
+            mkArr
+              (\(e, _) -> case e of
+                 Left (i, _) -> fromIntegral i
+                 Right i -> fromIntegral i)
+          hiArr =
+            mkArr
+              (\(e, _) -> case e of
+                 Left (_, i) -> fromIntegral i
+                 Right i -> fromIntegral i)
+          valArr :: A.UArray Int Word8
+          valArr =
+            mkArr
+              (\(_, gc) -> fromIntegral (fromEnum gc))
+          gcDb :: GCDatabase
+          gcDb = (loArr, hiArr, valArr)
+      pure gcDb
   do
-    let l = length revGroups
-        mkArr prj =
-          A.listArray
-            (0, l -1)
-            (fmap prj revGroups)
-        loArr, hiArr :: A.UArray Int Word32
-        loArr =
-          mkArr
-            (\(e, _) -> case e of
-               Left (i, _) -> fromIntegral i
-               Right i -> fromIntegral i)
-        hiArr =
-          mkArr
-            (\(e, _) -> case e of
-               Left (_, i) -> fromIntegral i
-               Right i -> fromIntegral i)
-        valArr :: A.UArray Int Word8
-        valArr =
-          mkArr
-            (\(_, gc) -> fromIntegral (fromEnum gc))
-        gcDb :: GCDatabase
-        gcDb = (loArr, hiArr, valArr)
-    print loArr
-    print hiArr
-    print valArr
-    print (query gcDb '\x7c4')
+    let allChars :: [Char]
+        allChars = [minBound .. maxBound]
+        notDefined :: [Char]
+        notDefined = filter (isNothing . query gcDb) allChars
+        inconsistents :: [(Char, GeneralCategory, Maybe GeneralCategory)]
+        inconsistents = concatMap getInconsistent allChars
+          where
+            getInconsistent ch =
+              if libGc == NotAssigned
+                then []
+                else
+                  let u13 = query gcDb ch
+                   in [(ch, libGc, u13) | query gcDb ch /= Just libGc]
+              where
+                libGc = generalCategory ch
+        newItems :: [(Char, GeneralCategory)]
+        newItems = concatMap go allChars
+          where
+            go ch =
+              if libGc == NotAssigned
+                then []
+                else case u13 of
+                       Nothing -> []
+                       Just gc -> [(ch, gc)]
+              where
+                libGc = generalCategory ch
+                u13 = query gcDb ch
+    putStrLn $ "U13 Query failures: " <> show (length notDefined)
+    putStrLn $ "all failures are NotAssigned?: " <> show (all ((== NotAssigned) . generalCategory) notDefined)
+    putStrLn $ "newly assigned chars: " <> show (length newItems)
+    putStrLn "Inconsistent chars:"
+    mapM_ print inconsistents
+
+{-
+- The Glorious Glasgow Haskell Compilation System, version 8.8.4
+- Unicode 13.0.0
+
+5 inconsistent characters:
+
+('\5741',OtherPunctuation,Just OtherSymbol)
+https://unicode.org/reports/tr44/
+The Terminal_Punctuation property of U+166D CANADIAN SYLLABICS CHI SIGN was changed to No
+
+('\43453',SpacingCombiningMark,Just NonSpacingMark)
+https://unicode.org/reports/tr44/
+The classification of the dependent form of the Javanese vocalic r, U+A9BD JAVANESE CONSONANT SIGN KERET, was corrected to a below-base mark
+
+('\72146',NonSpacingMark,Just SpacingCombiningMark)
+https://www.unicode.org/L2/L2019/19047-script-adhoc-recs.pdf
+
+('\72162',OtherLetter,Just OtherPunctuation)
+? - not sure about this one, it's already Po in Unicode 12.0.0 and Unicode 12.1.0.
+
+('\123215',OtherLetter,Just OtherSymbol)
+https://www.unicode.org/L2/L2019/19008.htm
+"Update the general category of U+1E14F NYIAKENG PUACHUE HMONG CIRCLED CA from gc="Lo" to "So", for Unicode version 12.0."
+
+GHC's table:
+https://github.com/ghc/ghc/commits/ghc-8.10.4-release/libraries/base/cbits/WCsubst.c
+
+ -}
