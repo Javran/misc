@@ -1,0 +1,7 @@
+.stack-work/
+happy-playground.cabal
+stack.yaml.lock
+*~
+
+private/
+z*

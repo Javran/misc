@@ -1,0 +1,8 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "happy-playground:lib"
+    - path: "./exe"
+      component: "happy-playground:exe:demo"
+    - path: "./test"
+      component: "happy-playground:test:hspec"

@@ -1,0 +1,51 @@
+name: happy-playground
+version: 0.1.0.0
+github: Javran/happy-playground
+license: BSD3
+author: Javran Cheng
+maintainer: javran.c@gmail.com
+copyright: "Copyright: (c) 2019 Javran Cheng"
+
+description: description
+
+dependencies:
+- base
+- array
+
+library:
+  source-dirs: src
+  ghc-options:
+    - -Wall
+    - -O2
+  build-tools:  
+    - happy
+
+executables:
+  demo:
+    main: Main.hs
+    source-dirs: exe
+    dependencies:
+      - happy-playground
+    ghc-options:
+      - -Wall
+      - -O2
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+
+tests:
+  hspec:
+    main: Spec.hs
+    source-dirs:
+      - test
+    dependencies:
+      - happy-playground
+      - QuickCheck
+      - hspec
+    ghc-options:
+      - -Wall
+      - -O2
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+      - -main-is Spec
