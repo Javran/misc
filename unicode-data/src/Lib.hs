@@ -1,20 +1,61 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Lib
-  ( main
-  )
-where
+module Lib where
 
 import qualified Codec.Compression.Lzma as Lzma
+import qualified Data.Array.Unboxed as A
+import Data.Bifunctor
 import qualified Data.ByteString.Lazy as BSL
+import Data.Char
 import Data.Function
 import Data.List
+import qualified Data.Map.Strict as M
 import Data.Ord
 import qualified Data.Set as S
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
+import Data.Word
 import Numeric
-import Data.Bifunctor
+
+gcTable :: M.Map T.Text GeneralCategory
+gcTable = M.fromList $ zip (T.words abbrs) [minBound .. maxBound]
+  where
+    abbrs =
+      "Lu Ll Lt Lm Lo \
+      \Mn Mc Me \
+      \Nd Nl No \
+      \Pc Pd Ps Pe Pi Pf Po \
+      \Sm Sc Sk So \
+      \Zs Zl Zp \
+      \Cc Cf Cs Co Cn"
+
+type GCDatabase = (A.UArray Int Word32, A.UArray Int Word32, A.UArray Int Word8)
+
+query :: GCDatabase -> Char -> Maybe GeneralCategory
+query (loArr, hiArr, valArr) ch = toEnum . fromIntegral <$> search lo hi
+  where
+    needle :: Word32
+    needle = fromIntegral $ ord ch
+    (lo, hi) = A.bounds loArr
+    -- compare <needle> <range at index>
+    cmp' :: Int -> Ordering
+    cmp' i
+      | needle < rangeL = LT
+      | needle > rangeR = GT
+      | rangeL <= needle && needle <= rangeR = EQ
+      | otherwise = error "unreachable"
+      where
+        rangeL = loArr A.! i
+        rangeR = hiArr A.! i
+    search l r =
+      if l <= r
+        then
+        let mid = (l + r) `quot` 2
+            in case cmp' mid of
+                 EQ -> Just (valArr A.! mid)
+                 LT -> search l (mid-1)
+                 GT -> search (mid+1) r
+        else Nothing
 
 main :: IO ()
 main = do
@@ -39,12 +80,11 @@ main = do
           zCmp (_, desc0, _) (_, desc1, _) =
             "First>" `T.isSuffixOf` desc0
               && "Last>" `T.isSuffixOf` desc1
-      gpMinus (Left (a, b)) (Left (c, d)) = b - c
-      gpMinus (Left (a, b)) (Right c) = b - c
-      gpMinus (Right a) (Left (b, c)) = a - b
+      gpMinus (Left (_a, b)) (Left (c, _d)) = b - c
+      gpMinus (Left (_a, b)) (Right c) = b - c
+      gpMinus (Right a) (Left (b, _c)) = a - b
       gpMinus (Right a) (Right b) = a - b
-      -- yes, strictly increasing.
-      _isIncr@True = and $ zipWith isStrictIncr gs (tail gs)
+      isIncr@True = and $ zipWith isStrictIncr gs (tail gs)
         where
           isStrictIncr l r = gpMinus l r < 0
           gs = fmap snd groupped
@@ -63,7 +103,39 @@ main = do
         (Right a, Right b) ->
           if a + 1 == b then merge (Left (a, b) : us) xs else merge (x : u : us) xs
       gcGroupped' = (fmap . second) (merge []) gcGroupped
+
   putStrLn $ "raw rows in total: " <> show (length rows)
   putStrLn $ "rows after range groupping: " <> show (sum (fmap (length . snd) gcGroupped))
+  putStrLn $
+    "verify that codepoint values are given in strictly increasing order: " <> show isIncr
   putStrLn $ "consecutive ranges in total: " <> show (sum (fmap (length . snd) gcGroupped'))
-  print $ S.size $ S.fromList (fmap fst gcGroupped)
+  let revGroups :: [(Either (Int, Int) Int, GeneralCategory)]
+      revGroups = concatMap (\(gc, xs) -> [(x, gcTable M.! gc) | x <- xs]) gcGroupped'
+  print (fmap fst revGroups)
+  do
+    let l = length revGroups
+        mkArr prj =
+          A.listArray
+            (0, l -1)
+            (fmap prj revGroups)
+        loArr, hiArr :: A.UArray Int Word32
+        loArr =
+          mkArr
+            (\(e, _) -> case e of
+               Left (i, _) -> fromIntegral i
+               Right i -> fromIntegral i)
+        hiArr =
+          mkArr
+            (\(e, _) -> case e of
+               Left (_, i) -> fromIntegral i
+               Right i -> fromIntegral i)
+        valArr :: A.UArray Int Word8
+        valArr =
+          mkArr
+            (\(_, gc) -> fromIntegral (fromEnum gc))
+        gcDb :: GCDatabase
+        gcDb = (loArr, hiArr, valArr)
+    print loArr
+    print hiArr
+    print valArr
+    print (query gcDb '\x7c4')
