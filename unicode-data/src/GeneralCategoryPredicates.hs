@@ -1,4 +1,9 @@
-module GeneralCategoryPredicates where
+module GeneralCategoryPredicates
+  ( GeneralCategoryPredicates (..)
+  , predicates
+  , mk
+  )
+where
 
 import Data.Char (GeneralCategory (..))
 import Data.Functor.Contravariant
@@ -84,3 +89,6 @@ predicates =
     , isSeparator = gcIsSeparator
     , generalCategory = id
     }
+
+mk :: (Char -> GeneralCategory) -> GeneralCategoryPredicates Char
+mk = (>$< predicates)
