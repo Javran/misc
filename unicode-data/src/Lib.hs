@@ -1,17 +1,20 @@
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Lib where
 
 import qualified Codec.Compression.Lzma as Lzma
+import Control.Monad
 import qualified Data.Array.Unboxed as A
 import Data.Bifunctor
+import Data.Bits
 import qualified Data.ByteString.Lazy as BSL
 import Data.Char
 import Data.Function
+import Data.Ix
 import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
-import Data.Ord
 import qualified Data.Set as S
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
@@ -32,8 +35,79 @@ gcTable = M.fromList $ zip (T.words abbrs) [minBound .. maxBound]
 
 type GCDatabase = (A.UArray Int Word32, A.UArray Int Word32, A.UArray Int Word8)
 
-query :: GCDatabase -> Char -> Maybe GeneralCategory
-query (loArr, hiArr, valArr) ch = toEnum . fromIntegral <$> search lo hi
+type PackedGCDatabase = A.UArray Int Word64
+
+{-
+  low: 0~23
+  high: 24~47
+  gc: 48~
+ -}
+packTuple :: (Word32, Word32, Word8) -> Word64
+packTuple (lo, high, gc) = fromIntegral lo .|. high' .|. gc'
+  where
+    high' = fromIntegral high `unsafeShiftL` 24
+    gc' = fromIntegral gc `unsafeShiftL` 48
+
+unpackTuple :: Word64 -> (Word32, Word32, Word8)
+unpackTuple payload = (lo, high, gc)
+  where
+    lo, high :: Word32
+    lo = fromIntegral (0xFF_FFFF .&. payload)
+    high = fromIntegral (0xFF_FFFF .&. (payload `unsafeShiftR` 24))
+    gc = fromIntegral (0xFF .&. (payload `unsafeShiftR` 48))
+
+_isLetter :: GCDatabase -> Char -> Bool
+_isLetter db ch =
+  query db ch
+    `elem` [ UppercaseLetter
+           , LowercaseLetter
+           , TitlecaseLetter
+           , ModifierLetter
+           , OtherLetter
+           ]
+
+_isNumber :: GCDatabase -> Char -> Bool
+_isNumber db ch =
+  query db ch
+    `elem` [ DecimalNumber
+           , LetterNumber
+           ]
+
+_isJavaIdentifierStart :: GCDatabase -> Char -> Bool
+_isJavaIdentifierStart db ch =
+  _isLetter db ch || gc
+    `elem` [ LetterNumber
+           , CurrencySymbol
+           , ConnectorPunctuation
+           ]
+  where
+    gc = query db ch
+
+_isJavaIdentifierPart :: GCDatabase -> Char -> Bool
+_isJavaIdentifierPart db ch =
+  _isLetter db ch
+    || _isNumber db ch
+    || gc
+    `elem` [ CurrencySymbol
+           , ConnectorPunctuation
+           , SpacingCombiningMark
+           , NonSpacingMark
+           ]
+    || _isIdentifierIgnorable db ch
+  where
+    gc = query db ch
+
+_isIdentifierIgnorable :: GCDatabase -> Char -> Bool
+_isIdentifierIgnorable db ch =
+  inRange ('\x0000', '\x0008') ch
+    || inRange ('\x000E', '\x0001B') ch
+    || inRange ('\x007F', '\x009F') ch
+    || gc == Format
+  where
+    gc = query db ch
+
+query :: GCDatabase -> Char -> GeneralCategory
+query (loArr, hiArr, valArr) ch = toEnum . fromIntegral $ search lo hi
   where
     needle :: Word32
     needle = fromIntegral $ ord ch
@@ -53,10 +127,10 @@ query (loArr, hiArr, valArr) ch = toEnum . fromIntegral <$> search lo hi
         then
           let mid = (l + r) `quot` 2
            in case cmp' mid of
-                EQ -> Just (valArr A.! mid)
+                EQ -> valArr A.! mid
                 LT -> search l (mid -1)
                 GT -> search (mid + 1) r
-        else Nothing
+        else fromIntegral $ fromEnum NotAssigned
 
 main :: IO ()
 main = do
@@ -107,6 +181,7 @@ main = do
 
   putStrLn $ "raw rows in total: " <> show (length rows)
   putStrLn $ "rows after range groupping: " <> show (sum (fmap (length . snd) gcGroupped))
+  putStrLn $ "No character is Cn: " <> show (S.notMember "Cn" (S.fromList $ fmap fst gcGroupped'))
   putStrLn $
     "verify that codepoint values are given in strictly increasing order: " <> show isIncr
   putStrLn $ "consecutive ranges in total: " <> show (sum (fmap (length . snd) gcGroupped'))
@@ -137,12 +212,13 @@ main = do
           gcDb :: GCDatabase
           gcDb = (loArr, hiArr, valArr)
       pure gcDb
+  let allChars :: [Char]
+      allChars = [minBound .. maxBound]
+
   do
-    let allChars :: [Char]
-        allChars = [minBound .. maxBound]
-        notDefined :: [Char]
-        notDefined = filter (isNothing . query gcDb) allChars
-        inconsistents :: [(Char, GeneralCategory, Maybe GeneralCategory)]
+    let notDefined :: [Char]
+        notDefined = filter ((== NotAssigned) . query gcDb) allChars
+        inconsistents :: [(Char, GeneralCategory, GeneralCategory)]
         inconsistents = concatMap getInconsistent allChars
           where
             getInconsistent ch =
@@ -150,18 +226,14 @@ main = do
                 then []
                 else
                   let u13 = query gcDb ch
-                   in [(ch, libGc, u13) | query gcDb ch /= Just libGc]
+                   in [(ch, libGc, u13) | query gcDb ch /= libGc]
               where
                 libGc = generalCategory ch
         newItems :: [(Char, GeneralCategory)]
         newItems = concatMap go allChars
           where
             go ch =
-              if libGc == NotAssigned
-                then []
-                else case u13 of
-                       Nothing -> []
-                       Just gc -> [(ch, gc)]
+              [(ch, u13) | libGc == NotAssigned && u13 /= NotAssigned]
               where
                 libGc = generalCategory ch
                 u13 = query gcDb ch
@@ -170,6 +242,27 @@ main = do
     putStrLn $ "newly assigned chars: " <> show (length newItems)
     putStrLn "Inconsistent chars:"
     mapM_ print inconsistents
+  let dump = False
+  when dump $
+    do
+      -- writeFile "u13.raw" (show gcDb)
+      raw2 <- readFile "u13.raw"
+      let gcDb' :: GCDatabase
+          gcDb' = read raw2
+      print $ gcDb' == gcDb
+  let verifyFn f fn = do
+        rawStart <- readFile fn
+        let truth :: [Char]
+            truth = chr <$> read rawStart
+            xs =
+              -- those recognized by function
+              filter (f gcDb) allChars
+        putStrLn $ "xs: " <> show (length xs)
+        putStrLn $ "truth: " <> show (length truth)
+        -- let extra =  S.fromList xs `S.difference` S.fromList truth
+        putStrLn $ "same: " <> show (truth == xs)
+  verifyFn _isJavaIdentifierStart "start.txt"
+  verifyFn _isJavaIdentifierPart "part.txt"
 
 {-
 - The Glorious Glasgow Haskell Compilation System, version 8.8.4
