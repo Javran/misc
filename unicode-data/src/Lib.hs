@@ -1,5 +1,6 @@
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
 
 module Lib
@@ -14,9 +15,11 @@ import qualified Data.Array.Unboxed as A
 import Data.Binary
 import Data.Bits
 import qualified Data.ByteString.Lazy as BSL
-import Data.Char
+import Data.Char (GeneralCategory (..), chr)
+import Data.Functor.Contravariant
 import Data.Ix
 import Data.Text.Encoding (decodeUtf8)
+import GeneralCategoryPredicates
 import PrepareDatabase
 
 {-
@@ -43,55 +46,38 @@ unpackTuple payload = (lo, high, gc)
     high = fromIntegral (0xFF_FFFF .&. (payload `unsafeShiftR` 24))
     gc = fromIntegral (0xFF .&. (payload `unsafeShiftR` 48))
 
-_isLetter :: GCDatabase -> Char -> Bool
-_isLetter db ch =
-  query db ch
-    `elem` [ UppercaseLetter
-           , LowercaseLetter
-           , TitlecaseLetter
-           , ModifierLetter
-           , OtherLetter
-           ]
-
-_isNumber :: GCDatabase -> Char -> Bool
-_isNumber db ch =
-  query db ch
-    `elem` [ DecimalNumber
-           , LetterNumber
-           ]
-
-_isJavaIdentifierStart :: GCDatabase -> Char -> Bool
-_isJavaIdentifierStart db ch =
-  _isLetter db ch || gc
-    `elem` [ LetterNumber
-           , CurrencySymbol
-           , ConnectorPunctuation
-           ]
+mkJavaIdentifierPreds :: GCDatabase -> (Char -> Bool, Char -> Bool)
+mkJavaIdentifierPreds gcDb = (isJavaIdentifierStart, isJavaIdentifierPart)
   where
-    gc = query db ch
+    GeneralCategoryPredicates {..} = contramap (query gcDb) predicates
+    isJavaIdentifierStart ch =
+      isLetter ch || generalCategory ch
+        `elem` [ LetterNumber
+               , CurrencySymbol
+               , ConnectorPunctuation
+               ]
+    isIdentifierIgnorable :: Char -> Bool
+    isIdentifierIgnorable ch =
+      inRange ('\x0000', '\x0008') ch
+        || inRange ('\x000E', '\x0001B') ch
+        || inRange ('\x007F', '\x009F') ch
+        || gc == Format
+      where
+        gc = generalCategory ch
 
-_isJavaIdentifierPart :: GCDatabase -> Char -> Bool
-_isJavaIdentifierPart db ch =
-  _isLetter db ch
-    || _isNumber db ch
-    || gc
-    `elem` [ CurrencySymbol
-           , ConnectorPunctuation
-           , SpacingCombiningMark
-           , NonSpacingMark
-           ]
-    || _isIdentifierIgnorable db ch
-  where
-    gc = query db ch
-
-_isIdentifierIgnorable :: GCDatabase -> Char -> Bool
-_isIdentifierIgnorable db ch =
-  inRange ('\x0000', '\x0008') ch
-    || inRange ('\x000E', '\x0001B') ch
-    || inRange ('\x007F', '\x009F') ch
-    || gc == Format
-  where
-    gc = query db ch
+    isJavaIdentifierPart :: Char -> Bool
+    isJavaIdentifierPart ch =
+      isLetter ch
+        || (gc /= OtherNumber && isNumber ch)
+        || gc
+        `elem` [ CurrencySymbol
+               , ConnectorPunctuation
+               , SpacingCombiningMark
+               , NonSpacingMark
+               ]
+        || isIdentifierIgnorable ch
+      where
+        gc = generalCategory ch
 
 main :: IO ()
 main = mainExperiments
@@ -114,11 +100,11 @@ mainExperiments = do
             truth = chr <$> read rawStart
             xs =
               -- those recognized by function
-              filter (f gcDb) allChars
+              filter f allChars
         putStrLn $ "xs: " <> show (length xs)
         putStrLn $ "truth: " <> show (length truth)
         -- let extra =  S.fromList xs `S.difference` S.fromList truth
         putStrLn $ "same: " <> show (truth == xs)
-  verifyFn _isJavaIdentifierStart "start.txt"
-  verifyFn _isJavaIdentifierPart "part.txt"
-
+      (isJavaIdentifierStart, isJavaIdentifierPart) = mkJavaIdentifierPreds gcDb
+  verifyFn isJavaIdentifierStart "start.txt"
+  verifyFn isJavaIdentifierPart "part.txt"
