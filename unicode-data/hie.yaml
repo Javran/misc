@@ -6,3 +6,5 @@ cradle:
       component: "unicode-data:exe:demo"
     - path: "./test"
       component: "unicode-data:test:hspec"
+    - path: "./bench"
+      component: "unicode-data:bench:criterion"

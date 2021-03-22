@@ -1,19 +1,18 @@
-{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TypeApplications #-}
+
 
 module Lib
   ( main
+  , benchmarker
   )
 where
 
 import qualified Codec.Compression.Lzma as Lzma
 import ConstructDatabase
 import Control.Monad
-import qualified Data.Array.Unboxed as A
-import Data.Binary
 import Data.Bits
+import Data.Binary
 import qualified Data.ByteString.Lazy as BSL
 import Data.Char (GeneralCategory (..), chr)
 import Data.Functor.Contravariant
@@ -21,35 +20,13 @@ import Data.Ix
 import Data.Text.Encoding (decodeUtf8)
 import GeneralCategoryPredicates
 import PrepareDatabase
+import qualified UnicodeV13 as U13
+import qualified UnicodeV13Packed as U13P
 
-{-
-  TODO: which way is faster?
- -}
-type PackedGCDatabase = A.UArray Int Word64
-
-{-
-  low: 0~23
-  high: 24~47
-  gc: 48~
- -}
-packTuple :: (Word32, Word32, Word8) -> Word64
-packTuple (lo, high, gc) = fromIntegral lo .|. high' .|. gc'
+mkJavaIdentifierPreds :: (Char -> GeneralCategory) -> (Char -> Bool, Char -> Bool)
+mkJavaIdentifierPreds gcx = (isJavaIdentifierStart, isJavaIdentifierPart)
   where
-    high' = fromIntegral high `unsafeShiftL` 24
-    gc' = fromIntegral gc `unsafeShiftL` 48
-
-unpackTuple :: Word64 -> (Word32, Word32, Word8)
-unpackTuple payload = (lo, high, gc)
-  where
-    lo, high :: Word32
-    lo = fromIntegral (0xFF_FFFF .&. payload)
-    high = fromIntegral (0xFF_FFFF .&. (payload `unsafeShiftR` 24))
-    gc = fromIntegral (0xFF .&. (payload `unsafeShiftR` 48))
-
-mkJavaIdentifierPreds :: GCDatabase -> (Char -> Bool, Char -> Bool)
-mkJavaIdentifierPreds gcDb = (isJavaIdentifierStart, isJavaIdentifierPart)
-  where
-    GeneralCategoryPredicates {..} = contramap (query gcDb) predicates
+    GeneralCategoryPredicates {..} = contramap gcx predicates
     isJavaIdentifierStart ch =
       isLetter ch || generalCategory ch
         `elem` [ LetterNumber
@@ -68,7 +45,7 @@ mkJavaIdentifierPreds gcDb = (isJavaIdentifierStart, isJavaIdentifierPart)
     isJavaIdentifierPart :: Char -> Bool
     isJavaIdentifierPart ch =
       isLetter ch
-        || (gc /= OtherNumber && isNumber ch)
+        || gc /= OtherNumber && isNumber ch
         || gc
         `elem` [ CurrencySymbol
                , ConnectorPunctuation
@@ -79,6 +56,12 @@ mkJavaIdentifierPreds gcDb = (isJavaIdentifierStart, isJavaIdentifierPart)
       where
         gc = generalCategory ch
 
+benchmarker :: (Char -> GeneralCategory) -> Word8
+benchmarker gc = foldr (\ch acc -> fromIntegral (fromEnum (gc ch)) `xor` acc) 0 allChars
+  where
+    allChars :: [Char]
+    allChars = [minBound .. maxBound]
+
 main :: IO ()
 main = mainExperiments
 
@@ -88,15 +71,15 @@ mainExperiments = do
   when needPrepareDatabase $ do
     xsr <- BSL.readFile "UnicodeData.txt.xz"
     revGroups <- verifyAndProcess . decodeUtf8 . BSL.toStrict $ Lzma.decompress xsr
-    BSL.writeFile "u13.raw" (encode $ mkDatabase revGroups)
-  gcDb <- decode @GCDatabase <$> BSL.readFile "embed/v13.0.0.raw"
-  validateDatabase gcDb
-  let allChars :: [Char]
+    BSL.writeFile "u13-packed.raw" (encode $ mkDatabasePacked revGroups)
+  validateDatabase U13.generalCategory
+  validateDatabase U13P.generalCategory
+  let allChars :: String
       allChars = [minBound .. maxBound]
 
       verifyFn f fn = do
         rawStart <- readFile fn
-        let truth :: [Char]
+        let truth :: String
             truth = chr <$> read rawStart
             xs =
               -- those recognized by function
@@ -105,6 +88,8 @@ mainExperiments = do
         putStrLn $ "truth: " <> show (length truth)
         -- let extra =  S.fromList xs `S.difference` S.fromList truth
         putStrLn $ "same: " <> show (truth == xs)
-      (isJavaIdentifierStart, isJavaIdentifierPart) = mkJavaIdentifierPreds gcDb
-  verifyFn isJavaIdentifierStart "start.txt"
-  verifyFn isJavaIdentifierPart "part.txt"
+      (isJavaIdentifierStart, isJavaIdentifierPart) = mkJavaIdentifierPreds U13.generalCategory
+  -- verifyFn isJavaIdentifierStart "start.txt"
+  -- verifyFn isJavaIdentifierPart "part.txt"
+  print (benchmarker U13.generalCategory)
+  print (benchmarker U13P.generalCategory)

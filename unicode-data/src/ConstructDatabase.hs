@@ -1,11 +1,20 @@
+{-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE NumericUnderscores #-}
+
 module ConstructDatabase where
 
 import qualified Data.Array.Unboxed as A
+import Data.Bits
 import Data.Char
 import Data.Word
 import PrepareDatabase
 
 type GCDatabase = (A.UArray Int Word32, A.UArray Int Word32, A.UArray Int Word8)
+
+{-
+  TODO: which way is faster?
+ -}
+type PackedGCDatabase = A.UArray Int Word64
 
 mkDatabase :: [(Ranged, GeneralCategory)] -> GCDatabase
 mkDatabase gs = gcDb
@@ -33,6 +42,40 @@ mkDatabase gs = gcDb
     gcDb :: GCDatabase
     gcDb = (loArr, hiArr, valArr)
 
+mkDatabasePacked :: [(Ranged, GeneralCategory)] -> PackedGCDatabase
+mkDatabasePacked gs = A.listArray (0, l -1) (fmap mkItem gs)
+  where
+    l = length gs
+    mkItem (range, gc) =
+      packTuple
+        ( fromIntegral lo
+        , fromIntegral hi
+        , fromIntegral $ fromEnum gc
+        )
+      where
+        (lo, hi) = case range of
+          Left (a, b) -> (a, b)
+          Right v -> (v, v)
+
+{-
+  low: 0~23
+  high: 24~47
+  gc: 48~
+ -}
+packTuple :: (Word32, Word32, Word8) -> Word64
+packTuple (lo, high, gc) = fromIntegral lo .|. high' .|. gc'
+  where
+    high' = fromIntegral high `unsafeShiftL` 24
+    gc' = fromIntegral gc `unsafeShiftL` 48
+
+unpackTuple :: Word64 -> (Word32, Word32, Word8)
+unpackTuple payload = (lo, high, gc)
+  where
+    lo, high :: Word32
+    lo = fromIntegral (0xFF_FFFF .&. payload)
+    high = fromIntegral (0xFF_FFFF .&. (payload `unsafeShiftR` 24))
+    gc = fromIntegral (0xFF .&. (payload `unsafeShiftR` 48))
+
 query :: GCDatabase -> Char -> GeneralCategory
 query (loArr, hiArr, valArr) ch = toEnum . fromIntegral $ search lo hi
   where
@@ -59,13 +102,31 @@ query (loArr, hiArr, valArr) ch = toEnum . fromIntegral $ search lo hi
                 GT -> search (mid + 1) r
         else fromIntegral $ fromEnum NotAssigned
 
+queryPacked :: PackedGCDatabase -> Char -> GeneralCategory
+queryPacked arr ch = toEnum . fromIntegral $ search lo hi
+  where
+    needle :: Word32
+    needle = fromIntegral $ ord ch
+    (lo, hi) = A.bounds arr
+    search l r =
+      if l <= r
+        then
+          let mid = (l + r) `quot` 2
+              (rangeL, rangeR, val) = unpackTuple (arr A.! mid)
+           in if
+                  | needle < rangeL -> search l (mid -1)
+                  | needle > rangeR -> search (mid + 1) r
+                  | rangeL <= needle && needle <= rangeR -> val
+                  | otherwise -> error "unreachable"
+        else fromIntegral $ fromEnum NotAssigned
+
 -- this also serves as verifying that query is implemented correctly.
-validateDatabase :: GCDatabase -> IO ()
-validateDatabase gcDb = do
+validateDatabase :: (Char -> GeneralCategory) -> IO ()
+validateDatabase queryDb = do
   let allChars :: [Char]
       allChars = [minBound .. maxBound]
       notDefined :: [Char]
-      notDefined = filter ((== NotAssigned) . query gcDb) allChars
+      notDefined = filter ((== NotAssigned) . queryDb) allChars
       inconsistents
         :: [ ( Char
              , GeneralCategory -- general category from base
@@ -78,7 +139,7 @@ validateDatabase gcDb = do
             [(ch, libGc, u13) | libGc /= NotAssigned, u13 /= libGc]
             where
               libGc = generalCategory ch
-              u13 = query gcDb ch
+              u13 = queryDb ch
       newItems :: [(Char, GeneralCategory)]
       newItems = concatMap go allChars
         where
@@ -86,7 +147,7 @@ validateDatabase gcDb = do
             [(ch, u13) | libGc == NotAssigned && u13 /= NotAssigned]
             where
               libGc = generalCategory ch
-              u13 = query gcDb ch
+              u13 = queryDb ch
   putStrLn $ "Number of NotAssigned in database: " <> show (length notDefined)
   putStrLn $ "Newly assigned since base: " <> show (length newItems)
   putStrLn "Inconsistent chars:"
