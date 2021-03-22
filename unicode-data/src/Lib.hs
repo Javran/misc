@@ -89,7 +89,7 @@ mainExperiments = do
     xsr <- BSL.readFile "UnicodeData.txt.xz"
     revGroups <- verifyAndProcess . decodeUtf8 . BSL.toStrict $ Lzma.decompress xsr
     BSL.writeFile "u13.raw" (encode $ mkDatabase revGroups)
-  gcDb <- decode @GCDatabase <$> BSL.readFile "u13.raw"
+  gcDb <- decode @GCDatabase <$> BSL.readFile "embed/v13.0.0.raw"
   validateDatabase gcDb
   let allChars :: [Char]
       allChars = [minBound .. maxBound]

@@ -16,6 +16,9 @@ dependencies:
 - containers
 - array
 - binary
+- file-embed
+
+extra-source-files: embed/*
 
 library:
   source-dirs: src
