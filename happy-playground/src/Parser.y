@@ -26,49 +26,33 @@ import Lexer
 
 -- without those %% it will fail to compile,
 -- so they actually play some roles here.
-
+%right in -- this one actually looks weird, probably for resolving `Exp in Exp`?
+  -- example: let x = 1 in let y = 2 in 2
+  -- which should mean: let x = 1 in (let y = 2 in 2), so it's right-associative?
+  -- hm, need to look into shift/reduce a bit ...
+%left '+' '-'
+%left '*' '/'
 %%
 
--- low precedence goes first it seems.
+{- Happy reporting "shift/reduce conflicts: 20" -}
 
 Exp
   : let var '=' Exp in Exp
-    { \p -> $6 (($2,$4 p):p)  } -- note that p :: [(str, num)], which is applied to the $variable.
-  | Exp1
-    { $1 }
-
--- no "let" in Exp1
-
-Exp1
-  : Exp1 '+' Term
-    { \p -> $1 p + $3 p }
-  | Exp1 '-' Term
-    { \p -> $1 p - $3 p }
-  | Term
-    { $1 }
-
--- no "let", "+", or "-" in Term
-
-Term
-  : Term '*' Factor
-    { \p -> $1 p * $3 p }
-  | Term '/' Factor
-    { \p -> $1 p `div` $3 p }
-  | Factor
-    { $1 }
-
--- leaving only literal, varable and parentheses in Factor.
-
-Factor
-  : int
-    { \p -> $1 }
-  | var
-    { \p -> case lookup $1 p of
-              Nothing -> error "no var"
-              Just i -> i
-    }
+    { Let $2 $4 $6 }
+  | Exp '+' Exp
+    { Plus $1 $3 }
+  | Exp '-' Exp
+    { Minus $1 $3 }
+  | Exp '*' Exp
+    { Times $1 $3 }
+  | Exp '/' Exp
+    { Div $1 $3 }
   | '(' Exp ')'
-    { $2 }
+    { Brack $2 }
+  | int
+    { Int $1 }
+  | var
+    { Var $1 }
 
 {
 
@@ -77,25 +61,13 @@ parseError _ = error "parse error"
 
 data Exp
   = Let String Exp Exp
-  | Exp1 Exp1
-  deriving (Show)
-
-data Exp1
-  = Plus Exp1 Term
-  | Minus Exp1 Term
-  | Term Term
-  deriving (Show)
-
-data Term
-  = Times Term Factor
-  | Div Term Factor
-  | Factor Factor
-  deriving (Show)
-
-data Factor
-  = Int Int
-  | Var String
+  | Plus Exp Exp
+  | Minus Exp Exp
+  | Times Exp Exp
+  | Div Exp Exp
   | Brack Exp
+  | Int Int
+  | Var String
   deriving (Show)
 
 }
