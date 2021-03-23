@@ -30,13 +30,13 @@ import Lexer
   -- example: let x = 1 in let y = 2 in 2
   -- which should mean: let x = 1 in (let y = 2 in 2), so it's right-associative?
   -- hm, need to look into shift/reduce a bit ...
+  -- https://en.wikipedia.org/wiki/Shift-reduce_parser ?
 %left '+' '-'
 %left '*' '/'
 %%
 
-{- Happy reporting "shift/reduce conflicts: 20" -}
 
-Exp
+Exp :: { Exp }
   : let var '=' Exp in Exp
     { Let $2 $4 $6 }
   | Exp '+' Exp
