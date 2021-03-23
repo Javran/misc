@@ -33,39 +33,42 @@ import Lexer
 
 Exp
   : let var '=' Exp in Exp
-    { Let $2 $4 $6 }
+    { \p -> $6 (($2,$4 p):p)  } -- note that p :: [(str, num)], which is applied to the $variable.
   | Exp1
-    { Exp1 $1 }
+    { $1 }
 
 -- no "let" in Exp1
 
 Exp1
   : Exp1 '+' Term
-    { Plus $1 $3 }
+    { \p -> $1 p + $3 p }
   | Exp1 '-' Term
-    { Minus $1 $3 }
+    { \p -> $1 p - $3 p }
   | Term
-    { Term $1 }
+    { $1 }
 
 -- no "let", "+", or "-" in Term
 
 Term
   : Term '*' Factor
-    { Times $1 $3 }
+    { \p -> $1 p * $3 p }
   | Term '/' Factor
-    { Div $1 $3 }
+    { \p -> $1 p `div` $3 p }
   | Factor
-    { Factor $1 }
+    { $1 }
 
 -- leaving only literal, varable and parentheses in Factor.
 
 Factor
   : int
-    { Int $1 }
+    { \p -> $1 }
   | var
-    { Var $1 }
+    { \p -> case lookup $1 p of
+              Nothing -> error "no var"
+              Just i -> i
+    }
   | '(' Exp ')'
-    { Brack $2 }
+    { $2 }
 
 {
 
