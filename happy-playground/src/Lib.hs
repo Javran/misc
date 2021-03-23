@@ -2,6 +2,7 @@ module Lib
   ( main
   ) where
 
+import Lexer
 import Parser
 
 main :: IO ()
