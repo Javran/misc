@@ -8,6 +8,9 @@ import Lexer
 %tokentype { Token }
 %error { parseError }
 
+-- comments are suppored like this.
+
+-- mapping between an identifier and Haskell value.
 %token
   let  { TokenLet }
   in   { TokenIn }
@@ -21,13 +24,20 @@ import Lexer
   '('  { TokenOB }
   ')'  { TokenCB }
 
+-- without those %% it will fail to compile,
+-- so they actually play some roles here.
+
 %%
+
+-- low precedence goes first it seems.
 
 Exp
   : let var '=' Exp in Exp
     { Let $2 $4 $6 }
   | Exp1
     { Exp1 $1 }
+
+-- no "let" in Exp1
 
 Exp1
   : Exp1 '+' Term
@@ -37,6 +47,8 @@ Exp1
   | Term
     { Term $1 }
 
+-- no "let", "+", or "-" in Term
+
 Term
   : Term '*' Factor
     { Times $1 $3 }
@@ -44,6 +56,8 @@ Term
     { Div $1 $3 }
   | Factor
     { Factor $1 }
+
+-- leaving only literal, varable and parentheses in Factor.
 
 Factor
   : int
