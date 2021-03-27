@@ -32,11 +32,12 @@ lexerP =
     <++ TokenOB <~ '('
     <++ TokenCB <~ ')'
     <++ (TokenInt . read <$> munch1 isDigit)
-    <++ (TokenLet <$ string "let")
-    <++ (TokenIn <$ string "in")
-    <++ (
-         -- quick and dirty. if variable starts with "let" or "in" this won't work.
-         TokenVar <$> munch1 isAlpha)
+    <++ (do
+           xs <- munch1 isAlpha
+           case xs of
+             "let" -> pure TokenLet
+             "in" -> pure TokenIn
+             _ -> pure $ TokenVar xs)
   where
     t <~ ch = t <$ char ch
 
