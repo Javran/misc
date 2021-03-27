@@ -72,11 +72,13 @@ State 21
   so we need "in" to have a lower precedence than '+' '-' '*' '/' in order to resolve those 4 conflicts.
 
  -}
+
+%expect 0 -- assert on shift/reduce conflict
 %right in
 %left '+' '-'
 %left '*' '/'
+%left NEG
 %%
-
 
 Exp :: { Exp }
   : let var '=' Exp in Exp
@@ -91,6 +93,8 @@ Exp :: { Exp }
     { Div $1 $3 }
   | '(' Exp ')'
     { Brack $2 }
+  | '-' Exp %prec NEG
+    { Negate $2 }
   | int
     { Int $1 }
   | var
@@ -103,6 +107,7 @@ parseError _ = error "parse error"
 
 data Exp
   = Let String Exp Exp
+  | Negate Exp
   | Plus Exp Exp
   | Minus Exp Exp
   | Times Exp Exp
