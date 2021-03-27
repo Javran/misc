@@ -1,6 +1,10 @@
 module Lexer where
 
+import Control.Monad.Except
 import Data.Char
+import Text.ParserCombinators.ReadP
+
+type P = ExceptT String ReadP
 
 data Token
   = TokenLet
@@ -14,28 +18,31 @@ data Token
   | TokenDiv
   | TokenOB
   | TokenCB
+  | TokenEOF
   deriving (Show)
 
-lexer :: String -> [Token]
-lexer [] = []
-lexer (c : cs)
-  | isSpace c = lexer cs
-  | isAlpha c = lexVar (c : cs)
-  | isDigit c = lexNum (c : cs)
-lexer ('=' : cs) = TokenEq : lexer cs
-lexer ('+' : cs) = TokenPlus : lexer cs
-lexer ('-' : cs) = TokenMinus : lexer cs
-lexer ('*' : cs) = TokenTimes : lexer cs
-lexer ('/' : cs) = TokenDiv : lexer cs
-lexer ('(' : cs) = TokenOB : lexer cs
-lexer (')' : cs) = TokenCB : lexer cs
-
-lexNum cs = TokenInt (read num) : lexer rest
+lexerP :: ReadP Token
+lexerP =
+  (TokenEOF <$ eof)
+    <++ TokenEq <~ '='
+    <++ TokenPlus <~ '+'
+    <++ TokenMinus <~ '-'
+    <++ TokenTimes <~ '*'
+    <++ TokenDiv <~ '/'
+    <++ TokenOB <~ '('
+    <++ TokenCB <~ ')'
+    <++ (TokenInt . read <$> munch1 isDigit)
+    <++ (TokenLet <$ string "let")
+    <++ (TokenIn <$ string "in")
+    <++ (
+         -- quick and dirty. if variable starts with "let" or "in" this won't work.
+         TokenVar <$> munch1 isAlpha)
   where
-    (num, rest) = span isDigit cs
+    t <~ ch = t <$ char ch
 
-lexVar cs =
-  case span isAlpha cs of
-    ("let", rest) -> TokenLet : lexer rest
-    ("in", rest) -> TokenIn : lexer rest
-    (var, rest) -> TokenVar var : lexer rest
+lexer :: (Token -> P a) -> P a
+lexer k =
+  lift (lexerP <* skipSpaces) >>= k
+
+parseError :: Token -> P a
+parseError _ = throwError "parse error"

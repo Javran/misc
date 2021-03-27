@@ -11,6 +11,7 @@ description: description
 dependencies:
 - base
 - array
+- mtl
 
 library:
   source-dirs: src

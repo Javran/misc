@@ -7,6 +7,8 @@ import Lexer
 %name calc
 %tokentype { Token }
 %error { parseError }
+%monad { P }
+%lexer { lexer } { TokenEOF }
 
 -- comments are suppored like this.
 
@@ -23,7 +25,6 @@ import Lexer
   '/'  { TokenDiv }
   '('  { TokenOB }
   ')'  { TokenCB }
-
 
 -- without those %% it will fail to compile,
 -- so they actually play some roles here.
@@ -101,9 +102,6 @@ Exp :: { Exp }
     { Var $1 }
 
 {
-
-parseError :: [Token] -> a
-parseError _ = error "parse error"
 
 data Exp
   = Let String Exp Exp
