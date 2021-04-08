@@ -3,10 +3,13 @@
 module LibSpec where
 
 import Lib
+import Math.NumberTheory.Primes
 import Test.Hspec
 import Test.Hspec.QuickCheck
 import Test.QuickCheck
-import Test.QuickCheck.Gen
+
+smallPrimes :: [Integer]
+smallPrimes = takeWhile (< 10000) $ fmap unPrime primes
 
 spec :: Spec
 spec =
