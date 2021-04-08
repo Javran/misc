@@ -20,7 +20,10 @@ spec =
       x <- choose (1, 0xFFFFFF)
       y <- choose (1, 0xFFFFFF)
       let (t, (u, v)) = extEuclidean @Integer x y
+          gcdResult = gcd x y
+          lbl = if gcdResult == 1 then "coprimes" else "not coprimes"
       pure $
-        t === gcd x y
-          .&&. (gcd x y =/= 1
-                  .||. u * x + v * y === 1)
+        label lbl $
+          t === gcd x y
+            .&&. (gcd x y =/= 1
+                    .||. u * x + v * y === 1)
