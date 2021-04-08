@@ -1,7 +1,4 @@
-module Lib
-  ( main
-  )
-where
+module Lib where
 
 import Control.Monad
 import Data.List
@@ -16,6 +13,7 @@ input =
   ]
 
 -- expect both input to be positive numbers.
+extEuclidean :: Integral i => i -> i -> (i, (i, i))
 extEuclidean a0 b0 = aux (a0, 1, 0) (b0, 0, 1)
   where
     aux (r0, s0, t0) y@(r1, s1, t1) =
@@ -37,14 +35,14 @@ main = do
   print triangle
   print $ reverse $ unfoldr (solveStep 17) ([], triangle)
 
-solveStep :: Int -> ([Int],[[Int]]) -> Maybe (Int, ([Int],[[Int]]))
+solveStep :: Int -> ([Int], [[Int]]) -> Maybe (Int, ([Int], [[Int]]))
 solveStep m (_, []) = Nothing
-solveStep m (xs, hd:tl) = do
+solveStep m (xs, hd : tl) = do
   let x = (rhs - sum (zipWith (*) lhs xs)) `mod` m
-      1:ys = hd
+      1 : ys = hd
       rhs = last ys
       lhs = init ys
-  pure (x, (x:xs, tl))
+  pure (x, (x : xs, tl))
 
 elimStep :: Int -> [[Int]] -> Maybe ([Int], [[Int]])
 elimStep m eqns = do
