@@ -1,0 +1,8 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "gaussian-elim:lib"
+    - path: "./exe"
+      component: "gaussian-elim:exe:demo"
+    - path: "./test"
+      component: "gaussian-elim:test:hspec"
