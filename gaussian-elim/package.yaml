@@ -12,6 +12,7 @@ dependencies:
 - base
 - containers
 - arithmoi
+- monad-loops
 
 library:
   source-dirs: src

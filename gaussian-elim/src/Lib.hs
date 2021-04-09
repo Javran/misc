@@ -1,6 +1,7 @@
 module Lib where
 
 import Control.Monad
+import Control.Monad.Loops
 import Data.List
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
@@ -44,9 +45,15 @@ main = do
   3 <- pure $ (a * 16 + b * 7 + c * 3) `rem` 17
   let norm n = if n > 0 then n else 17 + n
   print $ map (\x -> (x, norm . snd . snd . extEuclidean 17 $ x)) [1 .. 16]
-  let triangle = reverse $ unfoldr (elimStep 17) input
+  let Right t' = upperTriangular 17 input
+      triangle = reverse t'
   print triangle
   print $ reverse $ unfoldr (solveStep 17) ([], triangle)
+
+upperTriangular p = unfoldrM elimStepM
+  where
+    elimStepM :: [[Int]] -> Either Int (Maybe ([Int], [[Int]]))
+    elimStepM eqns = Right $ elimStep p eqns
 
 solveStep :: Int -> ([Int], [[Int]]) -> Maybe (Int, ([Int], [[Int]]))
 solveStep m (_, []) = Nothing
