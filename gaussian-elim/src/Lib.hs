@@ -23,6 +23,19 @@ extEuclidean a0 b0 = aux (a0, 1, 0) (b0, 0, 1)
       where
         (q, r) = r0 `quotRem` r1
 
+-- computes multiplicative inverse modulo p.
+-- returns input value on failure.
+multInv :: Integral i => i -> i -> Either i i
+multInv p x =
+  if comm == 1
+    then
+      Right $
+        -- p * s + x * t = 1
+        t `mod` p
+    else Left x
+  where
+    (comm, (_s, t)) = extEuclidean p x
+
 main :: IO ()
 main = do
   let [a, b, c] = [4, 15, 7 :: Int]
