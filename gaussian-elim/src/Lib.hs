@@ -19,7 +19,7 @@ input =
 data Err i
   = NoMultInv i
   | Underdetermined
-  deriving (Show)
+  deriving (Show, Eq)
 
 -- expect both input to be positive numbers.
 extEuclidean :: Integral i => i -> i -> (i, (i, i))
