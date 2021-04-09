@@ -1,7 +1,10 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module Lib where
 
 import Control.Monad
 import Control.Monad.Loops
+import Data.Bifunctor
 import Data.List
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
@@ -12,6 +15,11 @@ input =
   , [4, 11, 2, 8]
   , [16, 7, 3, 3]
   ]
+
+data Err i
+  = NoMultInv i
+  | Underdetermined
+  deriving (Show)
 
 -- expect both input to be positive numbers.
 extEuclidean :: Integral i => i -> i -> (i, (i, i))
@@ -43,44 +51,54 @@ main = do
   2 <- pure $ (a * 3 + b * 4 + c * 7) `rem` 17
   8 <- pure $ (a * 4 + b * 11 + c * 2) `rem` 17
   3 <- pure $ (a * 16 + b * 7 + c * 3) `rem` 17
-  let norm n = if n > 0 then n else 17 + n
-  print $ map (\x -> (x, norm . snd . snd . extEuclidean 17 $ x)) [1 .. 16]
-  let Right t' = upperTriangular 17 input
-      triangle = reverse t'
-  print triangle
-  print $ reverse $ unfoldr (solveStep 17) ([], triangle)
+  putStrLn "input:"
+  mapM_ print input
+  case solveMat 17 input of
+    Right sols -> putStrLn $ "Solution: " <> show sols
+    Left (NoMultInv i) ->
+      putStrLn $
+        "Cannot solve equations as " <> show i <> " does not have a multiplicative inverse."
+    Left Underdetermined ->
+      putStrLn
+        "Cannot solve equations, underdetermined."
 
-upperTriangular p = unfoldrM elimStepM
+solveMat :: Integral i => i -> [[i]] -> Either (Err i) [i]
+solveMat m mat = do
+  ut <- upperTriangular m mat
+  pure $ reverse $ unfoldr (solveStep m) ([], reverse ut)
+
+upperTriangular :: forall i. Integral i => i -> [[i]] -> Either (Err i) [[i]]
+upperTriangular m = unfoldrM elimStepM
   where
-    elimStepM :: [[Int]] -> Either Int (Maybe ([Int], [[Int]]))
-    elimStepM eqns = Right $ elimStep p eqns
+    elimStepM :: [[i]] -> Either (Err i) (Maybe ([i], [[i]]))
+    elimStepM eqns = do
+      let alts = do
+            -- any equation without a zero on front
+            (e@(hd : _), es) <- pick eqns
+            guard $ hd /= 0
+            pure (e, es)
+      case alts of
+        [] -> Right Nothing
+        ([], _) : _ -> Left Underdetermined
+        (e@(hd : _), es) : _ -> do
+          invHd <- first NoMultInv $ multInv m hd
+          let mul x y = (x * y) `mod` m
+              eNorm = fmap (mul invHd) (e :: [i])
+              norm eqn@(eh : _) =
+                if eh == 0
+                  then eqn
+                  else zipWith (\a b -> (a - b) `mod` m) eqn (fmap (mul eh) eNorm)
+              norm _ = error "length not unique"
+          pure $ Just (eNorm, fmap (drop 1 . norm) es)
 
-solveStep :: Int -> ([Int], [[Int]]) -> Maybe (Int, ([Int], [[Int]]))
-solveStep m (_, []) = Nothing
+solveStep :: Integral i => i -> ([i], [[i]]) -> Maybe (i, ([i], [[i]]))
+solveStep _ (_, []) = Nothing
 solveStep m (xs, hd : tl) = do
   let x = (rhs - sum (zipWith (*) lhs xs)) `mod` m
       1 : ys = hd
       rhs = last ys
       lhs = init ys
   pure (x, (x : xs, tl))
-
-elimStep :: Int -> [[Int]] -> Maybe ([Int], [[Int]])
-elimStep m eqns = do
-  [(a, s)] <- pure $
-    take 1 $ do
-      (e@(hd : _), es) <- pick eqns
-      guard $ hd /= 0
-      let (_, (_, invHd')) = extEuclidean m hd
-          invHd = invHd' `mod` m
-          mul x y = (x * y) `mod` m
-          eNorm = fmap (mul invHd) (e :: [Int])
-          norm eqn@(eh : _) =
-            if eh == 0
-              then eqn
-              else zipWith (\a b -> (a - b) `mod` m) eqn (fmap (mul eh) eNorm)
-          norm _ = error "TODO"
-      pure (eNorm, fmap norm es)
-  pure (a, fmap (drop 1) s)
 
 pick :: [a] -> [(a, [a])]
 pick xs = map split (init $ zip (inits xs) (tails xs))
