@@ -6,15 +6,7 @@ import Control.Monad
 import Control.Monad.Loops
 import Data.Bifunctor
 import Data.List
-import qualified Data.Map.Strict as M
-import qualified Data.Set as S
-
-input :: [[Int]]
-input =
-  [ [3, 4, 7, 2]
-  , [4, 11, 2, 8]
-  , [16, 7, 3, 3]
-  ]
+import qualified Puzzle as Pz
 
 data Err i
   = NoMultInv i
@@ -45,9 +37,15 @@ multInv p x =
   where
     (comm, (_s, t)) = extEuclidean p x
 
-main :: IO ()
-main = do
-  let [a, b, c] = [4, 15, 7 :: Int]
+mainDemo :: IO ()
+mainDemo = do
+  let input :: [[Int]]
+      input =
+        [ [3, 4, 7, 2]
+        , [4, 11, 2, 8]
+        , [16, 7, 3, 3]
+        ]
+      [a, b, c] = [4, 15, 7 :: Int]
   2 <- pure $ (a * 3 + b * 4 + c * 7) `rem` 17
   8 <- pure $ (a * 4 + b * 11 + c * 2) `rem` 17
   3 <- pure $ (a * 16 + b * 7 + c * 3) `rem` 17
@@ -105,3 +103,9 @@ pick xs = map split (init $ zip (inits xs) (tails xs))
   where
     split (ls, v : rs) = (v, ls ++ rs)
     split _ = error "cannot split empty list"
+
+main :: IO ()
+main = do
+  let mat :: [[Int]]
+      mat = map  (Pz.mkRow . Pz.eqn) Pz.coords
+  print (solveMat 4 mat)

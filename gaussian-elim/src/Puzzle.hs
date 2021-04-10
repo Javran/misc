@@ -18,14 +18,21 @@ targets :: M.Map Coord Int
 targets = M.fromList $ zip coords $ concatMap (fmap tr) initVals
   where
     tr x = (4 - x) `rem` 4
-    initVals =
+    initVals = [[3,1,3,2],[0,0,3,3],[3,2,3,0],[3,0,2,0]]
+      {-
       [ [2, 2, 3, 3]
       , [3, 2, 3, 3]
       , [1, 0, 3, 0]
       , [3, 2, 2, 0]
-      ]
+      ]-}
 
 type Eqn = ([] Char, Int)
+type MatRow = [Int]
+
+mkRow :: Eqn -> MatRow
+mkRow (lhs, rhs) = fmap tr ['A'..'P'] <> [rhs]
+  where
+    tr ch = if ch `elem` lhs then 1 else 0
 
 eqn :: Coord -> Eqn
 eqn c@(x, y) = (vs, targets M.! c)
