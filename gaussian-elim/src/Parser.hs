@@ -5,7 +5,6 @@ module Parser where
 
 import Control.Monad
 import Data.Char
-import Data.Functor
 import Text.ParserCombinators.ReadP
 
 {-
@@ -21,12 +20,14 @@ raw input format design:
 data PuzzleType
   = PSquare Int
   | PHexagon Int
+  deriving (Show, Eq)
 
 data Puzzle = Puzzle
   { opMod :: Int
   , pzType :: PuzzleType
   , grid :: [[Int]]
   }
+  deriving (Show, Eq)
 
 newlineP :: ReadP ()
 newlineP = void (char '\n')
@@ -62,3 +63,7 @@ puzzleP = do
   grid <- gridP pzType
   pure $ Puzzle {opMod, pzType, grid}
 
+fromRawString :: String -> Maybe Puzzle
+fromRawString raw = case readP_to_S (puzzleP <* skipSpaces <* eof) raw of
+  [(v, "")] -> Just v
+  _ -> Nothing
