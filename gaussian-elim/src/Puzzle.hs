@@ -5,6 +5,7 @@ import Data.Char
 import Data.List
 import Data.List.Split
 import qualified Data.Map.Strict as M
+import Data.Monoid
 import qualified Data.Set as S
 import Debug.Trace
 import Solver
@@ -88,28 +89,28 @@ hexExample =
 
 main :: IO ()
 main = do
-  let fallback _ eqns =
-        {-
-          TODO:
-          - div by gcd then fill in underdetermined.
-          - partition by whether hd is zero
-          - Q: but what if hd column are nothing but zero?
-            + need to insert one row with [1 0 0 0 ... 0]
-            + if there are all-zero rows, drop one
-            + otherwise just take diff.
-            + or shuffle a non-zero row to front, solve it and shuffle back?
-        -}
-        traceShow ("UNDER", eqns) $ Left Underdetermined
-      hexSplit = splitPlaces [4 :: Int, 5, 6, 7, 6, 5, 4]
-      ud =
+  let hexSplit = splitPlaces [4 :: Int, 5, 6, 7, 6, 5, 4]
+      r = solveMat' underDetFallback 6 hexExample
+      t =
         [ [0, 0, 0, 0, 0, 0]
-        , [3, 0, 0, 3, 0, 3]
         , [0, 0, 0, 0, 0, 0]
-        , [3, 0, 0, 3, 0, 3]
+        , [0, 0, 3, 0, 0, 3]
+        , [0, 0, 0, 3, 3, 3]
         , [0, 0, 0, 0, 0, 0]
         ]
-      r = solveMat' fallback 6 hexExample
-  print (foldr gcd 6 (concat ud))
+  -- print (solveMat' underDetFallback 6 t)
+  case r of
+    Left i -> print i
+    Right xs -> mapM_ print (hexSplit xs)
+  {-
+  print $
+    solveMatOne
+      10
+      [ [126, -27, 117, 83, 8]
+      , [44, -48, -95, 123, 9]
+      , [35, -141, 134, -26, 9]
+      , [-75, 66, -42, -6, 2]
+      ] -}
 
 pprLhsMat :: [[Int]] -> [String]
 pprLhsMat = fmap pprLine

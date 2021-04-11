@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Solver where
@@ -6,11 +7,13 @@ import Control.Monad
 import Control.Monad.Loops
 import Data.Bifunctor
 import Data.List
+import Data.Monoid
 import Debug.Trace
 
 data Err i
   = NoMultInv i
   | Underdetermined
+  | Todo String
   deriving (Show, Eq)
 
 -- expect both input to be positive numbers.
@@ -37,29 +40,70 @@ multInv p x =
   where
     (comm, (_s, t)) = extEuclidean p x
 
-solveMat' :: (Show i, Integral i) => (i -> ElimStepM i) -> i -> [[i]] -> Either (Err i) [i]
+type ElimStepM i = [[i]] -> Either (Err i) (Maybe ([i], [[i]]))
+
+solveMat' :: Integral i => (i -> ElimStepM i) -> i -> [[i]] -> Either (Err i) [i]
 solveMat' fallback m mat = do
   ut <- upperTriangular fallback m mat
   pure $ reverse $ unfoldr (solveStep m) ([], reverse ut)
 
-solveMat :: (Show i, Integral i) => i -> [[i]] -> Either (Err i) [i]
-solveMat =
-  solveMat'
-    (\_ eqns ->
-       {-
-               TODO:
-               - div by gcd then fill in underdetermined.
-               - partition by whether hd is zero
-               - Q: but what if hd column are nothing but zero?
-                 + need to insert one row with [1 0 0 0 ... 0]
-                 + if there are all-zero rows, drop one
-                 + otherwise just take diff.
-                 + or shuffle a non-zero row to front, solve it and shuffle back?
-             -}
+solveMat :: Integral i => i -> [[i]] -> Either (Err i) [i]
+solveMat = solveMat' (\_ _ -> Left Underdetermined)
 
-       traceShow ("UNDER", eqns) $ Left Underdetermined)
+solveMatOne :: Integral i => i -> [[i]] -> Either (Err i) [i]
+solveMatOne = solveMat' underDetFallback
 
-type ElimStepM i = [[i]] -> Either (Err i) (Maybe ([i], [[i]]))
+-- try to get one solution out of an underdetermined system.
+underDetFallback :: Integral i => i -> ElimStepM i
+underDetFallback m eqns
+  | null eqns = stop
+  | isLhsSquare = do
+    {-
+      note that here we also have l >= 1.
+     -}
+    let fstNonZeroInd =
+          getFirst
+            . mconcat
+            . fmap (First . findIndex (\v -> v `mod` m /= 0))
+            $ eqns
+    case fstNonZeroInd of
+      Nothing ->
+        {-
+          Making this determined by fixing underdetermined variables to 0.
+         -}
+        let (hdL : tlL) =
+              fmap
+                (<> [0])
+                [[if r == c then 1 else 0 | c <- [1 .. l]] | r <- [1 .. l]]
+         in Right $ Just (hdL, fmap (drop 1) tlL)
+      Just nzInd -> do
+        let common = foldr gcd m (concat eqns)
+            m' = m `div` common
+            eqns' = (fmap . fmap) (`div` common) eqns
+            (doShuffle, unShuffle) = shuffler nzInd
+            eqns'' = fmap doShuffle eqns'
+        {-
+          This might seem to be a potential for infinite loop,
+          but we have prevented that by moving a column that contains
+          non-zero element to the front to make sure it's making progress.
+
+          Update: another case is when gcd is 1, in which case we leave it unhandled for now.
+         -}
+        when (common == 1) $
+          Left $ Todo (show nzInd)
+        rsPre <- solveMatOne m' eqns''
+        let rs = unShuffle rsPre
+            (hdL : tlL) =
+              zipWith
+                (\r lhs -> lhs <> [r])
+                rs
+                [[if r == c then 1 else 0 | c <- [1 .. l]] | r <- [1 .. l]]
+        Right $ Just (hdL, fmap (drop 1) tlL)
+  | otherwise = stop
+  where
+    stop = Left Underdetermined
+    l = length eqns
+    isLhsSquare = all ((== l + 1) . length) eqns
 
 upperTriangular
   :: forall i.

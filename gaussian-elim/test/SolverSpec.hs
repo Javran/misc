@@ -11,6 +11,7 @@ import Solver
 import Test.Hspec
 import Test.Hspec.QuickCheck
 import Test.QuickCheck
+import Data.Either
 
 smallPrimes :: [Integer]
 smallPrimes = takeWhile (< 10000) $ fmap unPrime primes
@@ -43,22 +44,27 @@ spec = do
              label "has inv" $
                n' >= 0 .&&. n' < m .&&. (n' * n) `mod` m === 1)
           r
-  describe "solveMat" $ do
+  describe "solveMatOne" $ do
+    {-
+      TODO: coverage
+      - small modulo (2~12)
+      - intentionally underdetermined
+     -}
     specify "example" $
-      solveMat @Int
+      solveMatOne @Int
         17
         [ [3, 4, 7, 2]
         , [4, 11, 2, 8]
         , [16, 7, 3, 3]
         ]
         `shouldBe` Right [4, 15, 7]
-    prop "correctness" $ do
+    prop "correctness (primes)" $ do
       sz <- choose @Int (3, 20)
       let rndIntVal = choose @Int64 (-0xFF_FFFF, 0xFF_FFFF)
       mPre <- elements smallPrimes
       let m = fromInteger mPre
       mat <- replicateM sz $ replicateM (sz + 1) rndIntVal
-      let result = solveMat m mat
+      let result = solveMatOne m mat
           lbl = case result of
             Right _ -> "right"
             Left v ->
@@ -79,6 +85,23 @@ spec = do
                       .&&. counterexample (show ((lhs, xs), rhs)) (
                               sum (zipWith (*) lhs xs) `mod` m === (rhs `mod` m))
             Left _ -> property True
+    {-
+    prop "correctness (small modulo)" $ do
+      let maxM = 12
+          rndIntVal = choose @Int (-sq, sq)
+            where
+              sq = maxM * maxM
+      m <- choose @Int (2, maxM)
+      sz <- choose @Int (2, 8)
+      mat <- do
+        matLhs <- replicateM sz $ replicateM sz rndIntVal
+        assns <- replicateM sz rndIntVal
+        let matRhs :: [Int]
+            matRhs = fmap (\lhs -> sum (zipWith(*) assns lhs) `mod` m) matLhs
+        pure $ zipWith (\lhs rhs -> lhs <> [rhs]) matLhs matRhs
+      let result = solveMatOne m mat
+      -- TODO
+      pure $ counterexample (show result) $ property $ isRight result -}
   describe "shuffler" $ do
     specify "example" $ do
       let (f, g) = shuffler 2
