@@ -10,9 +10,10 @@ import qualified Data.Set as S
 type Coord = (Int, Int)
 
 -- the resulting pair is: LHS coefficients of the puzzle matrix,
--- and a list of Coords xs, such that its i-th element is the i-th variable of the equation.
-sqCoords :: Int -> ([[Int]], [Coord])
-sqCoords sz = (fmap mkEqn allCoords, allCoords)
+-- and a nested list of Coords xs, such that, when flatten this list,
+-- its i-th element is the i-th variable of the equation.
+sqCoords :: Int -> ([[Int]], [[Coord]])
+sqCoords sz = (fmap mkEqn allCoords, nestedAllCoords)
   where
     mkEqn :: Coord -> [Int]
     mkEqn c =
@@ -25,7 +26,8 @@ sqCoords sz = (fmap mkEqn allCoords, allCoords)
     coordEqns :: M.Map Coord [Coord]
     coordEqns = M.fromDistinctAscList $ fmap (\c -> (c, surrounding c)) allCoords
 
-    allCoords = [(i, j) | i <- [0 .. sz -1], j <- [0 .. sz -1]]
+    nestedAllCoords = [ [(r,c) | c <- [0..sz-1]] | r <- [0..sz-1] ]
+    allCoords = concat nestedAllCoords
     allCoords' = S.fromDistinctAscList allCoords
     surrounding (x, y) = do
       i <- [x -1 .. x + 1]
