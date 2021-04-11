@@ -53,7 +53,7 @@ spec = do
         ]
         `shouldBe` Right [4, 15, 7]
     prop "correctness" $ do
-      sz <- choose @Int (3, 100)
+      sz <- choose @Int (3, 20)
       let rndIntVal = choose @Int64 (-0xFF_FFFF, 0xFF_FFFF)
       mPre <- elements smallPrimes
       let m = fromInteger mPre
