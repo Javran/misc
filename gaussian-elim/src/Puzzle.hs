@@ -3,6 +3,7 @@ module Puzzle where
 import Control.Monad
 import Data.Char
 import Data.List
+import Data.List.Split
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 
@@ -67,10 +68,34 @@ hexCoords sz = (fmap mkEqn allCoords, nestedAllCoords)
         xs :: [CubeCoord]
         xs = coordEqns M.! c
 
+hexExample =
+  let inp =
+        (fmap . fmap)
+          (\v -> (1 - v) `mod` 6)
+          [ [1, 6, 2, 6]
+          , [2, 1, 1, 5, 1]
+          , [5, 6, 1, 5, 3, 4]
+          , [5, 5, 2, 1, 3, 2, 5]
+          , [5, 1, 4, 6, 4, 2]
+          , [2, 3, 4, 1, 4]
+          , [4, 5, 6, 1]
+          ]
+
+      (matLhs, _) = hexCoords 4
+   in zipWith (\xs rhs -> foldr (:) [rhs] xs) matLhs (concat inp)
+
 main :: IO ()
 main = do
-  let r = hexCoords 4
-  mapM_ putStrLn $ pprLhsMat (fst r)
+  let (matLhs, _) = hexCoords 4
+  mapM_
+    (\xs -> do
+       mapM_
+         (\(pd, x) -> putStrLn $ replicate pd ' ' <> show x)
+         (zip
+            [3, 2, 1, 0, 1, 2, 3]
+            (splitPlaces [4 :: Int, 5, 6, 7, 6, 5, 4] xs))
+       putStrLn "====")
+    matLhs
 
 pprLhsMat :: [[Int]] -> [String]
 pprLhsMat = fmap pprLine

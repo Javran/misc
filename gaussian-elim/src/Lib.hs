@@ -73,7 +73,9 @@ upperTriangular m = unfoldrM elimStepM
       let alts = do
             -- any equation without a zero on front
             (e@(hd : _), es) <- pick eqns
-            guard $ hd /= 0
+            guard $ hd /= 0 && case multInv m hd of
+                                  Left _ -> False
+                                  Right _ -> True
             pure (e, es)
       case alts of
         [] -> Right Nothing
@@ -108,6 +110,6 @@ main :: IO ()
 main = do
   let mat :: [[Int]]
       mat = map (Pz.mkRow . Pz.eqn) Pz.coords
-      r = Pz.sqCoords 3
+      Right r =solveMat 6 Pz.hexExample
   -- print (solveMat 4 mat)
   Pz.main

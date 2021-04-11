@@ -13,6 +13,7 @@ dependencies:
 - containers
 - arithmoi
 - monad-loops
+- split
 
 library:
   source-dirs: src
