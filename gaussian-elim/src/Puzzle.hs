@@ -1,6 +1,7 @@
 module Puzzle where
 
 import Control.Monad
+import Data.Char
 import qualified Data.IntSet as IS
 import Data.List
 import qualified Data.Map.Strict as M
@@ -24,9 +25,6 @@ sqCoords sz = (fmap mkEqn allCoords, allCoords)
     coordEqns :: M.Map Coord [Coord]
     coordEqns = M.fromDistinctAscList $ fmap (\c -> (c, surrounding c)) allCoords
 
-    coordsToLinears :: M.Map Coord Int
-    coordsToLinears = M.fromDistinctAscList $ zip allCoords [0 ..]
-
     allCoords = [(i, j) | i <- [0 .. sz -1], j <- [0 .. sz -1]]
     allCoords' = S.fromDistinctAscList allCoords
     surrounding (x, y) = do
@@ -44,7 +42,7 @@ pprLhsMat = fmap pprLine
           1 -> [ch]
           0 -> " "
           _ -> error "unexpected"
-        cs = ['A'..]
+        cs = filter isAlpha ['A' ..]
 
 coords :: [Coord]
 coords = [(i, j) | i <- [0 .. 3], j <- [0 .. 3]]

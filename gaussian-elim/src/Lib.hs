@@ -108,9 +108,8 @@ main :: IO ()
 main = do
   let mat :: [[Int]]
       mat = map (Pz.mkRow . Pz.eqn) Pz.coords
-      r = Pz.sqCoords 4
+      r = Pz.sqCoords 3
   print (solveMat 4 mat)
 
   mapM_ (putStrLn . Pz.pprEqn . Pz.eqn) Pz.coords
   mapM_ putStrLn (Pz.pprLhsMat (fst r))
-  print $ fst r == fmap init mat
