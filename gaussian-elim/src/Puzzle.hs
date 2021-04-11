@@ -1,15 +1,32 @@
 module Puzzle where
 
 import Control.Monad
+import qualified Data.IntSet as IS
 import Data.List
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 
 type Coord = (Int, Int)
 
-sqCoords :: Int -> M.Map Coord [Coord]
-sqCoords sz = M.fromDistinctAscList $ fmap (\c -> (c, surrounding c)) allCoords
+-- the resulting pair is: LHS coefficients of the puzzle matrix,
+-- and a list of Coords xs, such that its i-th element is the i-th variable of the equation.
+sqCoords :: Int -> ([[Int]], [Coord])
+sqCoords sz = (fmap mkEqn allCoords, allCoords)
   where
+    mkEqn :: Coord -> [Int]
+    mkEqn c =
+      -- TODO: we might want to do something more efficient than this.
+      fmap (\c' -> if c' `elem` xs then 1 else 0) allCoords
+      where
+        xs :: [Coord]
+        xs = coordEqns M.! c
+
+    coordEqns :: M.Map Coord [Coord]
+    coordEqns = M.fromDistinctAscList $ fmap (\c -> (c, surrounding c)) allCoords
+
+    coordsToLinears :: M.Map Coord Int
+    coordsToLinears = M.fromDistinctAscList $ zip allCoords [0 ..]
+
     allCoords = [(i, j) | i <- [0 .. sz -1], j <- [0 .. sz -1]]
     allCoords' = S.fromDistinctAscList allCoords
     surrounding (x, y) = do
