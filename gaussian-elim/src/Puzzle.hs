@@ -35,6 +35,17 @@ sqCoords sz = (fmap mkEqn allCoords, allCoords)
       let c = (i, j)
       c <$ guard (S.member c allCoords')
 
+pprLhsMat :: [[Int]] -> [String]
+pprLhsMat = fmap pprLine
+  where
+    pprLine coeffs = intercalate " + " (zipWith combine coeffs cs) <> " = ?"
+      where
+        combine coeff ch = case coeff of
+          1 -> [ch]
+          0 -> " "
+          _ -> error "unexpected"
+        cs = ['A'..]
+
 coords :: [Coord]
 coords = [(i, j) | i <- [0 .. 3], j <- [0 .. 3]]
 
