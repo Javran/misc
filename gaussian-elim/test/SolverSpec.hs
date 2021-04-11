@@ -1,15 +1,15 @@
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE TypeApplications #-}
 
-module LibSpec where
+module SolverSpec where
 
 import Control.Monad
-import Lib
+import Data.Int
 import Math.NumberTheory.Primes
+import Solver
 import Test.Hspec
 import Test.Hspec.QuickCheck
 import Test.QuickCheck
-import Data.Int
 
 smallPrimes :: [Integer]
 smallPrimes = takeWhile (< 10000) $ fmap unPrime primes
@@ -74,9 +74,7 @@ spec = do
                   let lhs = init eqn
                       rhs = last eqn
                   pure $
-                    if length xs < length lhs -- TODO: this should be underdetermined error.
-                      then label "underdetermined" $ property True
-                      else
-                        counterexample (show ((lhs, xs), rhs)) $
-                          sum (zipWith (*) lhs xs) `mod` m === (rhs `mod` m)
+                    length xs === length lhs
+                      .&&. counterexample (show ((lhs, xs), rhs)) (
+                              sum (zipWith (*) lhs xs) `mod` m === (rhs `mod` m))
             Left _ -> property True
