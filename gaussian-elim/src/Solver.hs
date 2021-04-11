@@ -37,7 +37,7 @@ multInv p x =
   where
     (comm, (_s, t)) = extEuclidean p x
 
-solveMat' :: (Show i, Integral i) => ElimStepM i -> i -> [[i]] -> Either (Err i) [i]
+solveMat' :: (Show i, Integral i) => (i -> ElimStepM i) -> i -> [[i]] -> Either (Err i) [i]
 solveMat' fallback m mat = do
   ut <- upperTriangular fallback m mat
   pure $ reverse $ unfoldr (solveStep m) ([], reverse ut)
@@ -45,7 +45,7 @@ solveMat' fallback m mat = do
 solveMat :: (Show i, Integral i) => i -> [[i]] -> Either (Err i) [i]
 solveMat =
   solveMat'
-    (\eqns ->
+    (\_ eqns ->
        {-
                TODO:
                - div by gcd then fill in underdetermined.
@@ -61,7 +61,7 @@ solveMat =
 
 type ElimStepM i = [[i]] -> Either (Err i) (Maybe ([i], [[i]]))
 
-upperTriangular :: forall i. Integral i => ElimStepM i -> i -> [[i]] -> Either (Err i) [[i]]
+upperTriangular :: forall i. Integral i => (i -> ElimStepM i) -> i -> [[i]] -> Either (Err i) [[i]]
 upperTriangular fallback m = unfoldrM elimStepM
   where
     elimStepM :: ElimStepM i
@@ -75,7 +75,7 @@ upperTriangular fallback m = unfoldrM elimStepM
         [] ->
           if null eqns
             then Right Nothing
-            else fallback eqns
+            else fallback m eqns
         ([], _) : _ -> Left Underdetermined
         (e@(hd : _), es) : _ -> do
           invHd <- first NoMultInv $ multInv m hd

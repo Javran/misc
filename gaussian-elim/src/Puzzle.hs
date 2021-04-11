@@ -6,6 +6,8 @@ import Data.List
 import Data.List.Split
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
+import Debug.Trace
+import Solver
 
 type Coord = (Int, Int)
 
@@ -72,13 +74,13 @@ hexExample =
   let inp =
         (fmap . fmap)
           (\v -> (1 - v) `mod` 6)
-          [ [1,2,4,5]
-          , [5,5,3,2,4]
-          , [1,1,3,3,2,4]
-          , [5,6,2,4,2,2,6]
-          , [5,1,3,5,2,6]
-          , [1,4,2,1,3]
-          , [4,5,6,4]
+          [ [1, 2, 4, 5]
+          , [5, 5, 3, 2, 4]
+          , [1, 1, 3, 3, 2, 4]
+          , [5, 6, 2, 4, 2, 2, 6]
+          , [5, 1, 3, 5, 2, 6]
+          , [1, 4, 2, 1, 3]
+          , [4, 5, 6, 4]
           ]
 
       (matLhs, _) = hexCoords 4
@@ -86,16 +88,28 @@ hexExample =
 
 main :: IO ()
 main = do
-  let (matLhs, _) = hexCoords 4
-  mapM_
-    (\xs -> do
-       mapM_
-         (\(pd, x) -> putStrLn $ replicate pd ' ' <> show x)
-         (zip
-            [3, 2, 1, 0, 1, 2, 3]
-            (splitPlaces [4 :: Int, 5, 6, 7, 6, 5, 4] xs))
-       putStrLn "====")
-    matLhs
+  let fallback _ eqns =
+        {-
+          TODO:
+          - div by gcd then fill in underdetermined.
+          - partition by whether hd is zero
+          - Q: but what if hd column are nothing but zero?
+            + need to insert one row with [1 0 0 0 ... 0]
+            + if there are all-zero rows, drop one
+            + otherwise just take diff.
+            + or shuffle a non-zero row to front, solve it and shuffle back?
+        -}
+        traceShow ("UNDER", eqns) $ Left Underdetermined
+      hexSplit = splitPlaces [4 :: Int, 5, 6, 7, 6, 5, 4]
+      ud =
+        [ [0, 0, 0, 0, 0, 0]
+        , [3, 0, 0, 3, 0, 3]
+        , [0, 0, 0, 0, 0, 0]
+        , [3, 0, 0, 3, 0, 3]
+        , [0, 0, 0, 0, 0, 0]
+        ]
+      r = solveMat' fallback 6 hexExample
+  print (foldr gcd 6 (concat ud))
 
 pprLhsMat :: [[Int]] -> [String]
 pprLhsMat = fmap pprLine

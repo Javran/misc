@@ -34,11 +34,12 @@ main :: IO ()
 main = do
   let mat :: [[Int]]
       mat = map (Pz.mkRow . Pz.eqn) Pz.coords
-      Right r = solveMat 6 Pz.hexExample
+      Right r = solveMat' (\_ _ -> Right Nothing) 6 Pz.hexExample
   -- print (solveMat 4 mat)
   -- Pz.main
   -- mapM_ print (zipWith (\pd xs -> replicate pd 0 <> xs) [0..] z)
   -- print z
   -- let sol = reverse $ unfoldr (solveStep 6) ([], reverse u)
-  mapM_ print (splitPlaces [4 :: Int, 5, 6, 7, 6, 5, 4] r)
-  pure ()
+  -- mapM_ print (splitPlaces [4 :: Int, 5, 6, 7, 6, 5, 4] r)
+  -- pure ()
+  Pz.main
