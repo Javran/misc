@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE TypeApplications #-}
 
@@ -78,3 +79,14 @@ spec = do
                       .&&. counterexample (show ((lhs, xs), rhs)) (
                               sum (zipWith (*) lhs xs) `mod` m === (rhs `mod` m))
             Left _ -> property True
+  describe "shuffler" $ do
+    specify "example" $ do
+      let (f, g) = shuffler 2
+      f "ABCD" `shouldBe` "CABD"
+      g "CABD" `shouldBe` "ABCD"
+    prop "correctness" $ \(xs :: String) ->
+      conjoin $ do
+        (i,e) <- zip [0..] xs
+        let (f,g) = shuffler i
+            ys = f xs
+        pure $ xs === g ys .&&. head ys === e

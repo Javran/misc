@@ -61,7 +61,13 @@ solveMat =
 
 type ElimStepM i = [[i]] -> Either (Err i) (Maybe ([i], [[i]]))
 
-upperTriangular :: forall i. Integral i => (i -> ElimStepM i) -> i -> [[i]] -> Either (Err i) [[i]]
+upperTriangular
+  :: forall i.
+  Integral i
+  => (i -> ElimStepM i)
+  -> i
+  -> [[i]]
+  -> Either (Err i) [[i]]
 upperTriangular fallback m = unfoldrM elimStepM
   where
     elimStepM :: ElimStepM i
@@ -102,3 +108,27 @@ pick xs = map split (init $ zip (inits xs) (tails xs))
   where
     split (ls, v : rs) = (v, ls ++ rs)
     split _ = error "cannot split empty list"
+
+shuffler :: Int -> ([a] -> [a], [a] -> [a])
+shuffler i =
+  if i <= 0
+    then (id, id)
+    else
+      let doShuffle xs =
+            if i >= l
+              then xs
+              else
+                let (pres, h : tl) = splitAt i xs
+                 in h : pres <> tl
+            where
+              l = length xs
+          unShuffle xs =
+            if i >= l
+              then xs
+              else
+                let (hd : ys) = xs
+                    (ys0, ys1) = splitAt i ys
+                 in ys0 <> (hd : ys1)
+            where
+              l = length xs
+       in (doShuffle, unShuffle)
