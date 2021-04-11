@@ -6,6 +6,8 @@ import Control.Monad
 import Control.Monad.Loops
 import Data.Bifunctor
 import Data.List
+import Data.List.Split
+import Debug.Trace
 import qualified Puzzle as Pz
 
 data Err i
@@ -60,12 +62,12 @@ mainDemo = do
       putStrLn
         "Cannot solve equations, underdetermined."
 
-solveMat :: Integral i => i -> [[i]] -> Either (Err i) [i]
+solveMat :: (Show i, Integral i) => i -> [[i]] -> Either (Err i) [i]
 solveMat m mat = do
   ut <- upperTriangular m mat
   pure $ reverse $ unfoldr (solveStep m) ([], reverse ut)
 
-upperTriangular :: forall i. Integral i => i -> [[i]] -> Either (Err i) [[i]]
+upperTriangular :: forall i. (Show i, Integral i) => i -> [[i]] -> Either (Err i) [[i]]
 upperTriangular m = unfoldrM elimStepM
   where
     elimStepM :: [[i]] -> Either (Err i) (Maybe ([i], [[i]]))
@@ -73,12 +75,23 @@ upperTriangular m = unfoldrM elimStepM
       let alts = do
             -- any equation without a zero on front
             (e@(hd : _), es) <- pick eqns
-            guard $ hd /= 0 && case multInv m hd of
-                                  Left _ -> False
-                                  Right _ -> True
+            guard $ gcd m hd == 1
             pure (e, es)
       case alts of
-        [] -> Right Nothing
+        [] ->
+          if null eqns
+            then Right Nothing
+            else {-
+                    TODO:
+                    - div by gcd then fill in underdetermined.
+                    - partition by whether hd is zero
+                    - Q: but what if hd column are nothing but zero?
+                      + need to insert one row with [1 0 0 0 ... 0]
+                      + if there are all-zero rows, drop one
+                      + otherwise just take diff.
+                      + or shuffle a non-zero row to front, solve it and shuffle back?
+                  -}
+              Right (traceShow ("UNDER", eqns) Nothing)
         ([], _) : _ -> Left Underdetermined
         (e@(hd : _), es) : _ -> do
           invHd <- first NoMultInv $ multInv m hd
@@ -110,6 +123,52 @@ main :: IO ()
 main = do
   let mat :: [[Int]]
       mat = map (Pz.mkRow . Pz.eqn) Pz.coords
-      Right r =solveMat 6 Pz.hexExample
+      Right r = solveMat 6 Pz.hexExample
+      Right z = upperTriangular 6 Pz.hexExample
+      u =
+        [ [1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        , [1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3]
+        , [1, 0, 5, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5]
+        , [1, 1, 0, 5, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3]
+        , [1, 1, 5, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4]
+        , [1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4]
+        , [1, 0, 5, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3]
+        , [1, 0, 0, 0, 0, 1, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+        , [1, 5, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5]
+        , [1, 0, 5, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4]
+        , [1, 1, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5]
+        , [1, 5, 0, 0, 5, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4]
+        , [1, 5, 5, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        , [1, 0, 5, 0, 1, 5, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4]
+        , [1, 1, 1, 5, 2, 0, 0, 0, 5, 5, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4]
+        , [1, 1, 1, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2]
+        , [1, 2, 2, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3]
+        , [1, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2]
+        , [1, 1, 1, 1, 0, 5, 5, 5, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 4]
+        , [1, 0, 5, 5, 5, 5, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 0, 1]
+        , [1, 1, 2, 1, 1, 1, 1, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 4]
+        , [1, 0, 3, 4, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2]
+        , [1, 5, 3, 0, 5, 5, 2, 5, 3, 0, 0, 0, 0, 0, 0, 2]
+        , [1, 4, 1, 2, 1, 5, 3, 3, 0, 0, 0, 0, 0, 0, 0]
+        , [1, 1, 4, 2, 4, 1, 4, 5, 0, 0, 0, 0, 0, 2]
+        , [1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 0]
+        , [1, 2, 3, 0, 2, 4, 2, 0, 0, 3, 3, 3]
+        , [1, 1, 0, 4, 5, 0, 0, 0, 4, 4, 0]
+        , [1, 1, 0, 0, 0, 1, 1, 0, 0, 3]
+        , [1, 1, 0, 0, 1, 1, 1, 0, 2]
+        , [1, 5, 1, 0, 1, 2, 5, 4]
+        , [1, 1, 0, 0, 1, 1, 3]
+        , [1, 0, 0, 1, 0, 1]
+        , [1, 0, 0, 0, 0]
+        , [1, 0, 0, 0]
+        , [1, 0, 0]
+        , [1, 0]
+        ]
+
   -- print (solveMat 4 mat)
-  Pz.main
+  -- Pz.main
+  -- mapM_ print (zipWith (\pd xs -> replicate pd 0 <> xs) [0..] z)
+  print z
+  let sol = reverse $ unfoldr (solveStep 6) ([], reverse u)
+  mapM_ print (splitPlaces [4 :: Int, 5, 6, 7, 6, 5, 4] sol)
+  pure ()
