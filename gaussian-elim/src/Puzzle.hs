@@ -2,7 +2,6 @@ module Puzzle where
 
 import Control.Monad
 import Data.Char
-import qualified Data.IntSet as IS
 import Data.List
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
@@ -26,7 +25,7 @@ sqCoords sz = (fmap mkEqn allCoords, nestedAllCoords)
     coordEqns :: M.Map Coord [Coord]
     coordEqns = M.fromDistinctAscList $ fmap (\c -> (c, surrounding c)) allCoords
 
-    nestedAllCoords = [ [(r,c) | c <- [0..sz-1]] | r <- [0..sz-1] ]
+    nestedAllCoords = [[(r, c) | c <- [0 .. sz -1]] | r <- [0 .. sz -1]]
     allCoords = concat nestedAllCoords
     allCoords' = S.fromDistinctAscList allCoords
     surrounding (x, y) = do
@@ -34,6 +33,44 @@ sqCoords sz = (fmap mkEqn allCoords, nestedAllCoords)
       j <- [y -1 .. y + 1]
       let c = (i, j)
       c <$ guard (S.member c allCoords')
+
+-- https://www.redblobgames.com/grids/hexagons/#coordinates-cube
+type CubeCoord = (Int, Int, Int)
+
+hexCoords sz = (fmap mkEqn allCoords, nestedAllCoords)
+  where
+    mx = sz -1
+    nestedAllCoords :: [[CubeCoord]]
+    nestedAllCoords =
+      [[(x, y, z) | y <- [3, 2 .. (-3 - z)], let x = - y - z] | z <- [- mx .. 0]]
+        <> [[(x, y, z) | x <- [-3 .. 3 - z], let y = - x - z] | z <- [1 .. mx]]
+    allCoords = concat nestedAllCoords
+    allCoords' = S.fromList allCoords
+    surrounding c@(x, y, z) =
+      c :
+      filter
+        (`S.member` allCoords')
+        [ (x, y + 1, z -1)
+        , (x, y -1, z + 1)
+        , (x + 1, y, z -1)
+        , (x -1, y, z + 1)
+        , (x + 1, y -1, z)
+        , (x - 1, y + 1, z)
+        ]
+    coordEqns :: M.Map CubeCoord [CubeCoord]
+    coordEqns = M.fromList $ fmap (\c -> (c, surrounding c)) allCoords
+    mkEqn :: CubeCoord -> [Int]
+    mkEqn c =
+      -- TODO: we might want to do something more efficient than this.
+      fmap (\c' -> if c' `elem` xs then 1 else 0) allCoords
+      where
+        xs :: [CubeCoord]
+        xs = coordEqns M.! c
+
+main :: IO ()
+main = do
+  let r = hexCoords 4
+  mapM_ putStrLn $ pprLhsMat (fst r)
 
 pprLhsMat :: [[Int]] -> [String]
 pprLhsMat = fmap pprLine
