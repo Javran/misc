@@ -1,0 +1,8 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "pyffi:lib"
+    - path: "./exe"
+      component: "pyffi:exe:demo"
+    - path: "./test"
+      component: "pyffi:test:hspec"
