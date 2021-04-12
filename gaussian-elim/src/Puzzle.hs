@@ -71,26 +71,37 @@ hexCoords sz = (fmap mkEqn allCoords, nestedAllCoords)
         xs :: [CubeCoord]
         xs = coordEqns M.! c
 
+archived =
+  [ [1, 2, 4, 5]
+  , [5, 5, 3, 2, 4]
+  , [1, 1, 3, 3, 2, 4]
+  , [5, 6, 2, 4, 2, 2, 6]
+  , [5, 1, 3, 5, 2, 6]
+  , [1, 4, 2, 1, 3]
+  , [4, 5, 6, 4]
+  ]
+
 hexExample =
   let inp =
         (fmap . fmap)
           (\v -> (1 - v) `mod` 6)
-          [ [1, 2, 4, 5]
-          , [5, 5, 3, 2, 4]
-          , [1, 1, 3, 3, 2, 4]
-          , [5, 6, 2, 4, 2, 2, 6]
-          , [5, 1, 3, 5, 2, 6]
-          , [1, 4, 2, 1, 3]
-          , [4, 5, 6, 4]
+          [ [5,2,3,2]
+          , [3,2,6,4,1]
+          , [5,5,5,3,3,4]
+          , [5,5,3,1,1,3,3]
+          , [6,2,6,5,3,6]
+          , [3,4,4,6,2]
+          , [4,5,6,4]
           ]
 
       (matLhs, _) = hexCoords 4
    in zipWith (\xs rhs -> foldr (:) [rhs] xs) matLhs (concat inp)
 
+hexSplit = splitPlaces [4 :: Int, 5, 6, 7, 6, 5, 4]
+
 main :: IO ()
 main = do
-  let hexSplit = splitPlaces [4 :: Int, 5, 6, 7, 6, 5, 4]
-      r = solveMat' underDetFallback 6 hexExample
+  let r = solveMat' underDetFallback 6 hexExample
       t =
         [ [0, 0, 0, 0, 0, 0]
         , [0, 0, 0, 0, 0, 0]
@@ -102,15 +113,16 @@ main = do
   case r of
     Left i -> print i
     Right xs -> mapM_ print (hexSplit xs)
-  {-
-  print $
-    solveMatOne
-      10
-      [ [126, -27, 117, 83, 8]
-      , [44, -48, -95, 123, 9]
-      , [35, -141, 134, -26, 9]
-      , [-75, 66, -42, -6, 2]
-      ] -}
+
+{-
+print $
+  solveMatOne
+    10
+    [ [126, -27, 117, 83, 8]
+    , [44, -48, -95, 123, 9]
+    , [35, -141, 134, -26, 9]
+    , [-75, 66, -42, -6, 2]
+    ] -}
 
 pprLhsMat :: [[Int]] -> [String]
 pprLhsMat = fmap pprLine

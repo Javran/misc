@@ -5,6 +5,7 @@ module Lib where
 import Data.List
 import Data.List.Split
 import qualified Puzzle as Pz
+import qualified Gaussian as G
 import Solver
 
 mainDemo :: IO ()
@@ -42,4 +43,5 @@ main = do
   -- let sol = reverse $ unfoldr (solveStep 6) ([], reverse u)
   -- mapM_ print (splitPlaces [4 :: Int, 5, 6, 7, 6, 5, 4] r)
   -- pure ()
-  Pz.main
+  -- Pz.main
+  G.main

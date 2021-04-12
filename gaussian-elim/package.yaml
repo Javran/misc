@@ -15,6 +15,7 @@ dependencies:
 - monad-loops
 - split
 - utility-ht
+- MonadRandom
 
 library:
   source-dirs: src
