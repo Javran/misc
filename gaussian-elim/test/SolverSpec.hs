@@ -71,6 +71,7 @@ spec = do
               "left: " <> case v of
                 NoMultInv _ -> "no mult inv"
                 Underdetermined -> "underdet"
+                Todo _ -> "TODO"
       pure $
         label lbl $
           case result of
