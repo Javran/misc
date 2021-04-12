@@ -7,8 +7,8 @@ import Control.Monad
 import Control.Monad.Loops
 import Data.Bifunctor
 import Data.List
+import Data.List.HT
 import Data.Monoid
-import Debug.Trace
 
 data Err i
   = NoMultInv i
@@ -118,7 +118,7 @@ upperTriangular fallback m = unfoldrM elimStepM
     elimStepM eqns = do
       let alts = do
             -- any equation without a zero on front
-            (e@(hd : _), es) <- pick eqns
+            (e@(hd : _), es) <- removeEach eqns
             guard $ gcd m hd == 1
             pure (e, es)
       case alts of
@@ -146,12 +146,6 @@ solveStep m (xs, hd : tl) = do
       rhs = last ys
       lhs = init ys
   pure (x, (x : xs, tl))
-
-pick :: [a] -> [(a, [a])]
-pick xs = map split (init $ zip (inits xs) (tails xs))
-  where
-    split (ls, v : rs) = (v, ls ++ rs)
-    split _ = error "cannot split empty list"
 
 shuffler :: Int -> ([a] -> [a], [a] -> [a])
 shuffler i =
