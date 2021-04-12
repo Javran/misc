@@ -72,6 +72,7 @@ spec = do
                 NoMultInv _ -> "no mult inv"
                 Underdetermined -> "underdet"
                 Todo _ -> "TODO"
+                Gaussian _ -> "Gaussian"
       pure $
         label lbl $
           case result of

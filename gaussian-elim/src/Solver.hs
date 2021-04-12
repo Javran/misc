@@ -9,11 +9,14 @@ import Data.Bifunctor
 import Data.List
 import Data.List.HT
 import Data.Monoid
+import Data.Ratio
+import qualified Gaussian as G
 
 data Err i
   = NoMultInv i
   | Underdetermined
   | Todo String
+  | Gaussian String
   deriving (Show, Eq)
 
 -- expect both input to be positive numbers.
@@ -52,6 +55,27 @@ solveMat = solveMat' (\_ _ -> Left Underdetermined)
 
 solveMatOne :: Integral i => i -> [[i]] -> Either (Err i) [i]
 solveMatOne = solveMat' underDetFallback
+
+solveMatGaussian :: Integral i => i -> [[i]] -> Either (Err i) [i]
+solveMatGaussian m modMat = do
+  let tr orig i =
+        init orig
+          <> [if i == j then m else 0 | j <- [0 .. l -1]]
+          <> [last orig]
+      l = length modMat
+      mat = zipWith tr modMat [0 ..]
+      varCount = length (head mat) - 1
+      ut = G.upperTriangular ((fmap . fmap) fromIntegral mat)
+      filled =
+        G.fillTriangular varCount ut
+      rResults = reverse $ unfoldr G.solveStep ([], reverse filled)
+      dElim = foldr lcm 1 (fmap denominator rResults)
+      nResults = fmap (* fromInteger dElim) rResults
+  invM <- first (const (Gaussian "no inv")) $ multInv (toInteger m) dElim
+  when (any ((/= 1) . denominator) nResults) $
+    -- note: this shouldn't happen.
+    Left (Gaussian $ "denom /= 1: " <> show ut)
+  pure $ take l $ fmap ((`mod` m) . (* fromInteger invM) . fromInteger . numerator) nResults
 
 -- try to get one solution out of an underdetermined system.
 underDetFallback :: Integral i => i -> ElimStepM i

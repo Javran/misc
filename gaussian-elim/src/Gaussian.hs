@@ -8,7 +8,7 @@ import Data.List
 import Data.List.HT
 import qualified Data.List.NonEmpty as NE
 import Data.Ratio
-import qualified Puzzle as Pz
+-- import qualified Puzzle as Pz
 
 -- it is expected that each equation is of the same length.
 upperTriangularStep :: [[Rational]] -> Maybe ([Rational], [[Rational]])
@@ -46,6 +46,8 @@ solveStep (xs, hd : tl) = do
       lhs = init ys
   pure (x, (x : xs, tl))
 
+solveMat ut = reverse $ unfoldr solveStep ([], reverse ut)
+
 mainE :: IO ()
 mainE = do
   let sz = 4
@@ -66,7 +68,7 @@ mainE = do
 -- INVARIANT: varCount >= length (head tri) (when tri not empty)
 
 {-
-  make matrix determined by assigning unknown vars to 0.
+  make matrix determined by assigning unknown vars to 0
  -}
 fillTriangular varCount tri
   | varCount <= 0 = tri
@@ -77,13 +79,14 @@ fillTriangular varCount tri
         then hd : fillTriangular (varCount -1) tl
         else (1 : replicate varCount 0) : fillTriangular (varCount -1) tri
 
+{-
 main :: IO ()
 main = do
   let tr orig i = init orig <> [if i == j then 6 else 0 | j <- [0 .. l -1]] <> [last orig]
       l = length Pz.hexExample
       mat = zipWith tr Pz.hexExample [0 ..]
       varCount = length (head mat) - 1
+      lPre = length $ upperTriangular ((fmap . fmap) fromIntegral mat)
       filled = fillTriangular varCount (upperTriangular ((fmap . fmap) fromIntegral mat))
-  print varCount
   mapM_ print $ Pz.hexSplit . take l . fmap ((`mod` 6) . round @_ @Int . fromRational @Double) $ reverse $ unfoldr solveStep ([], reverse filled)
-
+ -}

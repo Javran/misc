@@ -43,5 +43,5 @@ main = do
   -- let sol = reverse $ unfoldr (solveStep 6) ([], reverse u)
   -- mapM_ print (splitPlaces [4 :: Int, 5, 6, 7, 6, 5, 4] r)
   -- pure ()
-  -- Pz.main
-  G.main
+  Pz.main
+  -- G.main
