@@ -1,12 +1,17 @@
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Lib where
 
 import Data.List
 import Data.List.Split
-import qualified Puzzle as Pz
 import qualified Gaussian as G
+import Parser
+import qualified Puzzle as Pz
 import Solver
+import System.Environment
+import System.Exit
 
 mainDemo :: IO ()
 mainDemo = do
@@ -32,16 +37,24 @@ mainDemo = do
         "Cannot solve equations, underdetermined."
 
 main :: IO ()
-main = do
-  let mat :: [[Int]]
-      mat = map (Pz.mkRow . Pz.eqn) Pz.coords
-      Right r = solveMat' (\_ _ -> Right Nothing) 6 Pz.hexExample
-  -- print (solveMat 4 mat)
-  -- Pz.main
-  -- mapM_ print (zipWith (\pd xs -> replicate pd 0 <> xs) [0..] z)
-  -- print z
-  -- let sol = reverse $ unfoldr (solveStep 6) ([], reverse u)
-  -- mapM_ print (splitPlaces [4 :: Int, 5, 6, 7, 6, 5, 4] r)
-  -- pure ()
-  Pz.main
-  -- G.main
+main =
+  getArgs >>= \case
+    "stdin" : _ -> do
+      raw <- getContents
+      let parsed = fromRawString raw
+      case parsed of
+        Just Puzzle {opMod = 6, pzType = PHexagon 4, grid} -> do
+          let inp =
+                (fmap . fmap)
+                  (\v -> (- v) `mod` 6)
+                  grid
+              (matLhs, _) = Pz.hexCoords 4
+              mat = zipWith (\xs rhs -> foldr (:) [rhs] xs) matLhs (concat inp)
+          case solveMatOne 6 mat of
+            Left e -> print e
+            Right xs ->
+              mapM_ (putStrLn . unwords . fmap show) $ Pz.hexSplit xs
+        _ -> error "TODO"
+    xs -> do
+      putStrLn $ "Unknown: " <> show xs
+      exitFailure
