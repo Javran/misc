@@ -12,6 +12,18 @@ import Data.Monoid
 import Data.Ratio
 import qualified Gaussian as G
 
+{-
+  Notes about this module:
+
+  for the purpose of solving small scale puzzles, `solveMatOne` looks good enough,
+  however this approach does not work in general if we cannot find the multiplicative inverse
+  of some number (which is usually the case for non-prime modulos).
+
+  While Gaussian module implements an approach that solves linear systems in general,
+  we have trouble converting a solution back to one that works under modulo.
+
+ -}
+
 data Err i
   = NoMultInv i
   | Underdetermined
