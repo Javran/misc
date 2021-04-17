@@ -46,7 +46,9 @@ solveStep (xs, hd : tl) = do
       lhs = init ys
   pure (x, (x : xs, tl))
 
+solveMat :: [[Rational]] -> [Rational]
 solveMat ut = reverse $ unfoldr solveStep ([], reverse ut)
+
 
 mainE :: IO ()
 mainE = do
