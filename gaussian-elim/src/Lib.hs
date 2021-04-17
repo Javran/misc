@@ -4,9 +4,6 @@
 
 module Lib where
 
-import Data.List
-import Data.List.Split
-import qualified Gaussian as G
 import Parser
 import qualified Puzzle as Pz
 import Solver
@@ -35,6 +32,9 @@ mainDemo = do
     Left Underdetermined ->
       putStrLn
         "Cannot solve equations, underdetermined."
+    Left (Todo err) -> error $ "TODO: " <> err
+    Left (Gaussian err) ->
+      putStrLn $ "Cannot solve equations, Gaussian error: " <> err
 
 main :: IO ()
 main =
