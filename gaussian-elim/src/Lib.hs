@@ -53,7 +53,7 @@ main =
           case solveMatOne 6 mat of
             Left e -> print e
             Right xs ->
-              mapM_ (putStrLn . unwords . fmap show) $ Pz.hexSplit xs
+              mapM_ (putStrLn . unwords . fmap show) $ Pz.hexSplit 4 xs
         _ -> error "TODO"
     xs -> do
       putStrLn $ "Unknown: " <> show xs

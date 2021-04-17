@@ -5,9 +5,7 @@ import Data.Char
 import Data.List
 import Data.List.Split
 import qualified Data.Map.Strict as M
-import Data.Monoid
 import qualified Data.Set as S
-import Debug.Trace
 import Solver
 
 type Coord = (Int, Int)
@@ -85,19 +83,24 @@ hexExample =
   let inp =
         (fmap . fmap)
           (\v -> (1 - v) `mod` 6)
-          [ [5,2,3,2]
-          , [3,2,6,4,1]
-          , [5,5,5,3,3,4]
-          , [5,5,3,1,1,3,3]
-          , [6,2,6,5,3,6]
-          , [3,4,4,6,2]
-          , [4,5,6,4]
+          [ [5, 2, 3, 2]
+          , [3, 2, 6, 4, 1]
+          , [5, 5, 5, 3, 3, 4]
+          , [5, 5, 3, 1, 1, 3, 3]
+          , [6, 2, 6, 5, 3, 6]
+          , [3, 4, 4, 6, 2]
+          , [4, 5, 6, 4]
           ]
 
       (matLhs, _) = hexCoords 4
    in zipWith (\xs rhs -> foldr (:) [rhs] xs) matLhs (concat inp)
 
-hexSplit = splitPlaces [4 :: Int, 5, 6, 7, 6, 5, 4]
+-- Split a list into lines of a flat-top hexagon whose side length is n.
+hexSplit :: Int -> [a] -> [[a]]
+hexSplit n = splitPlaces $ [n .. n+n-1] <> reverse (init splits)
+  where
+    splits = [n .. n+n-1]
+  --[4 :: Int, 5, 6, 7, 6, 5, 4]
 
 main :: IO ()
 main = do
@@ -112,7 +115,7 @@ main = do
   -- print (solveMat' underDetFallback 6 t)
   case r of
     Left i -> print i
-    Right xs -> mapM_ print (hexSplit xs)
+    Right xs -> mapM_ print (hexSplit 4 xs)
 
 {-
 print $
