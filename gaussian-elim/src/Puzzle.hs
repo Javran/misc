@@ -108,16 +108,16 @@ hexSplit n = splitPlaces $ [n .. n + n -1] <> reverse (init splits)
 --[4 :: Int, 5, 6, 7, 6, 5, 4]
 
 solvePuzzle :: Puzzle -> Either (Err Int) [[Int]]
-solvePuzzle Puzzle {opMod = 6, pzType = PHexagon 4, grid} = do
+solvePuzzle Puzzle {opMod, pzType = PHexagon sz, grid} = do
   let inp =
         (fmap . fmap)
-          (\v -> (- v) `mod` 6)
+          (\v -> (- v) `mod` opMod)
           grid
-      (matLhs, _) = hexCoords 4
+      (matLhs, _) = hexCoords sz
       mat = zipWith (\xs rhs -> foldr (:) [rhs] xs) matLhs (concat inp)
-  case solveMatOne 6 mat of
+  case solveMatOne opMod mat of
     Left e -> Left e
-    Right xs -> Right $ hexSplit 4 xs
+    Right xs -> Right $ hexSplit sz xs
 
 main :: IO ()
 main = do
