@@ -176,30 +176,3 @@ targets = M.fromList $ zip coords $ concatMap (fmap tr) initVals
 , [3, 2, 2, 0]
 ]-}
 
-type Eqn = ([] Char, Int)
-
-type MatRow = [Int]
-
-mkRow :: Eqn -> MatRow
-mkRow (lhs, rhs) = fmap tr ['A' .. 'P'] <> [rhs]
-  where
-    tr ch = if ch `elem` lhs then 1 else 0
-
-eqn :: Coord -> Eqn
-eqn c@(x, y) = (vs, targets M.! c)
-  where
-    vs = do
-      dx <- [-1 .. 1]
-      dy <- [-1 .. 1]
-      let coord = (x + dx, y + dy)
-      Just v <- pure $ vars M.!? coord
-      pure v
-
-pprEqn :: Eqn -> String
-pprEqn (xs, v) = intercalate " + " (fmap tr ['A' .. 'P']) <> " = " <> show v
-  where
-    tr ch = if S.member ch cs then [ch] else " "
-    cs = S.fromList xs
-
--- main :: IO ()
--- main = mapM_ (putStrLn . pprEqn . eqn) coords
