@@ -1,3 +1,6 @@
+{-# LANGUAGE NamedFieldPuns #-}
+{-# OPTIONS_GHC -Wno-type-defaults #-}
+
 module Puzzle where
 
 import Control.Monad
@@ -7,6 +10,7 @@ import Data.List.Split
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import Solver
+import Parser
 
 type Coord = (Int, Int)
 
@@ -97,10 +101,23 @@ hexExample =
 
 -- Split a list into lines of a flat-top hexagon whose side length is n.
 hexSplit :: Int -> [a] -> [[a]]
-hexSplit n = splitPlaces $ [n .. n+n-1] <> reverse (init splits)
+hexSplit n = splitPlaces $ [n .. n + n -1] <> reverse (init splits)
   where
-    splits = [n .. n+n-1]
-  --[4 :: Int, 5, 6, 7, 6, 5, 4]
+    splits = [n .. n + n -1]
+
+--[4 :: Int, 5, 6, 7, 6, 5, 4]
+
+solvePuzzle :: Puzzle -> Either (Err Int) [[Int]]
+solvePuzzle Puzzle {opMod = 6, pzType = PHexagon 4, grid} = do
+  let inp =
+        (fmap . fmap)
+          (\v -> (- v) `mod` 6)
+          grid
+      (matLhs, _) = hexCoords 4
+      mat = zipWith (\xs rhs -> foldr (:) [rhs] xs) matLhs (concat inp)
+  case solveMatOne 6 mat of
+    Left e -> Left e
+    Right xs -> Right $ hexSplit 4 xs
 
 main :: IO ()
 main = do

@@ -1,5 +1,4 @@
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Lib where
@@ -43,14 +42,8 @@ main =
       raw <- getContents
       let parsed = fromRawString raw
       case parsed of
-        Just Puzzle {opMod = 6, pzType = PHexagon 4, grid} -> do
-          let inp =
-                (fmap . fmap)
-                  (\v -> (- v) `mod` 6)
-                  grid
-              (matLhs, _) = Pz.hexCoords 4
-              mat = zipWith (\xs rhs -> foldr (:) [rhs] xs) matLhs (concat inp)
-          case solveMatOne 6 mat of
+        Just pz -> do
+          case Pz.solvePuzzle pz of
             Left e -> print e
             Right xs ->
               mapM_ (putStrLn . unwords . fmap show) $ Pz.hexSplit 4 xs
