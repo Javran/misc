@@ -47,6 +47,12 @@ spec = do
             , [0, 3, 1, 0, 2]
             , [3, 4, 5, 3]
             ]
+      {-
+        TODO: simulate and verify if the result is correct rather
+        having to write out the solution
+        (this adds a bit of flexibility also as
+        this would allow alternative solutions as long as puzzle is solved.
+       -}
       solvePuzzle (Puzzle 6 (PHexagon 4) xs)
         `shouldBe` Right
           [ [4, 1, 1, 3]
