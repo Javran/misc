@@ -73,16 +73,6 @@ hexCoords sz = (fmap mkEqn allCoords, nestedAllCoords)
         xs :: [CubeCoord]
         xs = coordEqns M.! c
 
-archived =
-  [ [1, 2, 4, 5]
-  , [5, 5, 3, 2, 4]
-  , [1, 1, 3, 3, 2, 4]
-  , [5, 6, 2, 4, 2, 2, 6]
-  , [5, 1, 3, 5, 2, 6]
-  , [1, 4, 2, 1, 3]
-  , [4, 5, 6, 4]
-  ]
-
 hexExample =
   let inp =
         (fmap . fmap)

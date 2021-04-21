@@ -1,5 +1,6 @@
 module PuzzleSpec where
 
+import Parser
 import Puzzle
 import Test.Hspec
 
@@ -18,7 +19,7 @@ spec :: Spec
 spec = do
   describe "hexSplit" $ do
     specify "size = 4" $
-      hexSplit 4 (['A'..'Z'] <> ['a'..'k'])
+      hexSplit 4 (['A' .. 'Z'] <> ['a' .. 'k'])
         `shouldBe` [ "ABCD"
                    , "EFGHI"
                    , "JKLMNO"
@@ -28,10 +29,31 @@ spec = do
                    , "hijk"
                    ]
     specify "size = 3" $
-      hexSplit 3 ['A'..'S']
+      hexSplit 3 ['A' .. 'S']
         `shouldBe` [ "ABC"
                    , "DEFG"
                    , "HIJKL"
                    , "MNOP"
                    , "QRS"
                    ]
+  describe "solvePuzzle" $ do
+    specify "example" $ do
+      let xs =
+            [ [0, 1, 3, 4]
+            , [4, 4, 2, 1, 3]
+            , [0, 0, 2, 2, 1, 3]
+            , [4, 5, 1, 3, 1, 1, 5]
+            , [4, 0, 2, 4, 1, 5]
+            , [0, 3, 1, 0, 2]
+            , [3, 4, 5, 3]
+            ]
+      solvePuzzle (Puzzle 6 (PHexagon 4) xs)
+        `shouldBe` Right
+          [ [4, 1, 1, 3]
+          , [4, 3, 2, 2, 2]
+          , [3, 0, 0, 1, 0, 2]
+          , [5, 0, 2, 2, 3, 1, 4]
+          , [0, 3, 4, 3, 1, 0]
+          , [0, 3, 5, 2, 1]
+          , [0, 0, 0, 0]
+          ]
