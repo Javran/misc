@@ -40,9 +40,22 @@ sqCoords sz = (fmap mkEqn allCoords, nestedAllCoords)
       let c = (i, j)
       c <$ guard (S.member c allCoords')
 
--- https://www.redblobgames.com/grids/hexagons/#coordinates-cube
+{-
+  See: https://www.redblobgames.com/grids/hexagons/#coordinates-cube
+
+  Although storing a 3-tuple is more than necessary, it's easier to
+  distinguish this from a 2D coordinate.
+ -}
 type CubeCoord = (Int, Int, Int)
 
+{-
+  Build LHS of the matrix given a hexagon whose side length is `sz`.
+
+  Returns (<mat>, <shaped CubeCoord>), in which <mat> is the LHS of the matrix,
+  whose elements are of the same length, and <shaped CubeCoord> is a 2D list of
+  CubeCoord that has the same shape as the hexagon it's representing.
+ -}
+hexCoords :: Int -> ([[Int]], [[CubeCoord]])
 hexCoords sz = (fmap mkEqn allCoords, nestedAllCoords)
   where
     mx = sz -1
