@@ -7,6 +7,7 @@ module Board where
 
 import Control.Monad
 import qualified Data.Map.Strict as M
+import Data.Proxy
 import qualified Data.Set as S
 
 data PuzzleShape
@@ -15,6 +16,8 @@ data PuzzleShape
 
 class CoordSystem (k :: PuzzleShape) where
   type Coord k
+
+  {- TODO: surrounding can do the filtering itself. -}
   surrounding :: forall p. p k -> Coord k -> [Coord k]
   shapedCoords :: forall p. p k -> Int -> [[Coord k]]
 
@@ -69,3 +72,9 @@ gCoords ty sz = (fmap mkEqn allCoords, nestedAllCoords)
       fmap (\c' -> if c' `elem` xs then 1 else 0) allCoords
       where
         xs = coordEqns M.! c
+
+hexCoords :: Int -> ([[Int]], [[CubeCoord]])
+hexCoords = gCoords (Proxy :: Proxy 'Hexagon)
+
+sqCoords :: Int -> ([[Int]], [[(Int, Int)]])
+sqCoords = gCoords (Proxy :: Proxy 'Square)
