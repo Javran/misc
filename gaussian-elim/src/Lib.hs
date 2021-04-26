@@ -8,6 +8,7 @@ import qualified Puzzle as Pz
 import Solver
 import System.Environment
 import System.Exit
+import qualified Board
 
 mainDemo :: IO ()
 mainDemo = do
@@ -48,6 +49,11 @@ main =
             Right xs ->
               mapM_ (putStrLn . unwords . fmap show) $ Pz.hexSplit 4 xs
         _ -> error "TODO"
+    "dev" : _ -> do
+      let cs = Board.sqCoords 4
+      mapM_ print (snd cs)
+      let ds = Board.hexCoords 4
+      mapM_ print (snd ds)
     xs -> do
       putStrLn $ "Unknown: " <> show xs
       exitFailure

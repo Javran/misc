@@ -5,10 +5,8 @@
 
 module Board where
 
-import Control.Monad
 import qualified Data.Map.Strict as M
 import Data.Proxy
-import qualified Data.Set as S
 
 data PuzzleShape
   = Square
@@ -17,32 +15,45 @@ data PuzzleShape
 class CoordSystem (k :: PuzzleShape) where
   type Coord k
 
-  {- TODO: surrounding can do the filtering itself. -}
-  surrounding :: forall p. p k -> Coord k -> [Coord k]
+  {-
+    For this function, it is assumed that: input coord is valid
+    (i.e. satisfy type invariants) and is already inside.
+   -}
+  surrounding :: forall p. p k -> Int -> Coord k -> [Coord k]
   shapedCoords :: forall p. p k -> Int -> [[Coord k]]
 
 instance CoordSystem 'Square where
   type Coord 'Square = (Int, Int)
-  surrounding _ (x, y) = do
-    i <- [x -1 .. x + 1]
-    j <- [y -1 .. y + 1]
-    pure (i, j)
+  surrounding _ sz (x, y) =
+    [ c
+    | i <- [x -1 .. x + 1]
+    , j <- [y -1 .. y + 1]
+    , let c = (i, j)
+    , isInside c
+    ]
+    where
+      isInside (u, v) = u >= 0 && u < sz && v >= 0 && v < sz
 
   shapedCoords _ sz = [[(r, c) | c <- [0 .. sz -1]] | r <- [0 .. sz -1]]
 
+-- INVARIANT: (x,y,z) :: CubeCoord ==> x + y + z == 0
 type CubeCoord = (Int, Int, Int)
 
 instance CoordSystem 'Hexagon where
   type Coord 'Hexagon = CubeCoord
-  surrounding _ c@(x, y, z) =
+  surrounding _ sz c@(x, y, z) =
     c :
-    [ (x, y + 1, z -1)
-    , (x, y -1, z + 1)
-    , (x + 1, y, z -1)
-    , (x -1, y, z + 1)
-    , (x + 1, y -1, z)
-    , (x - 1, y + 1, z)
-    ]
+    filter
+      isInside
+      [ (x, y + 1, z -1)
+      , (x, y -1, z + 1)
+      , (x + 1, y, z -1)
+      , (x -1, y, z + 1)
+      , (x + 1, y -1, z)
+      , (x - 1, y + 1, z)
+      ]
+    where
+      isInside (i, j, k) = abs i + abs j + abs k < sz
 
   shapedCoords _ sz =
     [[(x, y, z) | y <- [3, 2 .. (-3 - z)], let x = - y - z] | z <- [- mx .. 0]]
@@ -61,11 +72,7 @@ gCoords ty sz = (fmap mkEqn allCoords, nestedAllCoords)
     nestedAllCoords :: [[Coord cs]]
     nestedAllCoords = shapedCoords ty sz
     allCoords = concat nestedAllCoords
-    allCoords' = S.fromList allCoords
-    surrounding' c =
-      filter
-        (`S.member` allCoords')
-        $ surrounding ty c
+    surrounding' c = surrounding ty sz c
     coordEqns :: M.Map (Coord cs) [Coord cs]
     coordEqns = M.fromList $ fmap (\c -> (c, surrounding' c)) allCoords
     mkEqn c =
