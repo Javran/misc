@@ -47,7 +47,7 @@ main =
           case Pz.solvePuzzle pz of
             Left e -> print e
             Right xs ->
-              mapM_ (putStrLn . unwords . fmap show) $ Pz.hexSplit 4 xs
+              mapM_ (putStrLn . unwords . fmap show) $ xs
         _ -> error "TODO"
     "dev" : _ -> do
       let cs = Board.sqCoords 4
