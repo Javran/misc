@@ -1,0 +1,7 @@
+.stack-work/
+dynamical-systems.cabal
+stack.yaml.lock
+*~
+
+private/
+z*

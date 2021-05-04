@@ -1,0 +1,8 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "dynamical-systems:lib"
+    - path: "./exe"
+      component: "dynamical-systems:exe:demo"
+    - path: "./test"
+      component: "dynamical-systems:test:hspec"
