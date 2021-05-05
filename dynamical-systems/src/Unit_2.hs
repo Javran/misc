@@ -1,3 +1,6 @@
+{-
+  This module implements Euler method as covered in the homework for Unit 2.
+ -}
 module Unit_2
   ( main
   )
