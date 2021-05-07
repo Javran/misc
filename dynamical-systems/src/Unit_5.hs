@@ -1,19 +1,12 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE NoMonomorphismRestriction #-}
-
 module Unit_5
   ( main
   )
 where
 
-import Control.Monad
 import Data.List.Extra (nubSort)
 import qualified Data.Set as S
 import Graphics.Image hiding (cols, rows)
 import Graphics.Image.Interface
-import System.Console.Terminfo
-import Text.Printf
 
 type SkipThenKeep = (Int, Int)
 
@@ -73,28 +66,14 @@ main = do
           )
       y = PixelRGB 0 0 255
       n = PixelRGB 255 255 255
-      imgParallel = makeImageR RPS (height, width) (\(r, c) -> if rendered !! c !! r then y else n)
+      imgParallel =
+        makeImageR
+          RPS
+          (height, width)
+          (\(r, c) ->
+             -- TODO: we obviously can improve this by not indexing a list, for now this is good enough however.
+             if rendered !! c !! r then y else n)
       img :: Image VS RGB Word8
       img = toManifest imgParallel
   writeImageExact PNG [] "/tmp/z.png" img
-  pure ()
-
-mainCli :: IO ()
-mainCli = do
-  term <- setupTermFromEnv
-  let Just (rows, cols) = getCapability term ((,) <$> termLines <*> termColumns)
-  printf "rows: %d, cols: %d\n" rows cols
-  let wantRows = rows - 3
-      rendered =
-        renderIteratedFunction
-          (\r x -> r * x * (1 - x))
-          (wantRows, cols)
-          ( -- xRange
-            (0.7765042979942693, 0.9140401146131805)
-          , -- rRange
-            (3.536511882631319, 3.593323318496883)
-          )
-
-  forM_ rendered $ \rs -> do
-    putStrLn $ (\b -> if b then '*' else ' ') <$> rs
   pure ()
