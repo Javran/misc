@@ -14,6 +14,7 @@ dependencies:
 - containers
 - extra
 - hip
+- repa
 
 library:
   source-dirs: src

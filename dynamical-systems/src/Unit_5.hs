@@ -10,7 +10,8 @@ where
 import Control.Monad
 import Data.List.Extra (nubSort)
 import qualified Data.Set as S
-import Graphics.Image
+import Graphics.Image hiding (cols, rows)
+import Graphics.Image.Interface
 import System.Console.Terminfo
 import Text.Printf
 
@@ -46,7 +47,7 @@ renderIteratedFunction
 renderIteratedFunction mkFunc (rows, cols) ranges =
   fmap
     (\r ->
-       let t = collectPoints (100, 200) $ getSequence r 0.5
+       let t = collectPoints (1000, 2000) $ getSequence r 0.5
         in renderLine cols xRange t)
     (take rows [rLo, rLo + step ..])
   where
@@ -59,8 +60,8 @@ renderIteratedFunction mkFunc (rows, cols) ranges =
 
 main :: IO ()
 main = do
-  let width = 1000
-      height = 800
+  let width = 2000
+      height = 1200
       rendered =
         renderIteratedFunction
           (\r x -> r * x * (1 - x))
@@ -70,10 +71,11 @@ main = do
           , -- rRange
             (3.536511882631319, 3.593323318496883)
           )
-      y = PixelRGB 0 0 1
-      n = PixelRGB 1 1 1
-      img :: Image VS RGB Double
-      img = makeImageR VS (height, width) (\(r, c) -> if rendered !! c !! r then y else n)
+      y = PixelRGB 0 0 255
+      n = PixelRGB 255 255 255
+      imgParallel = makeImageR RPS (height, width) (\(r, c) -> if rendered !! c !! r then y else n)
+      img :: Image VS RGB Word8
+      img = toManifest imgParallel
   writeImageExact PNG [] "/tmp/z.png" img
   pure ()
 
