@@ -17,7 +17,7 @@ collectPoints (s, k) =
     . drop s
 
 getSequence :: Double -> Double -> [Double]
-getSequence r = iterate f
+getSequence r seed = iterate f seed
   where
     f x = r * x * (1-x)
 
