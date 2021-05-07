@@ -5,7 +5,7 @@ github: {{github-username}}{{^github-username}}githubuser{{/github-username}}/{{
 license: BSD3
 author: {{author-name}}{{^author-name}}Author name here{{/author-name}}
 maintainer: {{author-email}}{{^author-email}}example@example.com{{/author-email}}
-copyright: "{{copyright}}{{^copyright}}{{year}}{{^year}}2020{{/year}} {{author-name}}{{^author-name}}Author name here{{/author-name}}{{/copyright}}"
+copyright: "{{copyright}}{{^copyright}}{{year}}{{^year}}2021{{/year}} {{author-name}}{{^author-name}}Author name here{{/author-name}}{{/copyright}}"
 
 description: description
 
@@ -97,6 +97,8 @@ packages:
 - ignore: {name: Use camelCase}
 - ignore: {name: Use newtype instead of data}
 - ignore: {name: Use uncurry}
+- ignore: {name: Redundant pure}
+- ignore: {name: Eta reduce}
 
 {-# START_FILE hie.yaml #-}
 cradle:
