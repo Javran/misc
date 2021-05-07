@@ -10,6 +10,8 @@ description: description
 
 dependencies:
 - base
+- terminfo
+- containers
 
 library:
   source-dirs: src
