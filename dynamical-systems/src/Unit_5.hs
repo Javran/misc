@@ -10,8 +10,7 @@ where
 import Control.Monad
 import Data.List.Extra (nubSort)
 import qualified Data.Set as S
-import Diagrams.Backend.SVG.CmdLine
-import Diagrams.Prelude hiding (image, magnitude)
+import Graphics.Image
 import System.Console.Terminfo
 import Text.Printf
 
@@ -58,22 +57,25 @@ renderIteratedFunction mkFunc (rows, cols) ranges =
     (xRange, (rLo, rHi)) = ranges
     step = (rHi - rLo) / fromIntegral (rows -1)
 
-graph :: Diagram B
-graph = (vcat . map hcat $ rendered) # bgFrame 3 white
-  where
-    rendered =
-      (fmap . fmap) (\b -> square 1 # lw medium # fc black # opacity (if b then 1 else 0)) $
+main :: IO ()
+main = do
+  let width = 1000
+      height = 800
+      rendered =
         renderIteratedFunction
           (\r x -> r * x * (1 - x))
-          (600, 350)
+          (width, height)
           ( -- xRange
             (0.7765042979942693, 0.9140401146131805)
           , -- rRange
             (3.536511882631319, 3.593323318496883)
           )
-
-main :: IO ()
-main = mainWith graph
+      y = PixelRGB 0 0 1
+      n = PixelRGB 1 1 1
+      img :: Image VS RGB Double
+      img = makeImageR VS (height, width) (\(r, c) -> if rendered !! c !! r then y else n)
+  writeImageExact PNG [] "/tmp/z.png" img
+  pure ()
 
 mainCli :: IO ()
 mainCli = do

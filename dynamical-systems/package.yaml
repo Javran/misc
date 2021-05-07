@@ -12,10 +12,8 @@ dependencies:
 - base
 - terminfo
 - containers
-- diagrams
-- diagrams-svg
-- diagrams-lib
 - extra
+- hip
 
 library:
   source-dirs: src
