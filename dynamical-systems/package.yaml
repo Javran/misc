@@ -12,6 +12,7 @@ dependencies:
 - base
 - terminfo
 - containers
+- diagrams
 
 library:
   source-dirs: src
