@@ -13,6 +13,9 @@ dependencies:
 - terminfo
 - containers
 - diagrams
+- diagrams-svg
+- diagrams-lib
+- extra
 
 library:
   source-dirs: src

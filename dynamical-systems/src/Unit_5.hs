@@ -1,22 +1,29 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
+
 module Unit_5
   ( main
   )
 where
 
 import Control.Monad
+import Data.List.Extra (nubSort)
 import qualified Data.Set as S
+import Diagrams.Backend.SVG.CmdLine
+import Diagrams.Prelude hiding (image, magnitude)
 import System.Console.Terminfo
 import Text.Printf
 
 type SkipThenKeep = (Int, Int)
 
-collectPoints :: SkipThenKeep -> [Double] -> S.Set Double
+collectPoints :: SkipThenKeep -> [Double] -> [Double]
 collectPoints (s, k) =
-  S.fromList
+  nubSort
     . take k
     . drop s
 
-renderLine :: Int -> (Double, Double) -> S.Set Double -> [Bool]
+renderLine :: Int -> (Double, Double) -> [Double] -> [Bool]
 renderLine cols (xLo, xHi) xs = fmap tr [0 .. cols -1]
   where
     xDist = xHi - xLo
@@ -29,7 +36,6 @@ renderLine cols (xLo, xHi) xs = fmap tr [0 .. cols -1]
              [ round (cols' * (x - xLo) / xDist)
              | x >= xLo && x <= xHi
              ])
-        . S.toList
         $ xs
     tr c = S.member c markedCols
 
@@ -52,8 +58,25 @@ renderIteratedFunction mkFunc (rows, cols) ranges =
     (xRange, (rLo, rHi)) = ranges
     step = (rHi - rLo) / fromIntegral (rows -1)
 
+graph :: Diagram B
+graph = (vcat . map hcat $ rendered) # bgFrame 3 white
+  where
+    rendered =
+      (fmap . fmap) (\b -> square 1 # lw medium # fc black # opacity (if b then 1 else 0)) $
+        renderIteratedFunction
+          (\r x -> r * x * (1 - x))
+          (600, 350)
+          ( -- xRange
+            (0.7765042979942693, 0.9140401146131805)
+          , -- rRange
+            (3.536511882631319, 3.593323318496883)
+          )
+
 main :: IO ()
-main = do
+main = mainWith graph
+
+mainCli :: IO ()
+mainCli = do
   term <- setupTermFromEnv
   let Just (rows, cols) = getCapability term ((,) <$> termLines <*> termColumns)
   printf "rows: %d, cols: %d\n" rows cols
