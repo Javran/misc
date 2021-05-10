@@ -3,20 +3,16 @@ module Unit_5
   )
 where
 
-import Data.List.Extra (nubSort)
 import qualified Data.Set as S
 import Graphics.Image hiding (cols, rows)
 import Graphics.Image.Interface
 
 type SkipThenKeep = (Int, Int)
 
-collectPoints :: SkipThenKeep -> [Double] -> [Double]
-collectPoints (s, k) =
-  nubSort
-    . take k
-    . drop s
+collectPoints :: SkipThenKeep -> [Double] -> S.Set Double
+collectPoints (s, k) = S.fromList . take k . drop s
 
-renderLine :: Int -> (Double, Double) -> [Double] -> [Bool]
+renderLine :: Int -> (Double, Double) -> S.Set Double -> [Bool]
 renderLine cols (xLo, xHi) xs = fmap tr [0 .. cols -1]
   where
     xDist = xHi - xLo
