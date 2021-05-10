@@ -1,8 +1,11 @@
+{-# LANGUAGE NamedFieldPuns #-}
+
 module Unit_5
   ( main
   )
 where
 
+import Data.Bool
 import qualified Data.Set as S
 import Graphics.Image hiding (cols, rows)
 import Graphics.Image.Interface
@@ -44,44 +47,54 @@ renderLine cols xRange@(xLo, xHi) xs = fmap tr [0 .. cols -1]
         restrictToRange xRange xs
     tr c = S.member c markedCols
 
-renderIteratedFunction
-  :: (Double -> Double -> Double)
-  -> (Int, Int)
-  -> ((Double, Double), (Double, Double))
-  -> [[Bool]]
-renderIteratedFunction mkFunc (rows, cols) ranges =
+-- initial value and how many to skip then keep.
+type SampleMethod = (Double, SkipThenKeep)
+
+type Dims = (Int, Int) -- (width, height)
+
+data Plot = Plot
+  { plDims :: Dims
+  , plFunc :: Double -> Double -> Double
+  , plRangeR :: (Double, Double)
+  , plRangeX :: (Double, Double)
+  , plSampleMethod :: SampleMethod
+  }
+
+renderPlot :: Plot -> [[Bool]]
+renderPlot pl =
   fmap
     (\r ->
-       let t = collectIterPoints (1000, 2000) $ getSequence r 0.5
-        in renderLine cols xRange t)
+       let t = collectIterPoints stk $ iterate f seed
+           f = plFunc r
+        in renderLine cols plRangeX t)
     (take rows [rLo, rLo + step ..])
   where
-    getSequence :: Double -> Double -> [Double]
-    getSequence r seed = iterate f seed
-      where
-        f = mkFunc r
-    (xRange, (rLo, rHi)) = ranges
+    Plot
+      { plDims = (rows, cols)
+      , plFunc
+      , plRangeX
+      , plRangeR = (rLo, rHi)
+      , plSampleMethod = (seed, stk)
+      } = pl
     step = (rHi - rLo) / fromIntegral (rows -1)
 
 main :: IO ()
 main = do
-  let width = 2000
-      height = 1200
-      rendered =
-        renderIteratedFunction
-          (\r x -> r * x * (1 - x))
-          (width, height)
-          ( -- xRange
-            (0.7765042979942693, 0.9140401146131805)
-          , -- rRange
-            (3.536511882631319, 3.593323318496883)
-          )
+  let pl =
+        Plot
+          { plDims = (2000, 1200)
+          , plFunc = \r x -> r * x * (1 - x)
+          , plRangeR = (3.536511882631319, 3.593323318496883)
+          , plRangeX = (0.7765042979942693, 0.9140401146131805)
+          , plSampleMethod = (0.5, (1000, 2000))
+          }
+      rendered = renderPlot pl
       y = PixelRGB 0 0 255
       n = PixelRGB 255 255 255
       imgParallel =
         transpose $
           fromListsR RPS $
-            (fmap . fmap) (\b -> if b then y else n) rendered
+            (fmap . fmap) (bool n y) rendered
       img :: Image VS RGB Word8
       img = toManifest imgParallel
   writeImageExact PNG [] "/tmp/z.png" img
