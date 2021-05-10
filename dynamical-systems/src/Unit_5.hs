@@ -9,8 +9,20 @@ import Graphics.Image.Interface
 
 type SkipThenKeep = (Int, Int)
 
-collectPoints :: SkipThenKeep -> [Double] -> S.Set Double
-collectPoints (s, k) = S.fromList . take k . drop s
+{-
+  Collect points but taking advantage that we are collecting results from iterated functions:
+  we can stop immediately once we've seen a number in the collected set - since that number
+  has been collected before, all of its consequent numbers should also have been collected.
+ -}
+collectIterPoints :: SkipThenKeep -> [Double] -> S.Set Double
+collectIterPoints (s, k) = collectIters S.empty . take k . drop s
+  where
+    collectIters :: S.Set Double -> [Double] -> S.Set Double
+    collectIters acc [] = acc
+    collectIters acc (x : xs) =
+      if S.member x acc
+        then acc
+        else collectIters (S.insert x acc) xs
 
 renderLine :: Int -> (Double, Double) -> S.Set Double -> [Bool]
 renderLine cols (xLo, xHi) xs = fmap tr [0 .. cols -1]
@@ -36,7 +48,7 @@ renderIteratedFunction
 renderIteratedFunction mkFunc (rows, cols) ranges =
   fmap
     (\r ->
-       let t = collectPoints (1000, 2000) $ getSequence r 0.5
+       let t = collectIterPoints (1000, 2000) $ getSequence r 0.5
         in renderLine cols xRange t)
     (take rows [rLo, rLo + step ..])
   where
@@ -62,7 +74,10 @@ main = do
           )
       y = PixelRGB 0 0 255
       n = PixelRGB 255 255 255
-      imgParallel = transpose $ fromListsR RPS $ (fmap . fmap) (\b -> if b then y else n) rendered
+      imgParallel =
+        transpose $
+          fromListsR RPS $
+            (fmap . fmap) (\b -> if b then y else n) rendered
       img :: Image VS RGB Word8
       img = toManifest imgParallel
   writeImageExact PNG [] "/tmp/z.png" img
