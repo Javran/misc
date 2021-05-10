@@ -97,12 +97,40 @@ plots =
         { plDims
         , plFunc = \r x -> r * x * x * (1 - x)
         , plRangeX = (0.7917471809417964, 0.8925554245570697)
-        , plRangeR = (5.847883456366569,5.991903306661956)
+        , plRangeR = (5.847883456366569, 5.991903306661956)
+        , plSampleMethod
+        }
+    )
+  , ( "a3"
+    , Plot
+        { plDims
+        , plFunc = \r x -> r * sin (pi * x / 2)
+        , plRangeX =
+            takeL 0.6
+              . takeL 0.3
+              . takeR 0.5
+              $ (0, 3)
+        , plRangeR =
+            takeR 0.5
+              . takeR 0.5
+              . takeL 0.5
+              . takeL 0.3
+              . takeR 0.7
+              . takeR 0.5
+              . takeL 0.5
+              $ (0, 5)
         , plSampleMethod
         }
     )
   ]
   where
+    takeL p (lo, hi) = (lo, lo + d * p)
+      where
+        d = hi - lo
+    takeR p (lo, hi) = (hi - d * p, hi)
+      where
+        d = hi - lo
+
     plDims = (2000, 1200)
     plSampleMethod = (0.5, (1000, 2000))
 
@@ -121,7 +149,6 @@ main =
             img :: Image VS RGB Word8
             img = toManifest imgParallel
         writeImageExact PNG [] target img
-        pure ()
     _ -> do
       putStrLn "usage: <prog> <which> <target image>"
       putStrLn $ "which: " <> show (fmap fst plots)
