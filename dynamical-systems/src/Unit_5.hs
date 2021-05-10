@@ -24,20 +24,24 @@ collectIterPoints (s, k) = collectIters S.empty . take k . drop s
         then acc
         else collectIters (S.insert x acc) xs
 
+restrictToRange :: (Double, Double) -> S.Set Double -> S.Set Double
+restrictToRange (xLo, xHi) xs =
+  (if hasHi then S.insert xHi else id) $
+    (if hasLo then S.insert xLo else id)
+      xs''
+  where
+    (_, hasLo, xs') = S.splitMember xLo xs
+    (xs'', hasHi, _) = S.splitMember xHi xs'
+
 renderLine :: Int -> (Double, Double) -> S.Set Double -> [Bool]
-renderLine cols (xLo, xHi) xs = fmap tr [0 .. cols -1]
+renderLine cols xRange@(xLo, xHi) xs = fmap tr [0 .. cols -1]
   where
     xDist = xHi - xLo
     cols' = fromIntegral cols
     markedCols :: S.Set Int
     markedCols =
-      S.fromList
-        . concatMap
-          (\x ->
-             [ round (cols' * (x - xLo) / xDist)
-             | x >= xLo && x <= xHi
-             ])
-        $ xs
+      S.map (\x -> round (cols' * (x - xLo) / xDist)) $
+        restrictToRange xRange xs
     tr c = S.member c markedCols
 
 renderIteratedFunction
