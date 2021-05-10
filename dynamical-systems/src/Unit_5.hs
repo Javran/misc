@@ -62,13 +62,7 @@ main = do
           )
       y = PixelRGB 0 0 255
       n = PixelRGB 255 255 255
-      imgParallel =
-        makeImageR
-          RPS
-          (height, width)
-          (\(r, c) ->
-             -- TODO: we obviously can improve this by not indexing a list, for now this is good enough however.
-             if rendered !! c !! r then y else n)
+      imgParallel = transpose $ fromListsR RPS $ (fmap . fmap) (\b -> if b then y else n) rendered
       img :: Image VS RGB Word8
       img = toManifest imgParallel
   writeImageExact PNG [] "/tmp/z.png" img
