@@ -12,8 +12,6 @@ import Diagrams.Prelude
 locs :: [(Double, Double)]
 locs = [(r, f) | r <- [0.001, 0.2 .. 10], f <- [0.001, 0.2 .. 10]]
 
-points = map p2 locs
-
 arrows :: [Diagram B]
 arrows = map arrowAtPoint locs
   where
@@ -33,10 +31,9 @@ rateOfChange (r, f) =
   (r - r * f / 4, 0.2 * r * f - 0.6 * f)
 
 example :: Diagram B
-example =
-  field # alignTL
+example = position (zip points arrows) # alignTL
   where
-    field = position $ zip points arrows
+    points = map p2 locs
 
 main :: IO ()
 main = mainWith example
