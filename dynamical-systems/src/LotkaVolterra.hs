@@ -10,14 +10,14 @@ import Diagrams.Backend.SVG.CmdLine
 import Diagrams.Prelude
 
 locs :: [(Double, Double)]
-locs = [(r, f) | r <- [0.001, 0.2 .. 10], f <- [0.001, 0.2 .. 10]]
+locs = [(r, f) | r <- [0, 0.2 .. 10], f <- [0, 0.2 .. 10]]
 
 arrows :: [Diagram B]
 arrows = map arrowAtPoint locs
   where
-    arrowAtPoint (x, y) = arrowAt' opts (p2 (x, y)) (sL *^ vf)
+    arrowAtPoint (x, y) = if vf == 0 then mempty else arrowAt' opts (p2 (x, y)) (sL *^ vf)
       where
-        vf = let v = r2 $ rateOfChange (x, y) in if v == 0 then 1 else v
+        vf = r2 $ rateOfChange (x, y)
         -- m = norm $ vectorField (x, y)
         sL = 0.05
         opts =
