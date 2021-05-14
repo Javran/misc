@@ -11,15 +11,15 @@ import Diagrams.Prelude
 
 locs :: [(Double, Double)]
 locs = do
-  let radius = 0.5
+  let radius = 0.05
       rMid = 3
       fMid = 4
-      ptCount = 20 :: Int
+      ptCount = 50 :: Int
       step = (radius + radius) / fromIntegral (ptCount - 1)
       rStart = rMid - radius
       fStart = fMid - radius
-  r <- [rStart, rStart + 0.01 .. rMid + radius]
-  f <- [fStart, fStart + 0.01 .. fMid + radius]
+  r <- [rStart, rStart + step .. rMid + radius]
+  f <- [fStart, fStart + step .. fMid + radius]
   pure (r, f)
 
 -- [(r, f) | r <- [0, 0.2 .. 8], f <- [0, 0.2 .. 8]]
@@ -32,7 +32,7 @@ arrows = map arrowAtPoint locs
       where
         vf = r2 $ rateOfChange (x, y)
         m = norm vf
-        sL = 0.5 / longest
+        sL = 0.005 / longest -- TODO: for whatever reason this `0.005` doesn't scale when radius changes.
         opts =
           with & arrowHead .~ spike
             & headLength .~ normalized (0.015 * m / longest)
