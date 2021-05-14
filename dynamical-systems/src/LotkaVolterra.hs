@@ -10,7 +10,19 @@ import Diagrams.Backend.SVG.CmdLine
 import Diagrams.Prelude
 
 locs :: [(Double, Double)]
-locs = [(r, f) | r <- [0, 0.2 .. 8], f <- [0, 0.2 .. 8]]
+locs = do
+  let radius = 0.5
+      rMid = 3
+      fMid = 4
+      ptCount = 20 :: Int
+      step = (radius + radius) / fromIntegral (ptCount - 1)
+      rStart = rMid - radius
+      fStart = fMid - radius
+  r <- [rStart, rStart + 0.01 .. rMid + radius]
+  f <- [fStart, fStart + 0.01 .. fMid + radius]
+  pure (r, f)
+
+-- [(r, f) | r <- [0, 0.2 .. 8], f <- [0, 0.2 .. 8]]
 
 arrows :: [Diagram B]
 arrows = map arrowAtPoint locs
