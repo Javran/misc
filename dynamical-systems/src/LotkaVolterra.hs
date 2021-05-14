@@ -10,20 +10,21 @@ import Diagrams.Backend.SVG.CmdLine
 import Diagrams.Prelude
 
 locs :: [(Double, Double)]
-locs = [(r, f) | r <- [0, 0.2 .. 10], f <- [0, 0.2 .. 10]]
+locs = [(r, f) | r <- [0, 0.2 .. 8], f <- [0, 0.2 .. 8]]
 
 arrows :: [Diagram B]
 arrows = map arrowAtPoint locs
   where
+    longest = maximum $ fmap (norm . r2 . rateOfChange) locs
     arrowAtPoint (x, y) = if vf == 0 then mempty else arrowAt' opts (p2 (x, y)) (sL *^ vf)
       where
         vf = r2 $ rateOfChange (x, y)
-        -- m = norm $ vectorField (x, y)
-        sL = 0.05
+        m = norm vf
+        sL = 0.5 / longest
         opts =
           with & arrowHead .~ spike
-            & headLength .~ normalized 0.01
-            & shaftStyle %~ lwN 0.004
+            & headLength .~ normalized (0.015 * m / longest)
+            & shaftStyle %~ lwN (0.004 * m / longest)
 
 rateOfChange :: (Double, Double) -> (Double, Double)
 rateOfChange (r, f) =
