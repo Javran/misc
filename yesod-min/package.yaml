@@ -18,3 +18,19 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - yesod-min
+
+tests:
+  hspec:
+    main: Spec.hs
+    source-dirs:
+      - test
+    dependencies:
+      - yesod-min
+      - QuickCheck
+      - hspec
+    ghc-options:
+      - -Wall
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+      - -main-is Spec

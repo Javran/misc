@@ -1,0 +1,8 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "yesod-min:lib"
+    - path: "./exe/Main.hs"
+      component: "yesod-min:exe:demo"
+    - path: "./test"
+      component: "yesod-min:test:hspec"

@@ -3,3 +3,5 @@
 - ignore: {name: Use camelCase}
 - ignore: {name: Use newtype instead of data}
 - ignore: {name: Use uncurry}
+- ignore: {name: Redundant pure}
+- ignore: {name: Eta reduce}
