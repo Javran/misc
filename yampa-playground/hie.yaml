@@ -1,8 +1,0 @@
-cradle:
-  stack:
-    - path: "./src"
-      component: "yampa-playground:lib"
-    - path: "./exe"
-      component: "yampa-playground:exe:demo"
-    - path: "./test"
-      component: "yampa-playground:test:hspec"
