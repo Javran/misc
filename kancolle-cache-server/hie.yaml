@@ -1,0 +1,8 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "kancolle-cache-server:lib"
+    - path: "./exe"
+      component: "kancolle-cache-server:exe:kc-cache-server"
+    - path: "./test"
+      component: "kancolle-cache-server:test:hspec"

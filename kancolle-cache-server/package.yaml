@@ -1,0 +1,60 @@
+name: kancolle-cache-server
+version: 0.1.0.0
+github: Javran/kancolle-cache-server
+license: BSD3
+author: Javran Cheng
+maintainer: javran.c@gmail.com
+copyright: "Copyright: (c) 2019 Javran Cheng"
+
+description: description
+
+dependencies:
+- aeson
+- base
+- bytestring
+- dhall
+- filepath
+- http-client
+- http-client-tls
+- text
+- unordered-containers
+- wai
+- warp
+- yesod-core
+- containers
+
+library:
+  source-dirs: src
+  ghc-options:
+    - -Wall
+    - -O2
+
+executables:
+  kc-cache-server:
+    main: Main.hs
+    source-dirs: exe
+    dependencies:
+      - kancolle-cache-server
+    ghc-options:
+      - -Wall
+      - -O2
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+
+tests:
+  hspec:
+    main: Spec.hs
+    source-dirs:
+      - test
+    dependencies:
+      - kancolle-cache-server
+      - QuickCheck
+      - hspec
+    ghc-options:
+      - -Wall
+      - -O2
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+      - -main-is Spec
