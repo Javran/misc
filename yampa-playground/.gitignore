@@ -1,0 +1,7 @@
+.stack-work/
+yampa-playground.cabal
+stack.yaml.lock
+*~
+
+private/
+z*
