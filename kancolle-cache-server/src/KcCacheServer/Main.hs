@@ -24,7 +24,7 @@ main =
       case r of
         Left err -> error err
         Right parsed -> do
-          let s = S.fromList . fmap R.version $ HM.elems parsed
+          let s = S.fromList . fmap R.lastModified $ HM.elems parsed
           print s
           pure ()
     _ -> do
