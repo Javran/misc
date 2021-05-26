@@ -22,6 +22,8 @@ dependencies:
 - warp
 - yesod-core
 - containers
+- SafeSemaphore
+- http-types
 
 library:
   source-dirs: src
