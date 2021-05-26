@@ -20,7 +20,10 @@ main =
   getArgs >>= \case
     configFp : _extraArgs -> do
       _cfg@Config.Config {Config.cacheBase} <- inputFile @Config.Config auto configFp
-      r <- eitherDecodeFileStrict @(HM.HashMap T.Text R.ResourceMeta) (cacheBase </> "cached.json")
+      r <-
+        eitherDecodeFileStrict
+          @(HM.HashMap T.Text R.ResourceMeta)
+          (cacheBase </> "cached.json")
       case r of
         Left err -> error err
         Right parsed -> do
