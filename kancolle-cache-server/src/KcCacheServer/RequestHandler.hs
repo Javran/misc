@@ -1,21 +1,31 @@
 module KcCacheServer.RequestHandler where
 
+import Control.Concurrent.MSem
 import Control.Concurrent.MVar
 import Control.Monad.IO.Class
 import qualified Data.HashMap.Strict as HM
+import qualified Data.HashSet as HS
 import qualified Data.Text as T
 import qualified KcCacheServer.CacheMeta as CM
-import qualified Network.Wai as Wai
-import Control.Concurrent.MSem
-import qualified Data.HashSet as HS
+import qualified Data.ByteString.Lazy as BSL
+
+data KcRequest = KcRequest
+  { reqPath :: T.Text -- HTTP URI resource (beginning with '/')
+  , reqVersion :: Maybe T.Text
+  }
+
+data KcResponse = KcResponse
+  { respMeta :: CM.ResourceMeta
+  , respBody :: BSL.ByteString
+  }
 
 handleRequest
   :: MonadIO m
-  => (Wai.Request -> IO Wai.Response)
-  -> (Wai.Request -> IO (Maybe Wai.Response))
-  -> (Wai.Request -> Wai.Response -> IO ())
-  -> Wai.Request
-  -> m Wai.Response
+  => (KcRequest -> IO KcResponse)
+  -> (KcRequest -> IO (Maybe KcResponse))
+  -> (KcRequest -> KcResponse -> IO ())
+  -> KcRequest
+  -> m KcResponse
 handleRequest networkRequest fetchFromCache updateCache req = do
   mResp <- liftIO $ fetchFromCache req
   case mResp of

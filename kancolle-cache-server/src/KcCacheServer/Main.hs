@@ -19,7 +19,8 @@ import System.FilePath.Posix
 import Network.HTTP.Types
 
 app :: Application
-app req respond = respond $ responseLBS status200 [] "foo"
+app req respond = do
+  respond $ responseLBS status200 [] "foo"
 
 main :: IO ()
 main =
@@ -35,7 +36,7 @@ main =
         Right parsed -> do
           let _s = S.fromList . fmap R.lastModified $ HM.elems parsed
           -- print s
-          run (fromIntegral $ Config.port $ Config.local cfg) app
+          -- run (fromIntegral $ Config.port $ Config.local cfg) app
           pure ()
     _ -> do
       putStrLn "<prog> <server config> [args...]"
