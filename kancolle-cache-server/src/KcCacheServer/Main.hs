@@ -8,6 +8,7 @@ module KcCacheServer.Main where
 
 import Control.Concurrent.MSem as MSem
 import Control.Concurrent.MVar
+import Control.Monad.Logger
 import Data.Aeson
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Set as S
@@ -24,7 +25,7 @@ import Network.HTTP.Types
 import System.Environment
 import System.Exit
 import System.FilePath.Posix
-
+import qualified Data.ByteString.Lazy as BSL
 main :: IO ()
 main =
   getArgs >>= \case
@@ -51,12 +52,13 @@ main =
                   }
               req = KcRequest {reqPath = "/kcs2/img/title/02.png", reqVersion = Just "5.0.0.0"}
           resp <-
-            handleRequest
-              (networkRequest cfg mgr)
-              (fetchFromCache cc)
-              (updateCache cc)
-              req
-          print (respBody resp)
+            runStderrLoggingT $
+              handleRequest
+                (networkRequest cfg mgr)
+                (fetchFromCache cc)
+                (updateCache cc)
+                req
+          print (BSL.length $ respBody resp)
     _ -> do
       putStrLn "<prog> <server config> [args...]"
       exitFailure

@@ -22,6 +22,7 @@ data ResourceMeta = ResourceMeta
   , rLength :: Int
   , cacheControl :: Maybe T.Text
   }
+  deriving (Show)
 
 instance FromJSON ResourceMeta where
   parseJSON = withObject "ResourceMeta" $ \o -> do

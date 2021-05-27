@@ -24,6 +24,7 @@ dependencies:
 - containers
 - SafeSemaphore
 - http-types
+- monad-logger
 
 library:
   source-dirs: src

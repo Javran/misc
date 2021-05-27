@@ -1,8 +1,13 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
+
 module KcCacheServer.Caching where
 
 import Control.Concurrent.MSem
 import Control.Concurrent.MVar
+import Control.Monad.IO.Class
+import Control.Monad.Logger
 import Data.ByteString.Builder
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.HashMap.Strict as HM
@@ -10,9 +15,9 @@ import qualified Data.HashSet as HS
 import Data.IORef
 import qualified Data.Text as T
 import qualified KcCacheServer.CacheMeta as CM
+import KcCacheServer.RequestHandler
 import Network.HTTP.Types.Status
 import System.FilePath.Posix
-import KcCacheServer.RequestHandler
 
 -- TODO: handle max-in-flight requests and de-dup.
 -- TODO: handle cache verfication and invalidation
@@ -23,19 +28,29 @@ data CacheContext = CacheContext
   , ccNetworkInFlight :: MVar (HS.HashSet T.Text)
   }
 
-fetchFromCache :: CacheContext -> KcRequest -> IO (Maybe KcResponse)
+forceNetwork = True
+
+fetchFromCache :: (MonadIO m, MonadLogger m) => CacheContext -> KcRequest -> m (Maybe KcResponse)
 fetchFromCache cc req = do
   let path = reqPath req
-  st <- readMVar (ccStore cc)
+  st <- liftIO $ readMVar (ccStore cc)
   case HM.lookup path st of
-    Nothing -> pure Nothing
+    Nothing -> do
+      $(logInfo) "Cache missed"
+      pure Nothing
     Just respMeta -> do
-      -- TODO: check whether file exists.
-      let fp = ccBaseDir cc </> T.unpack (T.dropWhile (== '/') path)
-      respBody <- BSL.readFile fp
-      pure $ Just $ KcResponse {respMeta,respBody}
+      $(logInfo) "Cache hit"
+      if forceNetwork
+        then do
+          $(logInfo) "Request to force network"
+          pure Nothing
+        else do
+          -- TODO: check whether file exists.
+          let fp = ccBaseDir cc </> T.unpack (T.dropWhile (== '/') path)
+          respBody <- liftIO $ BSL.readFile fp
+          pure $ Just $ KcResponse {respMeta, respBody}
 
-updateCache :: CacheContext -> KcRequest -> KcResponse -> IO ()
+updateCache :: (MonadIO m, MonadLogger m) => CacheContext -> KcRequest -> KcResponse -> m ()
 updateCache cc req resp =
   -- TODO
   pure ()
