@@ -1,32 +1,36 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE TypeApplications, OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 module KcCacheServer.Main where
 
+import Control.Concurrent.MSem as MSem
+import Control.Concurrent.MVar
 import Data.Aeson
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Set as S
 import qualified Data.Text as T
-import Dhall
+import Dhall hiding (newManager)
 import qualified KcCacheServer.CacheMeta as R
+import KcCacheServer.Caching
 import qualified KcCacheServer.Config as Config
-import Network.Wai.Handler.Warp
-import Network.Wai
+import KcCacheServer.HandlerImpl
+import KcCacheServer.RequestHandler
+import Network.HTTP.Client
+import Network.HTTP.Client.TLS
+import Network.HTTP.Types
 import System.Environment
 import System.Exit
 import System.FilePath.Posix
-import Network.HTTP.Types
-
-app :: Application
-app req respond = do
-  respond $ responseLBS status200 [] "foo"
 
 main :: IO ()
 main =
   getArgs >>= \case
     configFp : _extraArgs -> do
       cfg@Config.Config {Config.cacheBase} <- inputFile @Config.Config auto configFp
+      mgr <- newManager tlsManagerSettings
       r <-
         eitherDecodeFileStrict
           @(HM.HashMap T.Text R.ResourceMeta)
@@ -34,10 +38,25 @@ main =
       case r of
         Left err -> error err
         Right parsed -> do
-          let _s = S.fromList . fmap R.lastModified $ HM.elems parsed
-          -- print s
-          -- run (fromIntegral $ Config.port $ Config.local cfg) app
-          pure ()
+          ccStore <- newMVar parsed
+          ccNetworkInFlight <- newMVar mempty
+          ccSem <- MSem.new 32
+          -- /img/title/02.png?version=5.0.0.0
+          let cc =
+                CacheContext
+                  { ccStore
+                  , ccNetworkInFlight
+                  , ccSem
+                  , ccBaseDir = cacheBase
+                  }
+              req = KcRequest {reqPath = "/kcs2/img/title/02.png", reqVersion = Just "5.0.0.0"}
+          resp <-
+            handleRequest
+              (networkRequest cfg mgr)
+              (fetchFromCache cc)
+              (updateCache cc)
+              req
+          print (respBody resp)
     _ -> do
       putStrLn "<prog> <server config> [args...]"
       exitFailure

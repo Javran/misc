@@ -27,6 +27,7 @@ handleRequest
   -> KcRequest
   -> m KcResponse
 handleRequest networkRequest fetchFromCache updateCache req = do
+  -- TODO: what if we want to force network?
   mResp <- liftIO $ fetchFromCache req
   case mResp of
     Just resp -> pure resp

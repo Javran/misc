@@ -13,6 +13,7 @@ import KcCacheServer.RequestHandler
   , KcResponse (..)
   )
 import qualified Data.ByteString.Lazy as BSL
+import KcCacheServer.Caching
 import Network.HTTP.Client
 import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status

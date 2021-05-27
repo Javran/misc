@@ -16,7 +16,7 @@ instance FromDhall ServAddr
 data Config = Config
   { local :: ServAddr
   , cacheBase :: FilePath
-  , -- | Only the IP address part. (no trailing slash)
+  , -- | 'http://xxx.yyy.zzz.www/' (whether final '/' exists should not be significant)
     remoteHost :: Text
   }
   deriving (Generic)
