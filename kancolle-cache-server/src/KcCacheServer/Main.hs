@@ -50,7 +50,7 @@ main =
                   , ccSem
                   , ccBaseDir = cacheBase
                   }
-              req = KcRequest {reqPath = "/kcs2/img/title/02.png", reqVersion = Just "5.0.0.0"}
+              req = KcRequest {reqPath = "/kcs2/img/title/02.png", reqVersion = Just "?version=5.0.0.0"}
           resp <-
             runStderrLoggingT $
               handleRequest

@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -18,6 +19,7 @@ import qualified KcCacheServer.CacheMeta as CM
 import KcCacheServer.RequestHandler
 import Network.HTTP.Types.Status
 import System.FilePath.Posix
+import Data.Maybe
 
 -- TODO: handle max-in-flight requests and de-dup.
 -- TODO: handle cache verfication and invalidation
@@ -39,20 +41,27 @@ fetchFromCache cc req = do
       $(logInfo) "Cache missed"
       pure Nothing
     Just respMeta -> do
-      $(logInfo) "Cache hit"
-      if forceNetwork
-        then do
-          $(logInfo) "Request to force network"
-          pure Nothing
-        else do
-          -- TODO: check whether file exists.
-          let fp = ccBaseDir cc </> T.unpack (T.dropWhile (== '/') path)
-          respBody <- liftIO $ BSL.readFile fp
-          pure $ Just $ KcResponse {respMeta, respBody}
+      if
+          | forceNetwork -> do
+            $(logInfo)
+              "Cache hit but requested to force network"
+            pure Nothing
+          | -- in case request doesn't specify a version, cached data is preferred.
+             isJust (reqVersion req) && reqVersion req /= CM.version respMeta -> do
+            $(logInfo) "Version mismatched"
+            -- TODO: we need to be very specfic about content of reqVersion, as it begins with '?version='.
+            $(logInfoSH) (reqVersion req, CM.version respMeta)
+            pure Nothing
+          | otherwise -> do
+            -- TODO: check whether file exists.
+            let fp = ccBaseDir cc </> T.unpack (T.dropWhile (== '/') path)
+            respBody <- liftIO $ BSL.readFile fp
+            pure $ Just $ KcResponse {respMeta, respBody}
 
 updateCache :: (MonadIO m, MonadLogger m) => CacheContext -> KcRequest -> KcResponse -> m ()
-updateCache cc req resp =
-  -- TODO
+updateCache cc req resp = do
+  $(logInfo) "pretending to write to cache."
+  $(logInfoSH) (reqPath req, respMeta resp)
   pure ()
 
 {-
