@@ -11,7 +11,21 @@ import Diagrams.Backend.Cairo.CmdLine
 import Diagrams.Prelude
 
 main :: IO ()
-main = mainWith cairoPen
+main =
+  mainWith $ cairoUnit # showOrigin # showTrace # showEnvelope
+
+cairoUnit :: Diagram Cairo
+cairoUnit =
+  (((reflectY cairoPen # snugB)
+     <> (hcat
+           [ cairoPen # rotate (tau / 4 @@ rad)
+           , cairoPen # rotate ((- tau / 4) @@ rad)
+           ]
+           # centerX
+           # snugT))
+    # snugB
+    <> cairoPen
+    # snugT) # center
 
 cairoPen :: Diagram Cairo
 cairoPen =
@@ -20,4 +34,4 @@ cairoPen =
        & polyType
          .~ PolySides
            [tau / 4 @@ rad, tau / 6 @@ rad, tau / 4 @@ rad, tau / 6 @@ rad]
-           [1, 1, 1, 1]) # showOrigin
+           [1, 1, 1, 1])
