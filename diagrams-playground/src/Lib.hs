@@ -11,7 +11,7 @@ import Diagrams.Backend.Cairo.CmdLine
 import Diagrams.Prelude
 
 main :: IO ()
-main = mainWith (cairoUnit :: Diagram Cairo)
+main = mainWith example
 
 -- cairoUnit :: Diagram Cairo
 cairoUnit =
@@ -26,6 +26,11 @@ cairoUnit =
      <> cairoPen
      # snugT)
     # center
+
+example :: Diagram Cairo
+example =
+  (((cairoUnit # snugR <> ((cairoUnit # alignY 1) # snugL)) # snugL
+   <> (cairoUnit # alignY 1) # snugR) # center) # snugB <> snugT cairoUnit
 
 -- cairoPen :: Diagram Cairo
 cairoPen =
