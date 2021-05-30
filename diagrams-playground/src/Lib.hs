@@ -6,9 +6,11 @@ module Lib
   )
 where
 
+-- import Diagrams.Backend.SVG.CmdLine
+
+import Control.Monad
 import Diagrams.Angle
 import Diagrams.Backend.Cairo.CmdLine
--- import Diagrams.Backend.SVG.CmdLine
 import Diagrams.Prelude
 
 main :: IO ()
@@ -36,14 +38,21 @@ exampleFourCompo =
     # snugB
     <> snugT cairoUnit
 
+gen hf sz = do
+  hInd <- [0 .. sz -1]
+  (do
+     wInd <- [- hInd .. hInd]
+     pure $ p2 (wInd * 2 * hf, (-2) * hf * hInd))
+    <> (do
+          wInd <- [1 .. hInd + 1]
+          [ p2 (- (2 * wInd -1) * hf, (-2) * hf * hInd - hf)
+            , p2 ((2 * wInd -1) * hf, (-2) * hf * hInd - hf)
+            ])
+
 example :: Diagram B
 example =
   atPoints
-    [ p2 (0, 0)
-    , p2 (hf, - hf)
-    , p2 (- hf, - hf)
-    , p2 (0, -2 * hf)
-    ]
+    (gen hf 8)
     (repeat cairoUnit)
   where
     hf :: Double
