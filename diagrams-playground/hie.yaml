@@ -1,0 +1,8 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "diagrams-playground:lib"
+    - path: "./exe"
+      component: "diagrams-playground:exe:demo"
+    - path: "./test"
+      component: "diagrams-playground:test:hspec"

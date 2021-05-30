@@ -1,0 +1,10 @@
+resolver: lts-16.31
+packages:
+- .
+
+extra-deps:
+- diagrams-cairo-1.4.1.1
+- cairo-0.13.8.1
+- pango-0.13.8.1
+- glib-0.13.8.1
+- gtk2hs-buildtools-0.13.8.0
