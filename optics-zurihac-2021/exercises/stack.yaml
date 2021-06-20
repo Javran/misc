@@ -1,0 +1,11 @@
+resolver: lts-16.31
+
+packages:
+ - .
+
+extra-deps:
+- indexed-profunctors-0.1
+- indexed-traversable-0.1.1
+- th-abstraction-0.4.2.0
+- optics-core-0.4
+- optics-th-0.4
