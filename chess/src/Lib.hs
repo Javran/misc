@@ -1,4 +1,5 @@
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Lib
   ( main
@@ -25,7 +26,10 @@ data PieceType
   | Rook
   | Queen
   | King
-  deriving (Enum, Eq, Ord)
+  deriving (Enum, Eq, Ord, Bounded)
+
+pieceTypeSize :: Int
+pieceTypeSize = fromEnum (maxBound @PieceType) - fromEnum (minBound @PieceType) + 1
 
 {-
   A halfboard contains exactly 6 elements for 6 piece types.
@@ -34,6 +38,9 @@ newtype Halfboard = Halfboard (VU.Vector Bitboard)
 
 hbAt :: Halfboard -> PieceType -> Bitboard
 hbAt (Halfboard hb) pt = hb VU.! fromEnum pt
+
+emptyHalfboard :: Halfboard
+emptyHalfboard = Halfboard $ VU.replicate pieceTypeSize 0
 
 {-
   (<white side>, <black side>)
