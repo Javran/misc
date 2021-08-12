@@ -10,6 +10,7 @@ description: description
 
 dependencies:
 - base
+- vector
 
 library:
   source-dirs: src
