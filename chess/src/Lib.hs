@@ -47,5 +47,10 @@ emptyHalfboard = Halfboard $ VU.replicate pieceTypeSize 0
  -}
 newtype Board = Board (Halfboard, Halfboard)
 
+{-
+  Word8 but only 0~63 are valid.
+ -}
+newtype LinearCoord = LinearCoord Word8
+
 main :: IO ()
 main = pure ()
