@@ -73,7 +73,9 @@ newtype LinearCoord = LinearCoord Word8
   , [a8, b8, c8, d8, e8, f8, g8, h8]
   ] = chunksOf 8 $ LinearCoord <$> [0 .. 63]
 
-data Side = White | Black
+data Color = White | Black
+
+data Side = KingSide | QueenSide
 
 main :: IO ()
 main = pure ()
