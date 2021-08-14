@@ -1,7 +1,7 @@
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Lib
+module Game.Chess.Main
   ( main
   )
 where
@@ -9,7 +9,7 @@ where
 import Data.List.Split
 import qualified Data.Vector.Unboxed as VU
 import Data.Word
-import Fen
+import Game.Chess.Fen
 
 {-
   TODO: use newtype ideally - having trouble here as Vector Word64 and Vector Bitboard
