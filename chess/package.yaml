@@ -12,6 +12,7 @@ dependencies:
 - base
 - vector
 - split
+- template-haskell
 
 library:
   source-dirs: src

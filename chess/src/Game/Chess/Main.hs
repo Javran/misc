@@ -1,8 +1,9 @@
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 
 module Game.Chess.Main
-  ( main
+  ( main, t2
   )
 where
 
@@ -10,6 +11,7 @@ import Data.List.Split
 import qualified Data.Vector.Unboxed as VU
 import Data.Word
 import Game.Chess.Fen
+import Game.Chess.TH
 
 {-
   TODO: use newtype ideally - having trouble here as Vector Word64 and Vector Bitboard
@@ -56,6 +58,7 @@ newtype LinearCoord = LinearCoord Word8
 
 {-
   TODO: there must be a better way, right?
+  (Template Haskell?)
 
   To convert to 2D coord (Rank, File):
   - low bits (0~2) are file
@@ -73,6 +76,8 @@ newtype LinearCoord = LinearCoord Word8
   , [a7, b7, c7, d7, e7, f7, g7, h7]
   , [a8, b8, c8, d8, e8, f8, g8, h8]
   ] = chunksOf 8 $ LinearCoord <$> [0 .. 63]
+
+$(destructList 8 (\i -> "t" <> show i) [|[1 .. 8]|])
 
 data Color = White | Black
 
