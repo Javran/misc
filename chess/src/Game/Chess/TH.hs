@@ -1,6 +1,8 @@
 module Game.Chess.TH where
 
 import Language.Haskell.TH
+import Data.Bits
+import qualified Data.Vector as V
 
 {-
   Usage: `bindList l varName <exp> <element type>`
@@ -19,3 +21,13 @@ bindList l varName rhsQ tyQ = do
   ty <- tyQ
   let tySigs = (\n -> SigD n ty) <$> ns
   pure (bindingDec : tySigs)
+
+rankStrs, fileStrs :: V.Vector Char
+rankStrs = V.fromListN 8 ['1' .. '8']
+fileStrs = V.fromListN 8 ['a' .. 'h']
+
+linearCoordName :: Int -> String
+linearCoordName c = [fileStrs V.! file, rankStrs V.! rank]
+  where
+    rank = shiftR c 3
+    file = c .&. 7
