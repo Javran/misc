@@ -77,7 +77,7 @@ newtype LinearCoord = LinearCoord Word8
   , [a8, b8, c8, d8, e8, f8, g8, h8]
   ] = chunksOf 8 $ LinearCoord <$> [0 .. 63]
 
-$(destructList 8 (\i -> "t" <> show i) [|[1 .. 8]|])
+$(destructList 8 (\i -> "t" <> show i) [|[1 .. 8]|] [t|Int|])
 
 data Color = White | Black
 
