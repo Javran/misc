@@ -1,6 +1,5 @@
 module Game.Chess.TH where
 
-import Control.Monad
 import Language.Haskell.TH
 
 {-
@@ -15,7 +14,8 @@ import Language.Haskell.TH
 bindList :: Int -> (Int -> String) -> Q Exp -> Q Type -> Q [Dec]
 bindList l varName rhsQ tyQ = do
   let ns = fmap (mkName . varName) [0 .. l -1]
-  vs <- mapM (varP . mkName . varName) [0 .. l -1]
-  rhs <- rhsQ
+  bindingDec <-
+    valD (listP (varP <$> ns)) (normalB rhsQ) []
   ty <- tyQ
-  pure (ValD (ListP vs) (NormalB rhs) [] : fmap (\n -> SigD n ty) ns)
+  let tySigs = (\n -> SigD n ty) <$> ns
+  pure (bindingDec : tySigs)
