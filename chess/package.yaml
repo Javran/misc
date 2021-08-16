@@ -13,6 +13,7 @@ dependencies:
 - vector
 - split
 - template-haskell
+- attoparsec
 
 library:
   source-dirs: src
