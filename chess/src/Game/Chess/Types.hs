@@ -12,6 +12,12 @@ import Data.Word
 type Bitboard = Word64
 
 {-
+  Mostly for documenting purpose, a list with exactly 8 elements
+  (which is for now not checked).
+ -}
+type EightElems = []
+
+{-
   pawns and kings might not be considered pieces,
   but let's not make it more complicated than needed.
  -}
