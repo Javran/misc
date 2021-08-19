@@ -15,7 +15,7 @@ testTexts =
   ]
 
 chessPieces :: PreparedFont Double -> Diagram B
-chessPieces font = stroke (textSVG' opts (concat testTexts)) # lc blue # bg white
+chessPieces font = vcat (fmap (\t -> stroke (textSVG' opts t) # fc black # lcA transparent) testTexts) # bg white
   where
     opts = TextOpts font INSIDE_H KERN False 1 70
 
