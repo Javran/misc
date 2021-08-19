@@ -17,6 +17,7 @@ dependencies:
 - SVGFonts
 - diagrams-core
 - diagrams-lib
+- diagrams-rasterific
 
 data-files: 
 - data/ChessMerida.svg
