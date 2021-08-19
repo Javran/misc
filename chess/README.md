@@ -7,4 +7,6 @@ and try to have an implementation of our own without relying on known designs.
 
 ## Chess Font
 
-[Chess Mérida](http://www.enpassant.dk/chess/fonteng.htm)
+Font source: [Chess Mérida](http://www.enpassant.dk/chess/fonteng.htm),
+converted to SVG Font with fontforge.
+

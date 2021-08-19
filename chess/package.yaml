@@ -14,6 +14,12 @@ dependencies:
 - split
 - template-haskell
 - attoparsec
+- SVGFonts
+- diagrams-core
+- diagrams-lib
+
+data-files: 
+- data/ChessMerida.svg
 
 library:
   source-dirs: src
