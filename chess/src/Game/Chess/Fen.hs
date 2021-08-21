@@ -3,14 +3,14 @@
 module Game.Chess.Fen where
 
 import Control.Applicative
+import Control.Monad
 import Data.Attoparsec.ByteString.Char8
+import qualified Data.ByteString as BS
 import Data.Char
 import Data.Monoid
 import Data.Word
 import Game.Chess.Coord
 import Game.Chess.Types
-import qualified Data.ByteString as BS
-import Control.Monad
 
 {-
   https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
@@ -25,16 +25,18 @@ data Record = Record
   , fullMove :: Int
   }
 
+{-
+  Information of one sqaure: empty or there's something on it.
+ -}
+type Square = Maybe (Color, PieceType)
+
 rawStandardBoard = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-justBoard =  "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
 
-parseTest = parseOnly (do
-                      l0 <- rankP
-                      ls <- replicateM 7 (char '/' *> rankP)
-                      pure $ l0 : ls
-                      ) justBoard
+justBoard = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
 
-pElemP :: Parser (Sum Word8, [Maybe (Color, PieceType)])
+parseTest = parseOnly placementP justBoard
+
+pElemP :: Parser (Sum Word8, [Square])
 pElemP =
   choice
     [ "Pp" ~> Pawn
@@ -56,7 +58,10 @@ pElemP =
       pure (1, [Just (color, pt)])
     _ ~> _ = error "unreachable"
 
-rankP :: Parser (EightElems (Maybe (Color, PieceType)))
+rankP :: Parser (EightElems Square)
 rankP = do
   (Sum 8, es) <- mconcat <$> many1 pElemP
   pure es
+
+placementP :: Parser (EightElems (EightElems Square))
+placementP = (:) <$> rankP <*> replicateM 7 (char '/' *> rankP)
