@@ -1,10 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -Wno-deferred-type-errors #-}
 
 module Game.Chess.Fen where
 
 import Control.Applicative
 import Control.Monad
-import Data.Attoparsec.ByteString.Char8
+import Data.Attoparsec.ByteString.Char8 as Parser
 import Data.Bifunctor
 import qualified Data.ByteString as BS
 import Data.Char
@@ -25,7 +26,7 @@ data Record = Record
   , enPassantTarget :: Maybe LinearCoord
   , halfMove :: Int
   , fullMove :: Int
-  }
+  } deriving (Show)
 
 {-
   Information of one sqaure: empty or there's something on it.
@@ -34,9 +35,8 @@ type Square = Maybe (Color, PieceType)
 
 rawStandardBoard = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
-justBoard = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
 
-parseTest = parseOnly placementP justBoard
+parseTest = parseOnly fenP rawStandardBoard
 
 pElemP :: Parser (Sum Word8, [Square])
 pElemP =
@@ -85,13 +85,20 @@ castlingP = bimap nubOrd nubOrd . mconcat <$> many1 chP
 todoP :: String -> Parser a
 todoP msg = pure (error msg)
 
+enPassantTargetP :: Parser (Maybe LinearCoord)
+enPassantTargetP =
+  (Nothing <$ char '-')
+    <|> (Nothing
+           {- TODO: actual parsing -}
+           <$ Parser.takeWhile (/= ' '))
+
 fenP :: Parser Record
 fenP =
   Record <$> tok placementP
     <*> tok activeColorP
     <*> tok castlingP
-    <*> tok (todoP "en passant")
-    <*> tok (todoP "halfmove")
-    <*> todoP "fullmove"
+    <*> tok enPassantTargetP
+    <*> tok decimal
+    <*> decimal
   where
     tok p = p <* char ' '

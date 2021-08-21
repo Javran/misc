@@ -51,4 +51,4 @@ newtype Board = Board (Halfboard, Halfboard)
 
 data Color = White | Black deriving (Show)
 
-data Side = KingSide | QueenSide deriving (Eq, Ord)
+data Side = KingSide | QueenSide deriving (Eq, Ord, Show)
