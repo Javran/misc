@@ -11,6 +11,8 @@ import Data.Monoid
 import Data.Word
 import Game.Chess.Coord
 import Game.Chess.Types
+import Data.Bifunctor
+import Data.Containers.ListUtils
 
 {-
   https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
@@ -19,7 +21,7 @@ import Game.Chess.Types
 data Record = Record
   { placement :: EightElems (EightElems (Maybe (Color, PieceType)))
   , activeColor :: Color
-  , castling :: ([Side], [Side])
+  , castling :: ([Side], [Side]) -- TODO: probably just Set or a Word8?
   , enPassantTarget :: Maybe LinearCoord
   , halfMove :: Int
   , fullMove :: Int
@@ -65,3 +67,17 @@ rankP = do
 
 placementP :: Parser (EightElems (EightElems Square))
 placementP = (:) <$> rankP <*> replicateM 7 (char '/' *> rankP)
+
+activeColorP :: Parser Color
+activeColorP = (White <$ char 'w') <|> (Black <$ char 'b')
+
+castlingP :: Parser ([Side], [Side])
+castlingP = bimap nubOrd nubOrd . mconcat <$> many1 chP
+  where
+    chP =
+      choice
+        [ ([KingSide], []) <$ char 'K'
+        , ([QueenSide], []) <$ char 'Q'
+        , ([], [KingSide]) <$ char 'k'
+        , ([], [QueenSide]) <$ char 'q'
+        ]
