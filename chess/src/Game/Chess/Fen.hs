@@ -5,14 +5,14 @@ module Game.Chess.Fen where
 import Control.Applicative
 import Control.Monad
 import Data.Attoparsec.ByteString.Char8
+import Data.Bifunctor
 import qualified Data.ByteString as BS
 import Data.Char
+import Data.Containers.ListUtils
 import Data.Monoid
 import Data.Word
 import Game.Chess.Coord
 import Game.Chess.Types
-import Data.Bifunctor
-import Data.Containers.ListUtils
 
 {-
   https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
@@ -81,3 +81,17 @@ castlingP = bimap nubOrd nubOrd . mconcat <$> many1 chP
         , ([], [KingSide]) <$ char 'k'
         , ([], [QueenSide]) <$ char 'q'
         ]
+
+todoP :: String -> Parser a
+todoP msg = pure (error msg)
+
+fenP :: Parser Record
+fenP =
+  Record <$> tok placementP
+    <*> tok activeColorP
+    <*> tok castlingP
+    <*> tok (todoP "en passant")
+    <*> tok (todoP "halfmove")
+    <*> todoP "fullmove"
+  where
+    tok p = p <* char ' '
