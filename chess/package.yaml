@@ -18,6 +18,7 @@ dependencies:
 - diagrams-core
 - diagrams-lib
 - diagrams-rasterific
+- bytestring
 
 data-files: 
 - data/ChessMerida.svg

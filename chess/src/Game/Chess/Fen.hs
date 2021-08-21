@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Game.Chess.Fen where
 
@@ -9,6 +9,8 @@ import Data.Monoid
 import Data.Word
 import Game.Chess.Coord
 import Game.Chess.Types
+import qualified Data.ByteString as BS
+import Control.Monad
 
 {-
   https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
@@ -24,6 +26,13 @@ data Record = Record
   }
 
 rawStandardBoard = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+justBoard =  "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
+
+parseTest = parseOnly (do
+                      l0 <- rankP
+                      ls <- replicateM 7 (char '/' *> rankP)
+                      pure $ l0 : ls
+                      ) justBoard
 
 pElemP :: Parser (Sum Word8, [Maybe (Color, PieceType)])
 pElemP =

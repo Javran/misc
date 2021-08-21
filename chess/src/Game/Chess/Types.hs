@@ -28,7 +28,7 @@ data PieceType
   | Rook
   | Queen
   | King
-  deriving (Enum, Eq, Ord, Bounded)
+  deriving (Enum, Eq, Ord, Bounded, Show)
 
 {-
   A halfboard contains exactly 6 elements for 6 piece types.
@@ -49,6 +49,6 @@ emptyHalfboard = Halfboard $ VU.replicate pieceTypeSize 0
  -}
 newtype Board = Board (Halfboard, Halfboard)
 
-data Color = White | Black
+data Color = White | Black deriving (Show)
 
 data Side = KingSide | QueenSide
