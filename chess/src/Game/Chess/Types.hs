@@ -64,6 +64,7 @@ newtype Board = Board (Halfboard, Halfboard)
     + can move forward two squares if on home square
     + normal capture rule
     + en passant
+    + promotion
 
   - Knight:
 
@@ -77,7 +78,10 @@ newtype Board = Board (Halfboard, Halfboard)
 
   - Queen: just pretend it's both a Bishop and a Rook.
 
-  - King: should be easy to implement.
+  - King:
+    + normal moves
+    + castling
+
 
   Now to consider absolute pins and checks,
   we just need to exclude moves that would result in King being checked.
