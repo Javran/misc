@@ -16,7 +16,9 @@ import Game.Chess.Coord
 import Game.Chess.Types
 
 {-
-  https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
+  Reference:
+  - https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
+  - https://ia902908.us.archive.org/26/items/pgn-standard-1994-03-12/PGN_standard_1994-03-12.txt
  -}
 
 data Record = Record
@@ -34,7 +36,6 @@ data Record = Record
 type Square = Maybe (Color, PieceType)
 
 rawStandardBoard = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-
 
 parseTest = parseOnly fenP rawStandardBoard
 

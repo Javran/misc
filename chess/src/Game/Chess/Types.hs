@@ -14,6 +14,8 @@ type Bitboard = Word64
 {-
   Mostly for documenting purpose, a list with exactly 8 elements
   (which is for now not checked).
+
+  TODO: we can probably use https://hackage.haskell.org/package/fixed-vector
  -}
 type EightElems = []
 
@@ -32,6 +34,8 @@ data PieceType
 
 {-
   A halfboard contains exactly 6 elements for 6 piece types.
+
+  TODO: probably also use fixed-vector for this.
  -}
 newtype Halfboard = Halfboard (VU.Vector Bitboard)
 
