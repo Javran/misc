@@ -71,6 +71,17 @@ placementP = (:) <$> rankP <*> replicateM 7 (char '/' *> rankP)
 activeColorP :: Parser Color
 activeColorP = (White <$ char 'w') <|> (Black <$ char 'b')
 
+{-
+  TODO: We can make the representation a lot more compact by using bitset.
+
+  TODO: according to spec, this can only be:
+
+  - either "-"
+  - or "KQkq" with some missing chars (not all missing)
+
+  We can write a stricter version.
+
+ -}
 castlingP :: Parser ([Side], [Side])
 castlingP = bimap nubOrd nubOrd . mconcat <$> many1 chP
   where
