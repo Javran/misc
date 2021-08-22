@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# OPTIONS_GHC -Wno-deferred-type-errors #-}
 
 module Game.Chess.Fen where
 
@@ -87,11 +86,13 @@ todoP :: String -> Parser a
 todoP msg = pure (error msg)
 
 enPassantTargetP :: Parser (Maybe LinearCoord)
-enPassantTargetP =
-  (Nothing <$ char '-')
-    <|> (Nothing
-           {- TODO: actual parsing -}
-           <$ Parser.takeWhile (/= ' '))
+enPassantTargetP = (Nothing <$ char '-') <|> Just <$> enPassantSquareP
+   where
+     enPassantSquareP = do
+       fCh <- satisfy (\ch -> ch >= 'a' && ch <= 'h')
+       let f = ord fCh - ord 'a'
+       r <- 3 <$ char '3' <|> 6 <$ char '6'
+       pure (unsafeFromRankAndFile r f)
 
 fenP :: Parser Record
 fenP =
