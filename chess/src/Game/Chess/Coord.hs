@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ViewPatterns #-}
 
 {-
@@ -7,6 +8,7 @@ module Game.Chess.Coord
   ( Coord
   , unsafeFromRankAndFile
   , fromRankAndFile
+  , withRankAndFile
   {- ORMOLU_DISABLE -}
   , a1, b1, c1, d1, e1, f1, g1, h1
   , a2, b2, c2, d2, e2, f2, g2, h2
@@ -22,16 +24,31 @@ where
 
 import Control.Monad
 import Data.Bits
+import Data.Char
 import Data.List
 import Data.Word
+import Text.ParserCombinators.ReadP
 
 {-
-  Word8 but only 0~63 are valid.
+  INVARIANT: Word8 but only takes the value 0~63 (inclusive).
 
   - low bits (0~2) represents file
   - high bits (3~5) represents rank
  -}
-newtype Coord = Coord Word8 deriving (Show)
+newtype Coord = Coord Word8 deriving (Eq)
+
+instance Show Coord where
+  show c =
+    withRankAndFile
+      c
+      $ \r f ->
+        [chr (ord 'a' + f), chr (ord '1' + r)]
+
+instance Read Coord where
+  readsPrec _ = readP_to_S $ do
+    fCh <- satisfy (\c -> c >= 'a' && c <= 'h')
+    rCh <- satisfy (\c -> c >= '1' && c <= '8')
+    pure $ unsafeFromRankAndFile (ord rCh - ord '1') (ord fCh - ord 'a')
 
 {-
   Rank and file are both expected to be in [0..7]
@@ -46,6 +63,13 @@ fromRankAndFile :: Integral i => i -> i -> Maybe Coord
 fromRankAndFile r f =
   unsafeFromRankAndFile r f
     <$ guard (r >= 0 && r < 8 && f >= 0 && f < 8)
+
+withRankAndFile :: Integral i => Coord -> (i -> i -> r) -> r
+withRankAndFile (Coord c) action =
+  action (fromIntegral r) (fromIntegral f)
+  where
+    r = shiftR c 3
+    f = c .&. 7
 
 _gen :: IO ()
 _gen = do

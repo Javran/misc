@@ -6,6 +6,7 @@ import Game.Chess.Types
 import Graphics.SVGFonts
 import Graphics.SVGFonts.ReadFont
 import Paths_chess
+import Game.Chess.Coord
 
 testTexts =
   [ "tmvwlvmt"
@@ -25,3 +26,4 @@ main = do
   font <- loadFont fp
   mainWith (chessPieces font)
   pure ()
+
