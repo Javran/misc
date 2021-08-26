@@ -24,7 +24,7 @@ data Record = Record
   { placement :: EightElems (EightElems (Maybe (Color, PieceType)))
   , activeColor :: Color
   , castling :: ([Side], [Side]) -- TODO: probably just Set or a Word8?
-  , enPassantTarget :: Maybe LinearCoord
+  , enPassantTarget :: Maybe Coord
   , halfMove :: Int
   , fullMove :: Int
   } deriving (Show)
@@ -96,7 +96,7 @@ castlingP = bimap nubOrd nubOrd . mconcat <$> many1 chP
 todoP :: String -> Parser a
 todoP msg = pure (error msg)
 
-enPassantTargetP :: Parser (Maybe LinearCoord)
+enPassantTargetP :: Parser (Maybe Coord)
 enPassantTargetP = (Nothing <$ char '-') <|> Just <$> enPassantSquareP
    where
      enPassantSquareP = do

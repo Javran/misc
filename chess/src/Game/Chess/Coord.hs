@@ -18,15 +18,15 @@ import Game.Chess.TH
   - low bits (0~2) represents file
   - high bits (3~5) represents rank
  -}
-newtype LinearCoord = LinearCoord Word8 deriving (Num, Enum, Show)
+newtype Coord = Coord Word8 deriving (Num, Enum, Show)
 
-$(bindList 64 linearCoordName [|[0 .. 63]|] [t|LinearCoord|])
+$(bindList 64 linearCoordName [|[0 .. 63]|] [t|Coord|])
 
 {-
   Rank and file both are both expected to be in [0..7]
  -}
-unsafeFromRankAndFile :: Integral i => i -> i -> LinearCoord
+unsafeFromRankAndFile :: Integral i => i -> i -> Coord
 unsafeFromRankAndFile
   (fromIntegral -> rInd)
   (fromIntegral -> fInd) =
-    LinearCoord $ shiftL rInd 3 .|. (7 .&. fInd)
+    Coord $ shiftL rInd 3 .|. (7 .&. fInd)
