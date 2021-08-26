@@ -2,7 +2,7 @@
 {-# LANGUAGE ViewPatterns #-}
 
 {-
-  Coordinations on a Chess board.
+  Coordinates on a Chess board.
  -}
 module Game.Chess.Coord
   ( Coord
