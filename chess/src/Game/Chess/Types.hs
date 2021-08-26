@@ -1,9 +1,11 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeApplications #-}
 
 module Game.Chess.Types where
 
 import qualified Data.Vector.Unboxed as VU
 import Data.Word
+import qualified Data.Vector.Fixed as VF
 
 {-
   TODO: use newtype ideally - having trouble here as Vector Word64 and Vector Bitboard
@@ -14,10 +16,8 @@ type Bitboard = Word64
 {-
   Mostly for documenting purpose, a list with exactly 8 elements
   (which is for now not checked).
-
-  TODO: we can probably use https://hackage.haskell.org/package/fixed-vector
  -}
-type EightElems = []
+type EightElems = VF.VecList 8
 
 {-
   pawns and kings might not be considered pieces,

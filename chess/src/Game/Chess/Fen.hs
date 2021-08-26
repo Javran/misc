@@ -7,6 +7,7 @@ import Control.Monad
 import Data.Attoparsec.ByteString.Char8 as Parser
 import Data.Bifunctor
 import qualified Data.ByteString as BS
+import qualified Data.Vector.Fixed as VF
 import Data.Char
 import Data.Containers.ListUtils
 import Data.Monoid
@@ -63,10 +64,12 @@ pElemP =
 rankP :: Parser (EightElems Square)
 rankP = do
   (Sum 8, es) <- mconcat <$> many1 pElemP
-  pure es
+  pure $ VF.fromList' es
 
 placementP :: Parser (EightElems (EightElems Square))
-placementP = (:) <$> rankP <*> replicateM 7 (char '/' *> rankP)
+placementP = do
+  fs <- (:) <$> rankP <*> replicateM 7 (char '/' *> rankP)
+  pure $ VF.fromList' fs
 
 activeColorP :: Parser Color
 activeColorP = (White <$ char 'w') <|> (Black <$ char 'b')
