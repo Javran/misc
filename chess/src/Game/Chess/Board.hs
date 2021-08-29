@@ -18,7 +18,7 @@ import Game.Chess.Fen
 import Game.Chess.Types
 
 {-
-  There are multiple ways to represent a board with Bitboard as elemenets:
+  There are multiple ways to represent a board with Bitboard as elements:
 
   - we can do a vector of 12 elements
   - or a pair of vectors of 6 elements in each
