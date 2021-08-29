@@ -11,4 +11,4 @@ import Data.Word
 newtype Bitboard = Bitboard
   { getBitboard :: Word64
   }
-  deriving (Eq, Bits) via Word64
+  deriving (Eq, Bits, Show) via Word64

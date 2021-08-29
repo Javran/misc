@@ -2,7 +2,9 @@
 
 module Game.Chess.Fen
   ( Record (..)
+  , Placement
   , fenP
+  , fenParseTest
   )
 where
 
@@ -43,7 +45,7 @@ type Square = Maybe (Color, PieceType)
 
 rawStandardBoard = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
-parseTest = parseOnly fenP rawStandardBoard
+fenParseTest = parseOnly fenP rawStandardBoard
 
 pElemP :: Parser (Sum Word8, [Square])
 pElemP =
