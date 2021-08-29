@@ -11,7 +11,7 @@ import Data.List.Split
 import Data.Word
 
 newtype Bitboard = Bitboard
-  { getBitboard :: Word64
+  { getBitboard :: !Word64
   }
   deriving (Eq, Bits) via Word64
 
