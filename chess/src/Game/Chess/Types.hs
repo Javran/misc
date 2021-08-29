@@ -3,13 +3,8 @@
 
 module Game.Chess.Types where
 
-import qualified Data.Vector as V
 import qualified Data.Vector.Fixed as VF
-import Game.Chess.Bitboard
 
-{-
-  A list with exactly 8 elements.
- -}
 type EightElems = VF.VecList 8
 
 {-
@@ -24,31 +19,6 @@ data PieceType
   | Queen
   | King
   deriving (Enum, Eq, Ord, Bounded, Show)
-
-{-
-  A halfboard contains exactly 6 elements for 6 piece types.
-
-  Note: We could also use fixed-vector for this
-  but for now I'd prefer just the standard vector interface
-  rather than having to dealing with type-level dimension stuff
-  which is never going to change.
-
- -}
-newtype Halfboard = Halfboard (V.Vector Bitboard)
-
-hbAt :: Halfboard -> PieceType -> Bitboard
-hbAt (Halfboard hb) pt = hb V.! fromEnum pt
-
-pieceTypeSize :: Int
-pieceTypeSize = fromEnum (maxBound @PieceType) - fromEnum (minBound @PieceType) + 1
-
-emptyHalfboard :: Halfboard
-emptyHalfboard = Halfboard $ V.replicate pieceTypeSize (Bitboard 0)
-
-{-
-  (<white side>, <black side>)
- -}
-newtype Board = Board (Halfboard, Halfboard)
 
 {-
   Plan to implement all legal moves:

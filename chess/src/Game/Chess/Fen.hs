@@ -1,16 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Game.Chess.Fen where
+module Game.Chess.Fen
+  ( Record (..)
+  , fenP
+  )
+where
 
 import Control.Applicative
 import Control.Monad
 import Data.Attoparsec.ByteString.Char8 as Parser
 import Data.Bifunctor
-import qualified Data.ByteString as BS
-import qualified Data.Vector.Fixed as VF
 import Data.Char
 import Data.Containers.ListUtils
 import Data.Monoid
+import qualified Data.Vector.Fixed as VF
 import Data.Word
 import Game.Chess.Coord
 import Game.Chess.Types
@@ -21,14 +24,17 @@ import Game.Chess.Types
   - https://ia902908.us.archive.org/26/items/pgn-standard-1994-03-12/PGN_standard_1994-03-12.txt
  -}
 
+type Placement = EightElems (EightElems (Maybe (Color, PieceType)))
+
 data Record = Record
-  { placement :: EightElems (EightElems (Maybe (Color, PieceType)))
+  { placement :: Placement
   , activeColor :: Color
   , castling :: ([Side], [Side]) -- TODO: probably just Set or a Word8?
   , enPassantTarget :: Maybe Coord
   , halfMove :: Int
   , fullMove :: Int
-  } deriving (Show)
+  }
+  deriving (Show)
 
 {-
   Information of one sqaure: empty or there's something on it.
@@ -66,7 +72,7 @@ rankP = do
   (Sum 8, es) <- mconcat <$> many1 pElemP
   pure $ VF.fromList' es
 
-placementP :: Parser (EightElems (EightElems Square))
+placementP :: Parser Placement
 placementP = do
   fs <- (:) <$> rankP <*> replicateM 7 (char '/' *> rankP)
   pure $ VF.fromList' fs
@@ -96,17 +102,14 @@ castlingP = bimap nubOrd nubOrd . mconcat <$> many1 chP
         , ([], [QueenSide]) <$ char 'q'
         ]
 
-todoP :: String -> Parser a
-todoP msg = pure (error msg)
-
 enPassantTargetP :: Parser (Maybe Coord)
 enPassantTargetP = (Nothing <$ char '-') <|> Just <$> enPassantSquareP
-   where
-     enPassantSquareP = do
-       fCh <- satisfy (\ch -> ch >= 'a' && ch <= 'h')
-       let f = ord fCh - ord 'a'
-       r <- 3 <$ char '3' <|> 6 <$ char '6'
-       pure (unsafeFromRankAndFile r f)
+  where
+    enPassantSquareP = do
+      fCh <- satisfy (\ch -> ch >= 'a' && ch <= 'h')
+      let f = ord fCh - ord 'a'
+      r <- 3 <$ char '3' <|> 6 <$ char '6'
+      pure (unsafeFromRankAndFile r f)
 
 fenP :: Parser Record
 fenP =
