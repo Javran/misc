@@ -9,6 +9,7 @@ module Game.Chess.Coord
   , fromRankAndFile
   , withRankAndFile
   , allCoords
+  , toBit
   {- ORMOLU_DISABLE -}
   , a1, b1, c1, d1, e1, f1, g1, h1
   , a2, b2, c2, d2, e2, f2, g2, h2
@@ -81,6 +82,12 @@ withRankAndFile (Coord c) action =
   where
     r = shiftR c 3
     f = c .&. 7
+
+{-
+  Produces a bitboard with only the specified coord set.
+ -}
+toBit :: Coord -> Word64
+toBit (Coord c) = bit (fromIntegral c)
 
 _gen :: IO ()
 _gen = do

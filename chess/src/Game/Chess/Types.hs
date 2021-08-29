@@ -35,7 +35,11 @@ data PieceType
 {-
   A halfboard contains exactly 6 elements for 6 piece types.
 
-  TODO: probably also use fixed-vector for this.
+  Note: We could also use fixed-vector for this
+  but for now I'd prefer just the standard vector interface
+  rather than having to dealing with type-level dimension stuff
+  which is never going to change.
+
  -}
 newtype Halfboard = Halfboard (VU.Vector Bitboard)
 
