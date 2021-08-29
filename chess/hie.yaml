@@ -1,8 +1,0 @@
-cradle:
-  stack:
-    - path: "./src"
-      component: "chess:lib"
-    - path: "./exe"
-      component: "chess:exe:demo"
-    - path: "./test"
-      component: "chess:test:hspec"
