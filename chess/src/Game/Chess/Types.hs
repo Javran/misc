@@ -3,19 +3,12 @@
 
 module Game.Chess.Types where
 
-import qualified Data.Vector.Unboxed as VU
-import Data.Word
+import qualified Data.Vector as V
 import qualified Data.Vector.Fixed as VF
+import Game.Chess.Bitboard
 
 {-
-  TODO: use newtype ideally - having trouble here as Vector Word64 and Vector Bitboard
-  are not exactly the same.
- -}
-type Bitboard = Word64
-
-{-
-  Mostly for documenting purpose, a list with exactly 8 elements
-  (which is for now not checked).
+  A list with exactly 8 elements.
  -}
 type EightElems = VF.VecList 8
 
@@ -41,16 +34,16 @@ data PieceType
   which is never going to change.
 
  -}
-newtype Halfboard = Halfboard (VU.Vector Bitboard)
+newtype Halfboard = Halfboard (V.Vector Bitboard)
 
 hbAt :: Halfboard -> PieceType -> Bitboard
-hbAt (Halfboard hb) pt = hb VU.! fromEnum pt
+hbAt (Halfboard hb) pt = hb V.! fromEnum pt
 
 pieceTypeSize :: Int
 pieceTypeSize = fromEnum (maxBound @PieceType) - fromEnum (minBound @PieceType) + 1
 
 emptyHalfboard :: Halfboard
-emptyHalfboard = Halfboard $ VU.replicate pieceTypeSize 0
+emptyHalfboard = Halfboard $ V.replicate pieceTypeSize (Bitboard 0)
 
 {-
   (<white side>, <black side>)
@@ -85,7 +78,6 @@ newtype Board = Board (Halfboard, Halfboard)
   - King:
     + normal moves
     + castling
-
 
   Now to consider absolute pins and checks,
   we just need to exclude moves that would result in King being checked.
