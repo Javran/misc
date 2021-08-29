@@ -12,7 +12,6 @@ import Data.Maybe
 import qualified Data.Vector.Fixed as VF
 import qualified Data.Vector.Fixed.Boxed as VFB
 import qualified Data.Vector.Fixed.Mutable as VFM
-import Debug.Trace
 import Game.Chess.Bitboard
 import Game.Chess.Coord
 import Game.Chess.Fen
@@ -34,7 +33,7 @@ import Game.Chess.Types
 type Halfboard = VFB.Vec 6 Bitboard
 
 emptyHb :: Halfboard
-emptyHb = VF.replicate $! (Bitboard 0)
+emptyHb = VF.replicate (Bitboard 0)
 
 hbAt :: Halfboard -> PieceType -> Bitboard
 hbAt hb pt = hb VF.! fromEnum pt
@@ -48,13 +47,10 @@ bd =
  -}
 type Board = (Halfboard, Halfboard)
 
--- fromPlacement :: Placement -> Board
+fromPlacement :: Placement -> Board
 fromPlacement ps2d = runST $ do
-  whiteHb <- VFM.new
-  blackHb <- VFM.new
-  forM_ [0 .. 5] $ \i -> do
-    VFM.write whiteHb i (Bitboard 0)
-    VFM.write blackHb i (Bitboard 0)
+  whiteHb <- VFM.thaw emptyHb
+  blackHb <- VFM.thaw emptyHb
   let pairs :: [] (Coord, (Color, PieceType))
       pairs =
         catMaybes
@@ -62,13 +58,11 @@ fromPlacement ps2d = runST $ do
              (\mcp c -> (c,) <$> mcp)
              (concat $ VF.toList $ fmap VF.toList ps2d)
              (concat fenCoords))
-  forM_ pairs $ \e@(coord, (c, pt)) -> do
+  forM_ pairs $ \(coord, (c, pt)) -> do
     let hb = case c of
           White -> whiteHb
           Black -> blackHb
         pInd = fromEnum pt
-    Bitboard v <- traceShow e $ VFM.read hb pInd
-    VFM.write hb (traceShow v pInd) $! Bitboard (v .|. toBit coord)
-  (w :: Halfboard) <- VFM.unsafeFreeze whiteHb
-  (b :: Halfboard) <- VFM.unsafeFreeze blackHb
-  pure b
+    Bitboard v <- VFM.unsafeRead hb pInd
+    VFM.unsafeWrite hb pInd $! Bitboard (v .|. toBit coord)
+  (,) <$> VFM.unsafeFreeze whiteHb <*> VFM.unsafeFreeze blackHb
