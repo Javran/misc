@@ -29,6 +29,13 @@ subCmds = M.fromList
   , ("clean", cmdClean)
   ]
 
+
+{-
+  TODO: update this tool to only deal with grub2, which can simplify the workflow a little.
+  This is not to say that grub2 is in any way good,
+  a garbage is still a garbage, just that it's less convenient avoiding using it.
+ -}
+
 main :: IO ()
 main = getArgs >>= \case
   [cmd] | Just action <- uniqueLookup cmd subCmds -> action
