@@ -1,6 +1,7 @@
-module Lib
+module KcNavyAlbum.Main
   ( main
-  ) where
+  )
+where
 
 main :: IO ()
 main = pure ()

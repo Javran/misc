@@ -10,6 +10,9 @@ description: description
 
 dependencies:
 - base
+- containers
+- text
+- vector
 
 library:
   source-dirs: src
