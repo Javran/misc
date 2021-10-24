@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -10,8 +11,12 @@
 module KcNavyAlbum.DefaultDigest where
 
 import Data.Aeson as Aeson
+import qualified Data.HashMap.Strict as HM
+import qualified Data.IntMap.Strict as IM
+import Data.List
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as T
+import qualified Data.Vector as V
 import Deriving.Aeson
 import Network.HTTP.Client
 import System.Exit
@@ -74,5 +79,35 @@ subCmdMain mgr _cmdHelpPrefix = do
   parsed <- case Aeson.eitherDecode @KcMasterData (responseBody resp) of
     Left msg -> die ("parse error: " <> msg)
     Right r -> pure r
-  mapM_ print (mstShip parsed)
-  pure ()
+  encodeFile "assets/default-digest.json" (mkDigest parsed)
+  putStrLn "Written to default-digest.json."
+
+mkDigest :: KcMasterData -> Value
+mkDigest KcMasterData {mstSlotitem, mstShipgraph, mstShip} =
+  Object $
+    HM.fromList
+      [ ( "equipMstIds"
+        , Array $
+            V.fromList $
+              fmap (Number . fromIntegral) $
+                sort $ fmap slotId mstSlotitem
+        )
+      , ( "shipDigests"
+        , Array $
+            V.fromList $
+              fmap
+                (\shipId ->
+                   Array $
+                     V.fromList
+                       [ Number (fromIntegral shipId)
+                       , String (graphDigestTable IM.! shipId)
+                       ])
+                $ sort $ fmap (\KcShip {shipId} -> shipId) mstShip
+        )
+      ]
+  where
+    graphDigestTable :: IM.IntMap T.Text
+    graphDigestTable = IM.fromList $ fmap mk mstShipgraph
+      where
+        mk KcShipgraph {shipId, filename, version} =
+          (shipId, filename <> "#" <> NE.head version)
