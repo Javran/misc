@@ -9,10 +9,12 @@ copyright: "Copyright: (c) 2019 Javran Cheng"
 description: description
 
 dependencies:
+- aeson
 - base
 - containers
 - http-client
 - http-types
+- system-filepath
 - text
 - turtle
 - vector

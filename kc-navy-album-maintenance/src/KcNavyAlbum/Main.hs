@@ -1,13 +1,30 @@
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
+
 module KcNavyAlbum.Main
   ( main
   )
 where
 
+{-
+  Required environment variables:
+
+  - NAVY_ALBUM_REPO: path to the repo.
+
+ -}
+
+import Control.Monad
+import qualified Data.Aeson as Aeson
+import qualified Data.IntSet as IS
+import qualified Data.Text as T
+import Filesystem.Path.CurrentOS hiding (null)
 import Kantour.GameResource.Magic
 import Network.HTTP.Client
 import Network.HTTP.Types
-import Control.Monad
 import Text.Printf
+import Turtle.Prelude
+import Prelude hiding (FilePath)
 
 checkBattleBgm :: Manager -> Int -> IO Int
 checkBattleBgm mgr bgmId = do
@@ -18,5 +35,38 @@ checkBattleBgm mgr bgmId = do
 
 main :: IO ()
 main = do
+  let goodGap = 16
+  Just fp <- need "NAVY_ALBUM_REPO"
+  cd (fromText fp)
   mgr <- newManager defaultManagerSettings
-  print =<< forM [1..20] (checkBattleBgm mgr)
+  knownBgms <-
+    Aeson.eitherDecodeFileStrict @IS.IntSet "assets/map-bgms.json" >>= \case
+      Left e -> die (T.pack e)
+      Right s -> pure s
+
+  let detectBgm curId mLastGoodId
+        | case mLastGoodId of
+            Nothing -> False
+            Just lastGoodId -> curId - lastGoodId > goodGap = do
+          pure []
+        | IS.member curId knownBgms =
+          detectBgm (curId + 1) (Just curId)
+        | otherwise = do
+          putStr $ "Checking BGM #" <> show curId <> " ..."
+          s <- checkBattleBgm mgr curId
+          if s == 200
+            then do
+              putStrLn " yes"
+              (curId :) <$> detectBgm (curId + 1) (Just curId)
+            else do
+              putStrLn " no"
+              detectBgm (curId + 1) mLastGoodId
+  newBgms <- detectBgm 1 Nothing
+  let knownBgms' = IS.union knownBgms (IS.fromList newBgms)
+  if knownBgms /= knownBgms'
+    then do
+      Aeson.encodeFile @[Int] "assets/map-bgms.json" (IS.toAscList knownBgms')
+      putStrLn "Map BGM asset updated."
+    else
+      putStrLn "Nothing to do."
+  pure ()
