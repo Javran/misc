@@ -11,7 +11,10 @@ description: description
 dependencies:
 - base
 - containers
+- http-client
+- http-types
 - text
+- turtle
 - vector
 
 library:
