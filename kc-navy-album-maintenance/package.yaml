@@ -13,11 +13,13 @@ dependencies:
 - base
 - containers
 - http-client
+- http-client-tls
 - http-types
 - system-filepath
 - text
 - turtle
 - vector
+- unordered-containers
 
 library:
   source-dirs: src

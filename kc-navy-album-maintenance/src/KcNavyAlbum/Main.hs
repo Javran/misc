@@ -15,18 +15,20 @@ where
 
 import Control.Monad
 import Filesystem.Path.CurrentOS hiding (null)
+import qualified KcNavyAlbum.DefaultDigest
+import qualified KcNavyAlbum.MapBgm
 import Network.HTTP.Client
+import Network.HTTP.Client.TLS
+import System.Environment
+import System.Exit hiding (die)
 import Turtle.Prelude
 import Prelude hiding (FilePath)
-import System.Environment
-import qualified KcNavyAlbum.MapBgm
-import System.Exit hiding (die)
 
 main :: IO ()
 main = do
   Just fp <- need "NAVY_ALBUM_REPO"
   cd (fromText fp)
-  mgr <- newManager defaultManagerSettings
+  mgr <- newManager tlsManagerSettings
 
   getArgs >>= \case
     subCmd : args
@@ -38,5 +40,6 @@ main = do
       exitFailure
   where
     handlers =
-      [ ("map-bgm",  KcNavyAlbum.MapBgm.subCmdMain)
+      [ ("map-bgm", KcNavyAlbum.MapBgm.subCmdMain)
+      , ("default-digest", KcNavyAlbum.DefaultDigest.subCmdMain)
       ]
