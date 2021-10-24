@@ -1,8 +1,0 @@
-cradle:
-  stack:
-    - path: "./src"
-      component: "kc-navy-album-maintenance:lib"
-    - path: "./exe"
-      component: "kc-navy-album-maintenance:exe:demo"
-    - path: "./test"
-      component: "kc-navy-album-maintenance:test:hspec"
