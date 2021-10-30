@@ -80,12 +80,15 @@ spec =
 
 {-# START_FILE .gitignore #-}
 .stack-work/
-{{name}}.cabal
 stack.yaml.lock
 *~
 
 private/
 z*
+
+{-# START_FILE .gitattributes #-}
+*.cabal linguist-generated=true -diff
+
 {-# START_FILE stack.yaml #-}
 resolver: lts-16.31
 packages:
