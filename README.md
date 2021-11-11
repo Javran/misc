@@ -1,4 +1,3 @@
-misc
-==========
+## misc
 
 some miscellaneous toy programs
