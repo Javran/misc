@@ -143,8 +143,9 @@ type Bests = ([(String, Integer)], S.Set String)
 lookForBestInitialGuesses :: Int -> IO Bests
 lookForBestInitialGuesses n = do
   answers <- lines <$> readFile "wordle-answers-alphabetical.txt"
-  allowedGuesses <- lines <$> readFile "wordle-allowed-guesses.txt"
-  let fullSearchSpace = S.fromList $ answers <> allowedGuesses
+  -- allowedGuesses <- lines <$> readFile "wordle-allowed-guesses.txt"
+  let allowedGuesses = []
+      fullSearchSpace = S.fromList $ answers <> allowedGuesses
   let checkpointFile = "best-initials.txt"
   (curBest, alreadyGuessed) <- do
     e <- doesFileExist checkpointFile
@@ -161,14 +162,15 @@ lookForBestInitialGuesses n = do
   g <- newStdGen
   let guessSpace = fullSearchSpace S.\\ alreadyGuessed'
       actualGuessSpace = take n (shuffle' (S.toList guessSpace) (S.size guessSpace) g)
+      writeBests bests = do
+        let checkpoint' :: Checkpoint
+            checkpoint' = second S.toAscList bests
+        writeFile checkpointFile (show checkpoint')
+
   putStrLn $ "Search space: " <> show (S.size guessSpace)
   fix
     (\loop bests guesses -> case guesses of
-       [] -> do
-         let checkpoint' :: Checkpoint
-             checkpoint' = second S.toAscList bests
-         writeFile checkpointFile (show checkpoint')
-         pure bests
+       [] -> pure bests
        guess : guesses' -> do
          putStrLn $ "Trying " <> guess <> ", " <> show (length guesses') <> " more to go."
          let alts = do
@@ -181,6 +183,7 @@ lookForBestInitialGuesses n = do
                  LT -> ([(guess, score)], S.insert guess xs)
                  EQ -> ((guess, score) : bestAlts, S.insert guess xs)
                  GT -> (bestAlts, S.insert guess xs)
+         writeBests $! bests'
          putStrLn $ "Score: " <> show score
          loop bests' guesses')
     initBests
@@ -225,7 +228,7 @@ main = do
         pure (guess, sum (fmap fromIntegral alts :: [Integer]))
   if isInitialGuess
     then do
-      (bestAlts, searched) <- lookForBestInitialGuesses 200
+      (bestAlts, searched) <- lookForBestInitialGuesses 3000
       putStrLn $ "Searched: " <> show (S.size searched)
       print bestAlts
     else do
