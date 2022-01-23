@@ -143,10 +143,13 @@ type Bests = ([(String, Integer)], S.Set String)
 lookForBestInitialGuesses :: Int -> IO Bests
 lookForBestInitialGuesses n = do
   answers <- lines <$> readFile "wordle-answers-alphabetical.txt"
-  -- allowedGuesses <- lines <$> readFile "wordle-allowed-guesses.txt"
-  let allowedGuesses = []
-      fullSearchSpace = S.fromList $ answers <> allowedGuesses
-  let checkpointFile = "best-initials.txt"
+  let focusOnAnswers = False
+  allowedGuesses <-
+    if focusOnAnswers
+      then pure []
+      else lines <$> readFile "wordle-allowed-guesses.txt"
+  let fullSearchSpace = S.fromList $ answers <> allowedGuesses
+      checkpointFile = "best-initials.txt"
   (curBest, alreadyGuessed) <- do
     e <- doesFileExist checkpointFile
     if e
@@ -203,11 +206,15 @@ main = do
 
   let p = consumeOrDie attemptedP
       _guessesExample =
-        [ p "roted | mnnnn"
-        , p "cairn | gngmn"
-        ]
+        fmap
+          p
+          [ "roted | mnnnn"
+          , "cairn | gngmn"
+          ]
       guesses =
-        []
+        fmap
+          p
+          []
       isInitialGuess = null guesses
       searchSpace = do
         a <- answers
@@ -228,7 +235,7 @@ main = do
         pure (guess, sum (fmap fromIntegral alts :: [Integer]))
   if isInitialGuess
     then do
-      (bestAlts, searched) <- lookForBestInitialGuesses 3000
+      (bestAlts, searched) <- lookForBestInitialGuesses 30000
       putStrLn $ "Searched: " <> show (S.size searched)
       print bestAlts
     else do
