@@ -142,8 +142,10 @@ type Bests = ([(String, Integer)], S.Set String)
 
 lookForBestInitialGuesses :: Int -> IO Bests
 lookForBestInitialGuesses n = do
-  answers <- lines <$> readFile "wordle-answers-alphabetical.txt"
-  let focusOnAnswers = False
+  answersPre <- lines <$> readFile "wordle-answers-alphabetical.txt"
+  let answers = filter uniqueLetterOnly answersPre
+      uniqueLetterOnly a = S.size (S.fromList a) == length a
+      focusOnAnswers = True
   allowedGuesses <-
     if focusOnAnswers
       then pure []
