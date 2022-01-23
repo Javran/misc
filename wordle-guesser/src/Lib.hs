@@ -1,6 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Lib
   ( main
@@ -9,14 +10,17 @@ where
 
 import Control.Monad
 import Control.Monad.State.Strict
+import Data.Bifunctor
 import Data.Char
 import Data.Either
 import Data.Foldable
 import Data.List
 import Data.Maybe
 import Data.Ord
+import qualified Data.Set as S
 import Debug.Trace
 import GHC.Stack.Types (HasCallStack)
+import System.Directory
 import System.Random
 import System.Random.Shuffle
 import Text.ParserCombinators.ReadP hiding (get)
@@ -132,10 +136,60 @@ attemptedP = do
   mk <- replicateM 5 resultP
   pure $ zipWith ($) mk cs
 
+type Checkpoint = ([(String, Integer)], [String])
+
+type Bests = ([(String, Integer)], S.Set String)
+
+lookForBestInitialGuesses :: Int -> IO Bests
+lookForBestInitialGuesses n = do
+  answers <- lines <$> readFile "wordle-answers-alphabetical.txt"
+  allowedGuesses <- lines <$> readFile "wordle-allowed-guesses.txt"
+  let fullSearchSpace = S.fromList $ answers <> allowedGuesses
+  let checkpointFile = "best-initials.txt"
+  (curBest, alreadyGuessed) <- do
+    e <- doesFileExist checkpointFile
+    if e
+      then read @Checkpoint <$> readFile checkpointFile
+      else do
+        let emptyCp :: Checkpoint
+            emptyCp = ([], [])
+        writeFile checkpointFile (show emptyCp)
+        pure emptyCp
+  let alreadyGuessed' = S.fromDistinctAscList alreadyGuessed
+      initBests :: Bests
+      initBests = (curBest, alreadyGuessed')
+  g <- newStdGen
+  let guessSpace = fullSearchSpace S.\\ alreadyGuessed'
+      actualGuessSpace = take n (shuffle' (S.toList guessSpace) (S.size guessSpace) g)
+  putStrLn $ "Search space: " <> show (S.size guessSpace)
+  fix
+    (\loop bests guesses -> case guesses of
+       [] -> do
+         let checkpoint' :: Checkpoint
+             checkpoint' = second S.toAscList bests
+         writeFile checkpointFile (show checkpoint')
+         pure bests
+       guess : guesses' -> do
+         putStrLn $ "Trying " <> guess <> ", " <> show (length guesses') <> " more to go."
+         let alts = do
+               answer <- answers
+               pure (length $ tryElim answer guess answers)
+             score = sum (fmap fromIntegral alts :: [Integer])
+             bests' = case bests of
+               ([], xs) -> ([(guess, score)], S.insert guess xs)
+               (bestAlts@((_, sc) : _), xs) -> case compare score sc of
+                 LT -> ([(guess, score)], S.insert guess xs)
+                 EQ -> ((guess, score) : bestAlts, S.insert guess xs)
+                 GT -> (bestAlts, S.insert guess xs)
+         putStrLn $ "Score: " <> show score
+         loop bests' guesses')
+    initBests
+    actualGuessSpace
+
 {-
   Current best initial guesses:
 
-  - [("roted",247957)]
+  - [("taler",156811)]
 
  -}
 main :: IO ()
@@ -149,7 +203,8 @@ main = do
         [ p "roted | mnnnn"
         , p "cairn | gngmn"
         ]
-      guesses = []
+      guesses =
+        []
       isInitialGuess = null guesses
       searchSpace = do
         a <- answers
@@ -159,7 +214,7 @@ main = do
       allGuessSpace = answers <> allowedGuesses
       allGuessSpaceLen = length allGuessSpace
       experiment = do
-        let guessSpace = take 40 $ shuffle' allGuessSpace allGuessSpaceLen g
+        let guessSpace = take 200 $ shuffle' allGuessSpace allGuessSpaceLen g
         (i, guess) <- zip [0 :: Int ..] do
           if isInitialGuess
             then guessSpace
@@ -168,5 +223,11 @@ main = do
               answer <- searchSpace
               pure (length $ tryElim answer guess searchSpace)
         pure (guess, sum (fmap fromIntegral alts :: [Integer]))
-  let (_, z) = minimumBy (comparing snd) experiment
-  print $ filter ((== z) . snd) experiment
+  if isInitialGuess
+    then do
+      (bestAlts, searched) <- lookForBestInitialGuesses 200
+      putStrLn $ "Searched: " <> show (S.size searched)
+      print bestAlts
+    else do
+      let (_, z) = minimumBy (comparing snd) experiment
+      print $ filter ((== z) . snd) experiment

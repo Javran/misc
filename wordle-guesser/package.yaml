@@ -22,6 +22,7 @@ library:
     - monad-loops
     - random-shuffle
     - random
+    - directory
 
 executables:
   demo:
