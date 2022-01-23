@@ -1,0 +1,8 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "wordle-guesser:lib"
+    - path: "./exe"
+      component: "wordle-guesser:exe:demo"
+    - path: "./test"
+      component: "wordle-guesser:test:hspec"

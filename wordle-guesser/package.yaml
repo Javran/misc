@@ -1,0 +1,46 @@
+name: wordle-guesser
+version: 0.1.0.0
+github: Javran/wordle-guesser
+license: BSD3
+author: Javran Cheng
+maintainer: javran.c@gmail.com
+description: description
+
+dependencies:
+- base
+
+library:
+  source-dirs: src
+  ghc-options:
+    - -Wall
+    - -O2
+
+executables:
+  demo:
+    main: Main.hs
+    source-dirs: exe
+    dependencies:
+      - wordle-guesser
+    ghc-options:
+      - -Wall
+      - -O2
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+
+tests:
+  hspec:
+    main: Spec.hs
+    source-dirs:
+      - test
+    dependencies:
+      - wordle-guesser
+      - QuickCheck
+      - hspec
+    ghc-options:
+      - -Wall
+      - -O2
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+      - -main-is Spec
