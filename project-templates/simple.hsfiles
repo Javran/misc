@@ -102,6 +102,7 @@ packages:
 - ignore: {name: Use const}
 - ignore: {name: Use head}
 - ignore: {name: Use if}
+- ignore: {name: Use infix}
 - ignore: {name: Use list literal pattern}
 - ignore: {name: Use newtype instead of data}
 - ignore: {name: Use uncurry}
