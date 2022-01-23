@@ -18,6 +18,10 @@ library:
     - text
     - bytestring
     - containers
+    - mtl
+    - monad-loops
+    - random-shuffle
+    - random
 
 executables:
   demo:
