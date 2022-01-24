@@ -73,7 +73,7 @@ makeGuess answer guess = Result {rCorrects, rWrongPlaces, rNotIn}
 couldMatch :: Result -> String -> String -> Bool
 couldMatch result guess candidate = result == makeGuess candidate guess
 
-tryElim :: [Char] -> String -> [] String -> [] String
+tryElim :: [Char] -> String -> SearchSpace -> SearchSpace
 tryElim actualAnswer guess searchSpace = do
   let crit = makeGuess actualAnswer guess
   candidate <- searchSpace
@@ -85,16 +85,15 @@ data Attempted
   | Misp Char
   | Nope Char
 
-couldMatch' :: [Attempted] -> String -> Bool
-couldMatch' attemptedResult candidate = couldMatch r attemptedWord candidate
+toResult :: [Attempted] -> Result
+toResult xs = Result {rCorrects, rWrongPlaces, rNotIn}
   where
-    r = Result {rCorrects, rWrongPlaces, rNotIn}
     rNotIn =
       mapMaybe
         (\case
            Nope v -> Just v
            _ -> Nothing)
-        attemptedResult
+        xs
     rWrongPlaces =
       catMaybes $
         zipWith
@@ -102,20 +101,25 @@ couldMatch' attemptedResult candidate = couldMatch r attemptedWord candidate
              Misp c -> Just (c, i)
              _ -> Nothing)
           [0 ..]
-          attemptedResult
+          xs
     rCorrects =
       fmap
         (\case
            Good c -> Just c
            _ -> Nothing)
-        attemptedResult
+        xs
+
+couldMatch' :: [Attempted] -> String -> Bool
+couldMatch' xs candidate = couldMatch r attemptedWord candidate
+  where
+    r = toResult xs
     attemptedWord =
       fmap
         (\case
            Good c -> c
            Misp c -> c
            Nope c -> c)
-        attemptedResult
+        xs
 
 consumeAllWithReadP :: ReadP a -> String -> Maybe a
 consumeAllWithReadP p xs = case readP_to_S (p <* eof) xs of
@@ -197,6 +201,8 @@ lookForBestInitialGuesses n = do
     initBests
     actualGuessSpace
 
+type SearchSpace = [String]
+
 main :: IO ()
 main = do
   answers <- lines <$> readFile "wordle-answers-alphabetical.txt"
@@ -213,9 +219,14 @@ main = do
         fmap
           p
           [ "irate | mgnnn"
-          , "prigs | mggnn"
           ]
       isInitialGuess = null guesses
+      answerSpace = do
+        a <- answers
+        forM_ guesses \guess -> do
+          guard $ couldMatch' guess a
+        pure a
+      searchSpace :: SearchSpace
       searchSpace = do
         a <- answers <> allowedGuesses
         forM_ guesses \guess -> do
@@ -225,8 +236,10 @@ main = do
         (i, guess) <- zip [0 :: Int ..] do searchSpace
         let alts = traceShow i do
               answer <- searchSpace
-              pure (length $ tryElim answer guess searchSpace)
-        pure (guess, sum (fmap fromIntegral alts :: [Integer]))
+              pure (length $ tryElim answer guess answerSpace)
+            score = sum (fmap fromIntegral alts :: [Integer])
+        guard $ score > 0
+        pure (guess, score)
   if isInitialGuess
     then do
       (bestAlts, searched) <- lookForBestInitialGuesses 30000
