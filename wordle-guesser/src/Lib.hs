@@ -165,7 +165,11 @@ lookForBestInitialGuesses n = do
       initBests = (curBest, alreadyGuessed')
   g <- newStdGen
   let guessSpace = fullSearchSpace S.\\ alreadyGuessed'
-      actualGuessSpace = take n (shuffle' (S.toList guessSpace) (S.size guessSpace) g)
+      actualGuessSpace =
+        if S.null guessSpace
+          then []
+          else -- note: random-shuffle doesn't handle empty list well, which results in <<loop>>
+            take n (shuffle' (S.toList guessSpace) (S.size guessSpace) g)
       writeBests bests = do
         let checkpoint' :: Checkpoint
             checkpoint' = second S.toAscList bests
@@ -173,7 +177,7 @@ lookForBestInitialGuesses n = do
 
   putStrLn $ "Search space: " <> show (S.size guessSpace)
   fix
-    (\loop bests guesses -> case guesses of
+    (\loop bests -> \case
        [] -> pure bests
        guess : guesses' -> do
          putStrLn $ "Trying " <> guess <> ", " <> show (length guesses') <> " more to go."
@@ -197,7 +201,6 @@ main :: IO ()
 main = do
   answers <- lines <$> readFile "wordle-answers-alphabetical.txt"
   allowedGuesses <- lines <$> readFile "wordle-allowed-guesses.txt"
-  g <- newStdGen
 
   let p = consumeOrDie attemptedP
       _guessesExample =
@@ -209,21 +212,17 @@ main = do
       guesses =
         fmap
           p
-          []
+          [ "irate | mgnnn"
+          , "prigs | mggnn"
+          ]
       isInitialGuess = null guesses
       searchSpace = do
-        a <- answers
+        a <- answers <> allowedGuesses
         forM_ guesses \guess -> do
           guard $ couldMatch' guess a
         pure a
-      allGuessSpace = answers <> allowedGuesses
-      allGuessSpaceLen = length allGuessSpace
       experiment = do
-        let guessSpace = take 200 $ shuffle' allGuessSpace allGuessSpaceLen g
-        (i, guess) <- zip [0 :: Int ..] do
-          if isInitialGuess
-            then guessSpace
-            else searchSpace
+        (i, guess) <- zip [0 :: Int ..] do searchSpace
         let alts = traceShow i do
               answer <- searchSpace
               pure (length $ tryElim answer guess searchSpace)
