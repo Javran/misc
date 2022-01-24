@@ -235,7 +235,7 @@ main = do
       experiment = do
         (i, guess) <- zip [0 :: Int ..] do searchSpace
         let alts = traceShow i do
-              answer <- searchSpace
+              answer <- answerSpace
               pure (length $ tryElim answer guess answerSpace)
             score = sum (fmap fromIntegral alts :: [Integer])
         guard $ score > 0
