@@ -218,7 +218,7 @@ main = do
       guesses =
         fmap
           p
-          [ "irate | mgnnn"
+          [ "irate | nmnnm"
           ]
       isInitialGuess = null guesses
       answerSpace = do
@@ -229,8 +229,10 @@ main = do
       searchSpace :: SearchSpace
       searchSpace = do
         a <- answers <> allowedGuesses
-        forM_ guesses \guess -> do
-          guard $ couldMatch' guess a
+        let cut = True
+        when cut do
+          forM_ guesses \guess -> do
+            guard $ couldMatch' guess a
         pure a
       experiment = do
         (i, guess) <- zip [0 :: Int ..] do searchSpace
@@ -238,7 +240,6 @@ main = do
               answer <- answerSpace
               pure (length $ tryElim answer guess answerSpace)
             score = sum (fmap fromIntegral alts :: [Integer])
-        guard $ score > 0
         pure (guess, score)
   if isInitialGuess
     then do
