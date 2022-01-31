@@ -218,7 +218,7 @@ main = do
       guesses =
         fmap
           p
-          [ "irate | nmnnm"
+          [ "irate | mnnmn"
           ]
       isInitialGuess = null guesses
       answerSpace = do
@@ -229,7 +229,7 @@ main = do
       searchSpace :: SearchSpace
       searchSpace = do
         a <- answers <> allowedGuesses
-        let cut = True
+        let cut = False
         when cut do
           forM_ guesses \guess -> do
             guard $ couldMatch' guess a
@@ -248,4 +248,12 @@ main = do
       print bestAlts
     else do
       let (_, z) = minimumBy (comparing snd) experiment
-      print $ filter ((== z) . snd) experiment
+          suggestsPre = filter ((== z) . snd) experiment
+          (suggests, unused) = splitAt 200 suggestsPre
+      putStrLn $ "Suggestions: " <> show (length suggestsPre)
+
+      unless (null unused) do
+        putStrLn $ "Items truncated: " <> show (length unused)
+      print suggests
+      when (length answerSpace <= 60) do
+        print answerSpace
