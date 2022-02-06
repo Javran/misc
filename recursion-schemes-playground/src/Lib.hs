@@ -15,6 +15,7 @@ import Data.Coerce
 import Data.Fix (Fix)
 import Data.Functor.Foldable
 import Data.Monoid
+import qualified Study1
 
 list1 :: [Int]
 list1 = [1, 2, 4, 4, 8, 10, 24]
@@ -188,8 +189,8 @@ oddSums' = getSum . prepro odds sumAlg . coerce @[Int] @[sum]
     sumAlg Nil = 0
     sumAlg (Cons a b) = a <> b
 
-main :: IO ()
-main = do
+main1 :: IO ()
+main1 = do
   print listF1
   print list1'
   print list1''
@@ -199,3 +200,6 @@ main = do
   print (map (length . natFib' . (`replicate` ())) [1 .. 15])
   print (map (length . natFib'' . (`replicate` ())) [1 .. 15])
   print (oddSums [1 .. 15], sum (filter odd [1 .. 15 :: Int]))
+
+main :: IO ()
+main = Study1.main
