@@ -19,13 +19,34 @@ import Data.Monoid
 list1 :: [Int]
 list1 = [1, 2, 4, 4, 8, 10, 24]
 
+{-
+
+  A function of the form `f a -> a` is called an "f-algebra".
+
+  The idea is that we write function on a non-recursive datatype,
+  pass it to a combinator that does the rest.
+
+  No recursive calls are made, instead, we are exposed to the intermediate
+  results and just express how to construct another intermediate result
+  given current context (which is the non-recursive datatype).
+
+ -}
+listAlg1 :: ListF Int [Int] -> [Int]
+listAlg1 = \case
+  Nil -> []
+  Cons a b -> a : b
+
+{-
+  This one computes sum of all elements.
+ -}
+listSum :: ListF Int Int -> Int
+listSum = \case
+  Nil -> 0
+  Cons a b -> a + b
+
 listCoalg1 :: [Int] -> ListF Int [Int]
 listCoalg1 [] = Nil
 listCoalg1 (x : xs) = Cons x xs
-
-listAlg1 :: ListF Int [Int] -> [Int]
-listAlg1 Nil = []
-listAlg1 (Cons a b) = a : b
 
 {-
   for turning list1 into listF1,
