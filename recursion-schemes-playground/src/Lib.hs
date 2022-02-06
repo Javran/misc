@@ -12,76 +12,9 @@ where
 
 import Control.Comonad.Cofree
 import Data.Coerce
-import Data.Fix (Fix)
 import Data.Functor.Foldable
 import Data.Monoid
 import qualified Study1
-
-list1 :: [Int]
-list1 = [1, 2, 4, 4, 8, 10, 24]
-
-{-
-
-  A function of the form `f a -> a` is called an "f-algebra".
-
-  The idea is that we write function on a non-recursive datatype,
-  pass it to a combinator that does the rest.
-
-  No recursive calls are made, instead, we are exposed to the intermediate
-  results and just express how to construct another intermediate result
-  given current context (which is the non-recursive datatype).
-
- -}
-listAlg1 :: ListF Int [Int] -> [Int]
-listAlg1 = \case
-  Nil -> []
-  Cons a b -> a : b
-
-{-
-  This one computes sum of all elements.
- -}
-listSum :: ListF Int Int -> Int
-listSum = \case
-  Nil -> 0
-  Cons a b -> a + b
-
-listCoalg1 :: [Int] -> ListF Int [Int]
-listCoalg1 [] = Nil
-listCoalg1 (x : xs) = Cons x xs
-
-{-
-  for turning list1 into listF1,
-  we need to "build up" ListF from a tradictional list,
-  which suggests an anamorphism with the original list as seed
--}
-listF1 :: Fix (ListF Int)
-listF1 = ana listCoalg1 list1
-
-{-
-  reconstruction through catamorphism
--}
-list1' :: [Int]
-list1' = cata listAlg1 listF1
-
-{-
-  hylomorphism: construct then tear down
--}
-list1'' :: [Int]
-list1'' = hylo listAlg1 listCoalg1 list1
-
-lengthF :: (Recursive t, Base t ~ ListF Int) => t -> Int
-lengthF = cata coalg
-  where
-    coalg Nil = 0
-    coalg (Cons _ t) = 1 + t
-
--- an overcomplicated map (*10) for showing catamorphism on regular list
-listX :: [Int]
-listX = cata f list1
-  where
-    f :: ListF Int [Int] -> [Int]
-    f Nil = []
-    f (Cons a b) = (a * 10) : b
 
 type Nat = [()]
 
@@ -153,6 +86,8 @@ natFib'' = histo $ \case
   for List, as an example, it provides "Nil" and "Cons"
   so that we can describe the actual computation.
 -}
+
+{-
 v1 :: ListF Int (Fix (ListF Int))
 v1 = case project listF1 of
   Nil -> Nil
@@ -162,7 +97,7 @@ v2 :: ListF Int [Int]
 v2 = case project list1 of
   Nil -> Nil
   Cons a b -> Cons a b
-
+ -}
 -- we are basically using the sum monoid
 oddSums :: [Int] -> Int
 oddSums = prepro odds sumAlg
@@ -191,10 +126,6 @@ oddSums' = getSum . prepro odds sumAlg . coerce @[Int] @[sum]
 
 main1 :: IO ()
 main1 = do
-  print listF1
-  print list1'
-  print list1''
-  print listX
   print (length $ natFac (replicate 4 ()))
   print (map (length . natFib . (`replicate` ())) [1 .. 15])
   print (map (length . natFib' . (`replicate` ())) [1 .. 15])
