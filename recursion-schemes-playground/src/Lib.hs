@@ -1,17 +1,27 @@
-{-# LANGUAGE FlexibleContexts, TypeFamilies, LambdaCase, RankNTypes, ScopedTypeVariables, TypeApplications #-}
-module Main where
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
 
-import Data.Functor.Foldable
+module Lib
+  ( main
+  )
+where
+
 import Control.Comonad.Cofree
 import Data.Coerce
+import Data.Fix (Fix)
+import Data.Functor.Foldable
 import Data.Monoid
 
 list1 :: [Int]
-list1 = [1,2,4,4,8,10,24]
+list1 = [1, 2, 4, 4, 8, 10, 24]
 
 listCoalg1 :: [Int] -> ListF Int [Int]
 listCoalg1 [] = Nil
-listCoalg1 (x:xs) = Cons x xs
+listCoalg1 (x : xs) = Cons x xs
 
 listAlg1 :: ListF Int [Int] -> [Int]
 listAlg1 Nil = []
@@ -37,7 +47,6 @@ list1' = cata listAlg1 listF1
 list1'' :: [Int]
 list1'' = hylo listAlg1 listCoalg1 list1
 
-
 lengthF :: (Recursive t, Base t ~ ListF Int) => t -> Int
 lengthF = cata coalg
   where
@@ -50,10 +59,10 @@ listX = cata f list1
   where
     f :: ListF Int [Int] -> [Int]
     f Nil = []
-    f (Cons a b) = (a*10) : b
+    f (Cons a b) = (a * 10) : b
 
 type Nat = [()]
-    
+
 natFac :: Nat -> Nat
 natFac = para $ \case
   -- fac 0 = 1
@@ -91,10 +100,10 @@ natFib = fst . natFibAux
   where
     natFibAux :: Nat -> (Nat, Nat)
     natFibAux = para $ \case
-        -- fibAux 0 = (fib 0, fib 1)
-        Nil -> ([], [()])
-        -- fibAux (N+1) = let (fp0, fp1) = fibAux N in (fp1, fp0 + fp1)
-        Cons () (_, (u1, u2)) -> (u2, u1++u2)
+      -- fibAux 0 = (fib 0, fib 1)
+      Nil -> ([], [()])
+      -- fibAux (N+1) = let (fp0, fp1) = fibAux N in (fp1, fp0 + fp1)
+      Cons () (_, (u1, u2)) -> (u2, u1 ++ u2)
 
 -- to show that `para` is indeed an overkill.
 -- with the use of natFibAux, we can do the same with `cata`
@@ -103,19 +112,19 @@ natFib' = fst . natFibAux
   where
     natFibAux :: Nat -> (Nat, Nat)
     natFibAux = cata $ \case
-        -- fibAux 0 = (fib 0, fib 1)
-        Nil -> ([], [()])
-        -- fibAux (N+1) = let (fp0, fp1) = fibAux N in (fp1, fp0 + fp1)
-        Cons () (u,v) -> (v, u ++ v)
+      -- fibAux 0 = (fib 0, fib 1)
+      Nil -> ([], [()])
+      -- fibAux (N+1) = let (fp0, fp1) = fibAux N in (fp1, fp0 + fp1)
+      Cons () (u, v) -> (v, u ++ v)
 
 natFib'' :: Nat -> Nat
 natFib'' = histo $ \case
-    -- fib 0 = 0
-    Nil -> []
-    -- fib 1 = 1
-    Cons () (_ :< Nil) -> [()]
-    -- fib (n+2) = fib (n+1) + fib n
-    Cons () (pre' :< Cons () (pre'' :< _)) -> pre' ++ pre''
+  -- fib 0 = 0
+  Nil -> []
+  -- fib 1 = 1
+  Cons () (_ :< Nil) -> [()]
+  -- fib (n+2) = fib (n+1) + fib n
+  Cons () (pre' :< Cons () (pre'' :< _)) -> pre' ++ pre''
 
 {-
   seems "project" is a preparation for do recursion -
@@ -126,6 +135,7 @@ v1 :: ListF Int (Fix (ListF Int))
 v1 = case project listF1 of
   Nil -> Nil
   Cons a b -> Cons a b
+
 v2 :: ListF Int [Int]
 v2 = case project list1 of
   Nil -> Nil
@@ -141,7 +151,7 @@ oddSums = prepro odds sumAlg
     odds v@(Cons h t)
       | odd h = v
       | otherwise = Cons 0 t
-    
+
     sumAlg Nil = 0
     sumAlg (Cons a b) = a + b
 
@@ -156,7 +166,7 @@ oddSums' = getSum . prepro odds sumAlg . coerce @[Int] @[sum]
 
     sumAlg Nil = 0
     sumAlg (Cons a b) = a <> b
- 
+
 main :: IO ()
 main = do
   print listF1
@@ -164,7 +174,7 @@ main = do
   print list1''
   print listX
   print (length $ natFac (replicate 4 ()))
-  print (map (length . natFib . (`replicate` ()) ) [1..15])
-  print (map (length . natFib' . (`replicate` ()) ) [1..15])
-  print (map (length . natFib'' . (`replicate` ()) ) [1..15])
-  print (oddSums [1..15], sum (filter odd [1..15 :: Int]))
+  print (map (length . natFib . (`replicate` ())) [1 .. 15])
+  print (map (length . natFib' . (`replicate` ())) [1 .. 15])
+  print (map (length . natFib'' . (`replicate` ())) [1 .. 15])
+  print (oddSums [1 .. 15], sum (filter odd [1 .. 15 :: Int]))

@@ -1,0 +1,8 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "recursion-schemes-playground:lib"
+    - path: "./exe"
+      component: "recursion-schemes-playground:exe:demo"
+    - path: "./test"
+      component: "recursion-schemes-playground:test:hspec"
