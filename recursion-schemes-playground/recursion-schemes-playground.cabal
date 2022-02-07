@@ -22,6 +22,7 @@ library
   exposed-modules:
       Lib
       Study1
+      Study2
   other-modules:
       Paths_recursion_schemes_playground
   hs-source-dirs:

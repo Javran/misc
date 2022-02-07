@@ -15,6 +15,7 @@ import Data.Coerce
 import Data.Functor.Foldable
 import Data.Monoid
 import qualified Study1
+import qualified Study2
 
 type Nat = [()]
 
@@ -133,4 +134,10 @@ main1 = do
   print (oddSums [1 .. 15], sum (filter odd [1 .. 15 :: Int]))
 
 main :: IO ()
-main = Study1.main
+main = do
+  putStrLn "# Study1"
+  Study1.main
+  putStrLn ""
+  putStrLn "# Study2"
+  Study2.main
+  putStrLn ""
