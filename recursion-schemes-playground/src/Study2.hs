@@ -10,6 +10,7 @@ where
 
 import Control.Comonad.Cofree
 import Control.Monad
+import Data.Foldable
 import Data.Functor.Foldable
 import GHC.Natural
 
@@ -85,6 +86,16 @@ fib' = histo \case
     -- fib n = fib (n-1) + fib (n-2)
     pre1 + pre2
 
+catalan :: Nat -> Nat
+catalan = histo \case
+  Nothing ->
+    1
+  Just fs ->
+    let xs :: [Natural]
+        xs = toList fs
+        ys = reverse xs
+     in sum $ zipWith (*) xs ys
+
 main :: IO ()
 main = do
   putStrLn "factorial:"
@@ -96,4 +107,7 @@ main = do
   putStrLn "fib':"
   forM_ [1 .. 10] \i -> do
     print $ fib' i
+  putStrLn "catalan:"
+  forM_ [1 .. 10] \i -> do
+    print $ catalan i
   pure ()
