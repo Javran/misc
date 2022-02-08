@@ -8,6 +8,7 @@ module Study2
   )
 where
 
+import Control.Comonad.Cofree
 import Control.Monad
 import Data.Functor.Foldable
 import GHC.Natural
@@ -66,6 +67,24 @@ fib = fst . fibAux
       Nothing -> (0, 1)
       Just (u1, u2) -> (u2, u1 + u2)
 
+fib' :: Nat -> Nat
+fib' = histo \case
+  Nothing ->
+    -- fib 0 is 0
+    0
+  Just (pre :< Nothing) -> case pre of
+    ~0 ->
+      {-
+        fib 1 is 1,
+        note that here we have access to:
+        - value of `fib 0`, as LHS of `:<`
+        - input of `fib 0`, i.e. `0`, in the form of Nothing.
+       -}
+      1
+  Just (pre1 :< Just (pre2 :< _)) ->
+    -- fib n = fib (n-1) + fib (n-2)
+    pre1 + pre2
+
 main :: IO ()
 main = do
   putStrLn "factorial:"
@@ -74,4 +93,7 @@ main = do
   putStrLn "fib:"
   forM_ [1 .. 10] \i -> do
     print $ fib i
+  putStrLn "fib':"
+  forM_ [1 .. 10] \i -> do
+    print $ fib' i
   pure ()

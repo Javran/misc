@@ -17,17 +17,6 @@ import Data.Monoid
 import qualified Study1
 import qualified Study2
 
-type Nat = [()]
-
-natFib'' :: Nat -> Nat
-natFib'' = histo $ \case
-  -- fib 0 = 0
-  Nil -> []
-  -- fib 1 = 1
-  Cons () (_ :< Nil) -> [()]
-  -- fib (n+2) = fib (n+1) + fib n
-  Cons () (pre' :< Cons () (pre'' :< _)) -> pre' ++ pre''
-
 {-
   seems "project" is a preparation for do recursion -
   for List, as an example, it provides "Nil" and "Cons"
@@ -73,7 +62,6 @@ oddSums' = getSum . prepro odds sumAlg . coerce @[Int] @[sum]
 
 main1 :: IO ()
 main1 = do
-  print (map (length . natFib'' . (`replicate` ())) [1 .. 15])
   print (oddSums [1 .. 15], sum (filter odd [1 .. 15 :: Int]))
 
 main :: IO ()
