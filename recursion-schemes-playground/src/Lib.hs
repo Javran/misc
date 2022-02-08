@@ -19,60 +19,6 @@ import qualified Study2
 
 type Nat = [()]
 
-natFac :: Nat -> Nat
-natFac = para $ \case
-  -- fac 0 = 1
-  Nil -> [()]
-  -- fac (N + 1) = (N+1) * fac N {- i.e. previous result -}
-  Cons () (u, rOld) -> (() : u) >> rOld
-
-{-
-  using para might be an overkill because we are not using all info given.
-  but, well, it works.
-
-  now that given definition:
-
-  fib 0 = 0
-  fib 1 = 1
-  fib (n+2) = fib n + fib (n+1)
-
-  because we demand two previous values, this cannot be done with just one prev value available.
-  so instead, consider:
-
-  fibAux n = (fib n, fib (n+1))
-
-  by definition:
-
-  fibAux 0 = (fib 0, fib 1) = (0, 1)
-  fibAux (n+1) = (fib (n+1), fib (n+2))
-               = (fib (n+1), fib n + fib (n+1))
-    note that `fibAux n = (fib n, fib n + fib (n+1))`
-    contains all info we need - now it's good enough
-    to write an impl using para.
-
--}
-natFib :: Nat -> Nat
-natFib = fst . natFibAux
-  where
-    natFibAux :: Nat -> (Nat, Nat)
-    natFibAux = para $ \case
-      -- fibAux 0 = (fib 0, fib 1)
-      Nil -> ([], [()])
-      -- fibAux (N+1) = let (fp0, fp1) = fibAux N in (fp1, fp0 + fp1)
-      Cons () (_, (u1, u2)) -> (u2, u1 ++ u2)
-
--- to show that `para` is indeed an overkill.
--- with the use of natFibAux, we can do the same with `cata`
-natFib' :: Nat -> Nat
-natFib' = fst . natFibAux
-  where
-    natFibAux :: Nat -> (Nat, Nat)
-    natFibAux = cata $ \case
-      -- fibAux 0 = (fib 0, fib 1)
-      Nil -> ([], [()])
-      -- fibAux (N+1) = let (fp0, fp1) = fibAux N in (fp1, fp0 + fp1)
-      Cons () (u, v) -> (v, u ++ v)
-
 natFib'' :: Nat -> Nat
 natFib'' = histo $ \case
   -- fib 0 = 0
@@ -127,9 +73,6 @@ oddSums' = getSum . prepro odds sumAlg . coerce @[Int] @[sum]
 
 main1 :: IO ()
 main1 = do
-  print (length $ natFac (replicate 4 ()))
-  print (map (length . natFib . (`replicate` ())) [1 .. 15])
-  print (map (length . natFib' . (`replicate` ())) [1 .. 15])
   print (map (length . natFib'' . (`replicate` ())) [1 .. 15])
   print (oddSums [1 .. 15], sum (filter odd [1 .. 15 :: Int]))
 
