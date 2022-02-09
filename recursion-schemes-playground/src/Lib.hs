@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -10,30 +9,12 @@ module Lib
   )
 where
 
-import Control.Comonad.Cofree
 import Data.Coerce
 import Data.Functor.Foldable
 import Data.Monoid
 import qualified Study1
 import qualified Study2
 
-{-
-  seems "project" is a preparation for do recursion -
-  for List, as an example, it provides "Nil" and "Cons"
-  so that we can describe the actual computation.
--}
-
-{-
-v1 :: ListF Int (Fix (ListF Int))
-v1 = case project listF1 of
-  Nil -> Nil
-  Cons a b -> Cons a b
-
-v2 :: ListF Int [Int]
-v2 = case project list1 of
-  Nil -> Nil
-  Cons a b -> Cons a b
- -}
 -- we are basically using the sum monoid
 oddSums :: [Int] -> Int
 oddSums = prepro odds sumAlg
@@ -60,9 +41,10 @@ oddSums' = getSum . prepro odds sumAlg . coerce @[Int] @[sum]
     sumAlg Nil = 0
     sumAlg (Cons a b) = a <> b
 
-main1 :: IO ()
-main1 = do
+_main1 :: IO ()
+_main1 = do
   print (oddSums [1 .. 15], sum (filter odd [1 .. 15 :: Int]))
+  print (oddSums' [1 .. 15], sum (filter odd [1 .. 15 :: Int]))
 
 main :: IO ()
 main = do
