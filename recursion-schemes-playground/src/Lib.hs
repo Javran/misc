@@ -46,6 +46,17 @@ _main1 = do
   print (oddSums [1 .. 15], sum (filter odd [1 .. 15 :: Int]))
   print (oddSums' [1 .. 15], sum (filter odd [1 .. 15 :: Int]))
 
+{-
+  TODO:
+
+  - find example for zygo?
+  - references:
+
+    + https://github.com/willtim/recursion-schemes
+    + https://stackoverflow.com/q/36851766/315302
+
+ -}
+
 main :: IO ()
 main = do
   putStrLn "# Study1"
