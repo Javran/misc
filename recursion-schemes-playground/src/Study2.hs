@@ -12,6 +12,7 @@ import Control.Comonad.Cofree
 import Control.Monad
 import Data.Foldable
 import Data.Functor.Foldable
+import Debug.Trace
 import GHC.Natural
 
 type Nat = Natural
@@ -86,6 +87,9 @@ fib' = histo \case
     -- fib n = fib (n-1) + fib (n-2)
     pre1 + pre2
 
+{-
+  TODO: this does not seems to be memoizing?
+ -}
 catalan :: Nat -> Nat
 catalan = histo \case
   Nothing ->
