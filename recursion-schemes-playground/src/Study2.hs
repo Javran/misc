@@ -101,6 +101,20 @@ catalan = histo \case
         ys = reverse xs
      in sum $ zipWith (*) xs ys
 
+sumOfOdds :: [Int] -> Int
+sumOfOdds = prepro odds sumAlg
+  where
+    odds = \case
+      Nil -> Nil
+      v@(Cons h t) ->
+        if odd h
+          then v
+          else Cons 0 t
+
+    sumAlg = \case
+      Nil -> 0
+      Cons a b -> a + b
+
 main :: IO ()
 main = do
   putStrLn "factorial:"
@@ -115,4 +129,7 @@ main = do
   putStrLn "catalan:"
   forM_ [1 .. 10] \i -> do
     print $ catalan i
-  pure ()
+
+  putStrLn "sum of odd numbers"
+  let xs = [1 .. 10]
+  print (xs, sumOfOdds xs)
