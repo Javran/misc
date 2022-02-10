@@ -12,7 +12,6 @@ import Control.Comonad.Cofree
 import Control.Monad
 import Data.Foldable
 import Data.Functor.Foldable
-import Debug.Trace
 import GHC.Natural
 
 type Nat = Natural
@@ -89,6 +88,8 @@ fib' = histo \case
 
 {-
   TODO: this does not seems to be memoizing?
+  TODO: if we were to memoize, what should we use as key?
+  (as we are dealing with Base ..?)
  -}
 catalan :: Nat -> Nat
 catalan = histo \case

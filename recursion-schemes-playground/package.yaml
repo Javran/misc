@@ -18,6 +18,8 @@ library:
     - data-fix
     - free
     - recursion-schemes
+    - mtl
+    - containers
 
 executables:
   demo:
