@@ -101,6 +101,13 @@ catalan = histo \case
         ys = reverse xs
      in sum $ zipWith (*) xs ys
 
+
+{-
+  TODO: Probably useful: https://stackoverflow.com/q/47465205/315302
+
+  I'm not sure what do we get by doing it this way - it looks
+  just like an overly involved way to just filter and take the sum.
+ -}
 sumOfOdds :: [Int] -> Int
 sumOfOdds = prepro odds sumAlg
   where

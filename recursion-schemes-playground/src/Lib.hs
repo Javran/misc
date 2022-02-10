@@ -14,6 +14,7 @@ import qualified Study2
 
     + https://github.com/willtim/recursion-schemes
     + https://stackoverflow.com/q/36851766/315302
+    + https://blog.sumtypeofway.com/posts/introduction-to-recursion-schemes.html
 
  -}
 
