@@ -13,8 +13,6 @@ import Control.Monad
 import Data.Foldable
 import Data.Function.Memoize (memoFix)
 import Data.Functor.Foldable
-import Debug.Trace
-import Data.Function
 import GHC.Natural
 
 type Nat = Natural
@@ -100,7 +98,7 @@ catalanHisto = histo \case
   Nothing ->
     1
   Just fs ->
-    let xs = toList fs
+    let xs = toList fs -- this is line 101 in my original code.
         ys = reverse xs
      in sum $ zipWith (*) xs ys
 
@@ -134,8 +132,9 @@ sumOfOdds = prepro odds sumAlg
 
 main :: IO ()
 main = do
-  print $ catalanMemo 1000
-
+  print $ catalanHisto 1000
+  -- print $ catalanMemo 1000
+  
 catalan2 :: Integer -> Integer
 catalan2 = memoFix \q n ->
   if n == 0

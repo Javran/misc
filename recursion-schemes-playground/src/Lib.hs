@@ -25,5 +25,5 @@ main2 = do
   Study1.main
   putStrLn ""
   putStrLn "# Study2"
-  Study2.main
+  Catalan.main
   putStrLn ""
