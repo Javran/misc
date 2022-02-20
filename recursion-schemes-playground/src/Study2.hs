@@ -11,7 +11,9 @@ where
 import Control.Comonad.Cofree
 import Control.Monad
 import Data.Foldable
+import Data.Function.Memoize (memoFix)
 import Data.Functor.Foldable
+import Debug.Trace
 import GHC.Natural
 
 type Nat = Natural
@@ -101,7 +103,6 @@ catalan = histo \case
         ys = reverse xs
      in sum $ zipWith (*) xs ys
 
-
 {-
   TODO: Probably useful: https://stackoverflow.com/q/47465205/315302
 
@@ -123,7 +124,18 @@ sumOfOdds = prepro odds sumAlg
       Cons a b -> a + b
 
 main :: IO ()
-main = do
+main = print $ catalan 400
+
+catalan2 :: Integer -> Integer
+catalan2 = memoFix \q n ->
+  if n == 0
+    then 1
+    else
+      let rs = fmap q [0 .. n -1]
+       in sum $ zipWith (*) rs (reverse rs)
+
+main1 :: IO ()
+main1 = do
   putStrLn "factorial:"
   forM_ [1 .. 10] \i -> do
     print $ factorial i

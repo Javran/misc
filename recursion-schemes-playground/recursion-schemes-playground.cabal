@@ -33,6 +33,7 @@ library
     , containers
     , data-fix
     , free
+    , memoize
     , mtl
     , recursion-schemes
   default-language: Haskell2010
