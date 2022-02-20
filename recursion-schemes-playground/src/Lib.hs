@@ -4,7 +4,7 @@ module Lib
 where
 
 import qualified Study1
-import qualified Study2
+import qualified Catalan
 
 {-
   TODO:
@@ -17,9 +17,10 @@ import qualified Study2
     + https://blog.sumtypeofway.com/posts/introduction-to-recursion-schemes.html
 
  -}
+main = Catalan.main
 
-main :: IO ()
-main = do
+main2 :: IO ()
+main2 = do
   putStrLn "# Study1"
   Study1.main
   putStrLn ""

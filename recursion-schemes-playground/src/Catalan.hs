@@ -3,7 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Study2
+module Catalan
   ( main
   )
 where
@@ -14,6 +14,7 @@ import Data.Foldable
 import Data.Function.Memoize (memoFix)
 import Data.Functor.Foldable
 import Debug.Trace
+import Data.Function
 import GHC.Natural
 
 type Nat = Natural
@@ -93,15 +94,23 @@ fib' = histo \case
   TODO: if we were to memoize, what should we use as key?
   (as we are dealing with Base ..?)
  -}
-catalan :: Nat -> Nat
-catalan = histo \case
+
+catalanHisto :: Nat -> Nat
+catalanHisto = histo \case
   Nothing ->
     1
   Just fs ->
-    let xs :: [Natural]
-        xs = toList fs
+    let xs = toList fs
         ys = reverse xs
      in sum $ zipWith (*) xs ys
+
+catalanMemo :: Integer -> Integer
+catalanMemo = memoFix \q n ->
+  if n == 0
+    then 1
+    else
+      let rs = fmap q [0 .. n -1]
+       in sum $ zipWith (*) rs (reverse rs)
 
 {-
   TODO: Probably useful: https://stackoverflow.com/q/47465205/315302
@@ -124,7 +133,8 @@ sumOfOdds = prepro odds sumAlg
       Cons a b -> a + b
 
 main :: IO ()
-main = print $ catalan 400
+main = do
+  print $ catalanMemo 1000
 
 catalan2 :: Integer -> Integer
 catalan2 = memoFix \q n ->
@@ -147,7 +157,7 @@ main1 = do
     print $ fib' i
   putStrLn "catalan:"
   forM_ [1 .. 10] \i -> do
-    print $ catalan i
+    print $ catalanHisto i
 
   putStrLn "sum of odd numbers"
   let xs = [1 .. 10]
