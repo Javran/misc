@@ -88,7 +88,7 @@ z*
 *.cabal linguist-generated=true -diff
 
 {-# START_FILE stack.yaml #-}
-resolver: lts-18.20
+resolver: lts-18.28
 packages:
 - .
 
