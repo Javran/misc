@@ -1,0 +1,8 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "sysfs:lib"
+    - path: "./exe"
+      component: "sysfs:exe:demo"
+    - path: "./test"
+      component: "sysfs:test:hspec"
