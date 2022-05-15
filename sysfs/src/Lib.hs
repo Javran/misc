@@ -49,18 +49,9 @@ displayInhibitorInfo (what, who, why, mode, uid, pid) = do
   putStrLn $ "UID: " <> show uid
   putStrLn $ "PID: " <> show pid
 
-{-
-  For ListInhibitors: what, who, why, mode, uid (user ID), and pid
 
-  Ref: https://www.freedesktop.org/software/systemd/man/org.freedesktop.login1.html
- -}
-main :: IO ()
-main = do
-  readAndParse "capacity_level" CL.capacityLevelP >>= print
-  readAndParse "status" PS.statusP >>= print
-
-  putStrLn "# DBus"
-  sys <- connectSystem
+examineSys :: Client -> IO ()
+examineSys sys = do
   reply <-
     call_
       sys
@@ -77,3 +68,31 @@ main = do
     displayInhibitorInfo x
     putStrLn ""
   pure ()
+
+{-
+  For ListInhibitors: what, who, why, mode, uid (user ID), and pid
+
+  Ref: https://www.freedesktop.org/software/systemd/man/org.freedesktop.login1.html
+ -}
+main :: IO ()
+main = do
+  readAndParse "capacity_level" CL.capacityLevelP >>= print
+  readAndParse "status" PS.statusP >>= print
+
+  putStrLn "# DBus"
+  -- sys <- connectSystem
+  -- examineSys sys
+  sess <- connectSession
+  reply <-
+    call_
+      sess
+      (methodCall
+         "/org/freedesktop/PowerManagement/Inhibit"
+         "org.freedesktop.PowerManagement.Inhibit"
+         "GetInhibitors")
+        { methodCallDestination = Just "org.freedesktop.PowerManagement"
+        }
+  let [r] = methodReturnBody reply
+      xs :: [String]
+      Just xs = fromVariant r
+  print xs
