@@ -10,6 +10,7 @@ dependencies:
 - base
 - directory
 - filepath
+- dbus
 
 library:
   source-dirs: src
