@@ -8,6 +8,8 @@ description: description
 
 dependencies:
 - base
+- directory
+- filepath
 
 library:
   source-dirs: src
