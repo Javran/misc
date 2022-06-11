@@ -63,8 +63,11 @@ main = do
   args <- getArgs
   case args of
     [srcPath, tgtPath] -> do
-      print $ readP_to_S (resourcePath <* eof) srcPath
-      -- loadSpritesmith jsonFile pngFile >>= outputImages outputDir
+      let [(parsed, "")] = readP_to_S (resourcePath <* eof) srcPath
+          (jsonFile, pngFile) = case parsed of
+            LocalPath fp -> (fp <> ".json", fp <> ".png")
+            _ -> error "TODO"
+      loadSpritesmith jsonFile pngFile >>= outputImages tgtPath
     _ -> do
       putStrLn "<prog> <source> <target dir>"
       exitFailure
