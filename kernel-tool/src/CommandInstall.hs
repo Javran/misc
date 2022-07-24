@@ -1,8 +1,8 @@
 {-# LANGUAGE
-    OverloadedStrings
-  , TypeApplications
-  , LambdaCase
+    LambdaCase
   , NoMonomorphismRestriction
+  , OverloadedStrings
+  , TypeApplications
   #-}
 module CommandInstall
   ( cmdInstall
@@ -21,12 +21,12 @@ import Turtle.Prelude
 import Turtle.Shell
 
 import qualified Control.Foldl as Foldl
-import qualified Data.Text as T
-import qualified Data.Text.Lazy as TL
 import qualified Data.Aeson as Aeson
 import qualified Data.HashMap.Lazy as HM
-import qualified Data.Vector as Vec
+import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import qualified Data.Text.Lazy as TL
+import qualified Data.Vector as Vec
 import qualified Filesystem.Path.CurrentOS as FP
 
 import Common

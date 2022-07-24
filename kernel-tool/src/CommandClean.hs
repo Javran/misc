@@ -1,4 +1,8 @@
-{-# LANGUAGE OverloadedStrings, TupleSections, LambdaCase #-}
+{-# LANGUAGE
+    LambdaCase
+  , OverloadedStrings
+  , TupleSections
+  #-}
 module CommandClean
   ( cmdClean
   ) where
@@ -20,8 +24,8 @@ import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Filesystem.Path.CurrentOS as FP
 
-import Common
 import CommandInstall
+import Common
 
 {-
   scan files directly under boot directory, match them against a given set

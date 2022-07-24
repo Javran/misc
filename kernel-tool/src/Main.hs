@@ -1,6 +1,6 @@
 {-# LANGUAGE
-    OverloadedStrings
-  , LambdaCase
+    LambdaCase
+  , OverloadedStrings
   #-}
 module Main
   ( main
