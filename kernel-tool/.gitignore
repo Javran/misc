@@ -4,3 +4,5 @@ kernel-tool.cabal
 
 grub.conf.template
 run.sh
+
+z*
