@@ -35,7 +35,9 @@ main = do
   let touchscreenDevs = do
         rawLine <- T.lines raw
         d@(devName,_):_ <- [match patDevice rawLine]
-        guard $ "touchscreen" `T.isInfixOf` T.toLower devName
+        guard $
+          "touchscreen" `T.isInfixOf` T.toLower devName
+          || "wacom pen and multitouch" `T.isInfixOf` T.toLower devName
         pure d
   forM_ touchscreenDevs $ \(devName, devId) -> do
     putStr $ "Disabling " <> T.unpack devName <> " ("
