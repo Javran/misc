@@ -1,7 +1,9 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE
+    OverloadedStrings
+  , TemplateHaskell
+  , TypeFamilies
+  , ViewPatterns
+  #-}
 
 module Foundation where
 

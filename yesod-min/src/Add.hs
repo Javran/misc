@@ -1,5 +1,7 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE
+    OverloadedStrings
+  , QuasiQuotes
+  #-}
 
 module Add where
 

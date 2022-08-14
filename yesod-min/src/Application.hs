@@ -1,6 +1,8 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE
+    OverloadedStrings
+  , TemplateHaskell
+  , ViewPatterns
+  #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Application where
