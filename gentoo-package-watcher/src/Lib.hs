@@ -5,14 +5,16 @@ module Lib
   )
 where
 
+import qualified Algorithms.NaturalSort
 import qualified Data.ByteString.Lazy as BSL
+import Data.List
+import Data.Ord
 import qualified Data.Text as T
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS
 import qualified Text.HTML.DOM as Html
 import Text.XML
 import Text.XML.Cursor
-import qualified Algorithms.NaturalSort
 
 type Package = (String, String)
 
@@ -42,8 +44,9 @@ listFilesFromRaw (_, p2) raw = do
           T.dropEnd (T.length magicSuff) $
             T.drop (T.length magicPref) t
         _ -> error "mismatched"
-  mapM_ (print . extractContent . node) $
-    fromDocument doc $// element "ul" &/ element "li" &/ element "a" >=> checkElement isEbuild
+      parsed = fromDocument doc $// element "ul" &/ element "li" &/ element "a" >=> checkElement isEbuild
+      versions = sortOn (Data.Ord.Down . Algorithms.NaturalSort.sortKey) $ fmap (extractContent . node) parsed
+  mapM_ print versions
 
 main :: IO ()
 main = do
