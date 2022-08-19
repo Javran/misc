@@ -1,0 +1,8 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "gentoo-package-watcher:lib"
+    - path: "./exe"
+      component: "gentoo-package-watcher:exe:demo"
+    - path: "./test"
+      component: "gentoo-package-watcher:test:hspec"
