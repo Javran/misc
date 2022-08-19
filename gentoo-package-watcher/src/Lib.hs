@@ -76,8 +76,15 @@ main :: IO ()
 main = do
   let
   mgr <- newManager tlsManagerSettings
-  -- mapM_ (\pkg -> fetchPackageDirRaw mgr pkg >>= print . versionsFromRaw pkg) watchlist
-  versions <- versionsFromRaw nvidiaDrivers <$> fetchPackageDirRaw mgr nvidiaDrivers
-  forM_ versions \v -> do
-    kVer <- parseNvKernelMax <$> fetchEbuild mgr ("x11-drivers", "nvidia-drivers") v
-    print (v, kVer)
+  forM_ watchlist \pkg@(p1,p2) -> do
+    putStrLn $ "Package: " <> p1 <> "/" <> p2
+    vers <- versionsFromRaw pkg <$> fetchPackageDirRaw mgr pkg
+    let nvSpecial = pkg == nvidiaDrivers
+    forM_ vers \ver -> do
+      putStr $ " - " <> T.unpack ver
+      when nvSpecial $ do
+        mKVer <- parseNvKernelMax <$> fetchEbuild mgr pkg ver
+        case mKVer of
+          Just kVer -> putStr $ ", kernel max: " <> T.unpack kVer
+          _ -> pure ()
+      putStrLn ""
