@@ -1,3 +1,4 @@
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Lib
@@ -6,10 +7,14 @@ module Lib
 where
 
 import qualified Algorithms.NaturalSort
+import Control.Monad
 import qualified Data.ByteString.Lazy as BSL
+import qualified Data.ByteString.Lazy.Char8 as BSLC
 import Data.List
+import Data.Maybe
 import Data.Ord
 import qualified Data.Text as T
+import Data.Text.Encoding (decodeUtf8)
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS
 import qualified Text.HTML.DOM as Html
@@ -18,10 +23,16 @@ import Text.XML.Cursor
 
 type Package = (String, String)
 
+type Version = T.Text
+
+nvidiaDrivers :: Package
+nvidiaDrivers = ("x11-drivers", "nvidia-drivers")
+
 watchlist :: [(String, String)]
 watchlist =
+  nvidiaDrivers :
   [ ("sys-kernel", "gentoo-sources")
-  , ("x11-drivers", "nvidia-drivers")
+  , ("media-video", "pipewire")
   ]
 
 fetchPackageDirRaw :: Manager -> Package -> IO BSL.ByteString
@@ -30,8 +41,8 @@ fetchPackageDirRaw mgr (p1, p2) = do
   resp <- httpLbs req mgr
   pure $ responseBody resp
 
-listFilesFromRaw :: Package -> BSL.ByteString -> IO ()
-listFilesFromRaw (_, p2) raw = do
+versionsFromRaw :: Package -> BSL.ByteString -> [Version]
+versionsFromRaw (_, p2) raw = do
   let magicPref = T.pack (p2 <> "-")
       magicSuff = ".ebuild"
       doc = Html.parseLBS raw
@@ -45,10 +56,28 @@ listFilesFromRaw (_, p2) raw = do
             T.drop (T.length magicPref) t
         _ -> error "mismatched"
       parsed = fromDocument doc $// element "ul" &/ element "li" &/ element "a" >=> checkElement isEbuild
-      versions = sortOn (Data.Ord.Down . Algorithms.NaturalSort.sortKey) $ fmap (extractContent . node) parsed
-  mapM_ print versions
+  sortOn (Data.Ord.Down . Algorithms.NaturalSort.sortKey) $ fmap (extractContent . node) parsed
+
+fetchEbuild :: Manager -> Package -> Version -> IO BSL.ByteString
+fetchEbuild mgr (p1, p2) ver = do
+  req <- parseRequest $ "https://gitweb.gentoo.org/repo/gentoo.git/plain/" <> p1 <> "/" <> p2 <> "/nvidia-drivers-" <> T.unpack ver <> ".ebuild"
+  resp <- httpLbs req mgr
+  pure $ responseBody resp
+
+parseNvKernelMax :: BSL.ByteString -> Maybe Version
+parseNvKernelMax raw = listToMaybe do
+  l0 <- BSLC.lines raw
+  Just l1 <- pure do
+    BSLC.stripPrefix "NV_KERNEL_MAX=\"" l0
+      >>= BSLC.stripSuffix "\""
+  pure (decodeUtf8 $ BSLC.toStrict l1)
 
 main :: IO ()
 main = do
+  let
   mgr <- newManager tlsManagerSettings
-  mapM_ (\pkg -> fetchPackageDirRaw mgr pkg >>= listFilesFromRaw pkg) watchlist
+  -- mapM_ (\pkg -> fetchPackageDirRaw mgr pkg >>= print . versionsFromRaw pkg) watchlist
+  versions <- versionsFromRaw nvidiaDrivers <$> fetchPackageDirRaw mgr nvidiaDrivers
+  forM_ versions \v -> do
+    kVer <- parseNvKernelMax <$> fetchEbuild mgr ("x11-drivers", "nvidia-drivers") v
+    print (v, kVer)
