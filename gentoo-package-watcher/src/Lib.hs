@@ -92,7 +92,7 @@ versionsFromRaw Pkg.Package {Pkg.name} raw = do
           $// element "ul"
           &/ element "li"
           &/ element "a" >=> checkElement isEbuild
-  sortOn (Data.Ord.Down . Algorithms.NaturalSort.sortKey) $ fmap (extractContent . node) parsed
+  fmap (extractContent . node) parsed
 
 parseNvKernelMax :: BSL.ByteString -> Maybe Version
 parseNvKernelMax raw = listToMaybe do
@@ -117,8 +117,9 @@ main = do
     putStrLn $ "Package: " <> show pkg
     case m of
       Nothing -> putStrLn "  <Fetch error>"
-      Just ebs ->
-        forM_ ebs \Eb.EbuildInfo {Eb.version, Eb.extra} -> do
+      Just ebsPre ->
+        let ebs = sortOn (Data.Ord.Down . Algorithms.NaturalSort.sortKey . Eb.version) ebsPre
+        in forM_ ebs \Eb.EbuildInfo {Eb.version, Eb.extra} -> do
           putStrLn $ "- " <> T.unpack version <> case extra of
             Nothing -> ""
             Just ~(Object v) ->
