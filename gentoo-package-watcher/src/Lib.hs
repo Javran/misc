@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Lib
@@ -15,35 +16,34 @@ import Data.Maybe
 import Data.Ord
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
+import qualified Javran.Gentoo.PackageWatcher.Data.Package as Pkg
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS
 import qualified Text.HTML.DOM as Html
 import Text.XML
 import Text.XML.Cursor
 
-type Package = (String, String)
-
 type Version = T.Text
 
-nvidiaDrivers :: Package
-nvidiaDrivers = ("x11-drivers", "nvidia-drivers")
+nvidiaDrivers :: Pkg.Package
+nvidiaDrivers = "x11-drivers/nvidia-drivers"
 
-watchlist :: [(String, String)]
+watchlist :: [Pkg.Package]
 watchlist =
   nvidiaDrivers :
-  [ ("sys-kernel", "gentoo-sources")
-  , ("media-video", "pipewire")
+  [ "sys-kernel/gentoo-sources"
+  , "media-video/pipewire"
   ]
 
-fetchPackageDirRaw :: Manager -> Package -> IO BSL.ByteString
-fetchPackageDirRaw mgr (p1, p2) = do
-  req <- parseRequest $ "https://gitweb.gentoo.org/repo/gentoo.git/plain/" <> p1 <> "/" <> p2
+fetchPackageDirRaw :: Manager -> Pkg.Package -> IO BSL.ByteString
+fetchPackageDirRaw mgr pkg = do
+  req <- parseRequest $ "https://gitweb.gentoo.org/repo/gentoo.git/plain/" <> show pkg
   resp <- httpLbs req mgr
   pure $ responseBody resp
 
-versionsFromRaw :: Package -> BSL.ByteString -> [Version]
-versionsFromRaw (_, p2) raw = do
-  let magicPref = T.pack (p2 <> "-")
+versionsFromRaw :: Pkg.Package -> BSL.ByteString -> [Version]
+versionsFromRaw Pkg.Package {Pkg.name} raw = do
+  let magicPref = name <> "-"
       magicSuff = ".ebuild"
       doc = Html.parseLBS raw
       isEbuild e = case elementNodes e of
@@ -58,9 +58,9 @@ versionsFromRaw (_, p2) raw = do
       parsed = fromDocument doc $// element "ul" &/ element "li" &/ element "a" >=> checkElement isEbuild
   sortOn (Data.Ord.Down . Algorithms.NaturalSort.sortKey) $ fmap (extractContent . node) parsed
 
-fetchEbuild :: Manager -> Package -> Version -> IO BSL.ByteString
-fetchEbuild mgr (p1, p2) ver = do
-  req <- parseRequest $ "https://gitweb.gentoo.org/repo/gentoo.git/plain/" <> p1 <> "/" <> p2 <> "/nvidia-drivers-" <> T.unpack ver <> ".ebuild"
+fetchEbuild :: Manager -> Pkg.Package -> Version -> IO BSL.ByteString
+fetchEbuild mgr pkg ver = do
+  req <- parseRequest $ "https://gitweb.gentoo.org/repo/gentoo.git/plain/" <> show pkg <> "/nvidia-drivers-" <> T.unpack ver <> ".ebuild"
   resp <- httpLbs req mgr
   pure $ responseBody resp
 
@@ -76,8 +76,8 @@ main :: IO ()
 main = do
   let
   mgr <- newManager tlsManagerSettings
-  forM_ watchlist \pkg@(p1,p2) -> do
-    putStrLn $ "Package: " <> p1 <> "/" <> p2
+  forM_ watchlist \pkg -> do
+    putStrLn $ "Package: " <> show pkg
     vers <- versionsFromRaw pkg <$> fetchPackageDirRaw mgr pkg
     let nvSpecial = pkg == nvidiaDrivers
     forM_ vers \ver -> do

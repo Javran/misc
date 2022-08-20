@@ -15,6 +15,7 @@ library:
     - -Wall
     - -O2
   dependencies:
+    - aeson
     - bytestring
     - text
     - http-client
@@ -22,6 +23,7 @@ library:
     - xml-conduit
     - html-conduit
     - natural-sort
+    - split
 
 executables:
   demo:
