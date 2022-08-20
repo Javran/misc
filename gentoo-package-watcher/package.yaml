@@ -24,6 +24,8 @@ library:
     - html-conduit
     - natural-sort
     - split
+    - safe-exceptions
+    - deepseq
 
 executables:
   demo:

@@ -8,6 +8,7 @@ module Lib
 where
 
 import qualified Algorithms.NaturalSort
+import Control.Exception.Safe (SomeException)
 import Control.Monad
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString.Lazy.Char8 as BSLC
@@ -17,6 +18,7 @@ import Data.Ord
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
 import qualified Javran.Gentoo.PackageWatcher.Data.Package as Pkg
+import Javran.Gentoo.PackageWatcher.Fetch (nfFetch)
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS
 import qualified Text.HTML.DOM as Html
@@ -35,12 +37,6 @@ watchlist =
   , "media-video/pipewire"
   ]
 
-fetchPackageDirRaw :: Manager -> Pkg.Package -> IO BSL.ByteString
-fetchPackageDirRaw mgr pkg = do
-  req <- parseRequest $ "https://gitweb.gentoo.org/repo/gentoo.git/plain/" <> show pkg
-  resp <- httpLbs req mgr
-  pure $ responseBody resp
-
 versionsFromRaw :: Pkg.Package -> BSL.ByteString -> [Version]
 versionsFromRaw Pkg.Package {Pkg.name} raw = do
   let magicPref = name <> "-"
@@ -55,14 +51,12 @@ versionsFromRaw Pkg.Package {Pkg.name} raw = do
           T.dropEnd (T.length magicSuff) $
             T.drop (T.length magicPref) t
         _ -> error "mismatched"
-      parsed = fromDocument doc $// element "ul" &/ element "li" &/ element "a" >=> checkElement isEbuild
+      parsed =
+        fromDocument doc
+          $// element "ul"
+          &/ element "li"
+          &/ element "a" >=> checkElement isEbuild
   sortOn (Data.Ord.Down . Algorithms.NaturalSort.sortKey) $ fmap (extractContent . node) parsed
-
-fetchEbuild :: Manager -> Pkg.Package -> Version -> IO BSL.ByteString
-fetchEbuild mgr pkg ver = do
-  req <- parseRequest $ "https://gitweb.gentoo.org/repo/gentoo.git/plain/" <> show pkg <> "/nvidia-drivers-" <> T.unpack ver <> ".ebuild"
-  resp <- httpLbs req mgr
-  pure $ responseBody resp
 
 parseNvKernelMax :: BSL.ByteString -> Maybe Version
 parseNvKernelMax raw = listToMaybe do
@@ -72,19 +66,25 @@ parseNvKernelMax raw = listToMaybe do
       >>= BSLC.stripSuffix "\""
   pure (decodeUtf8 $ BSLC.toStrict l1)
 
+fetchNvDriverExtra :: Manager -> T.Text -> IO (Either SomeException Version)
+fetchNvDriverExtra mgr ver =
+  nfFetch
+    mgr
+    (show nvidiaDrivers <> "/nvidia-drivers-" <> T.unpack ver <> ".ebuild")
+    (fromMaybe (error "parse failure") . parseNvKernelMax)
+
 main :: IO ()
 main = do
-  let
   mgr <- newManager tlsManagerSettings
   forM_ watchlist \pkg -> do
     putStrLn $ "Package: " <> show pkg
-    vers <- versionsFromRaw pkg <$> fetchPackageDirRaw mgr pkg
+    Right vers <- nfFetch mgr (show pkg) (versionsFromRaw pkg)
     let nvSpecial = pkg == nvidiaDrivers
     forM_ vers \ver -> do
       putStr $ " - " <> T.unpack ver
       when nvSpecial $ do
-        mKVer <- parseNvKernelMax <$> fetchEbuild mgr pkg ver
+        mKVer <- fetchNvDriverExtra mgr ver
         case mKVer of
-          Just kVer -> putStr $ ", kernel max: " <> T.unpack kVer
+          Right kVer -> putStr $ ", kernel max: " <> T.unpack kVer
           _ -> pure ()
       putStrLn ""
