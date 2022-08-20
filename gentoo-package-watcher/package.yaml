@@ -26,6 +26,8 @@ library:
     - split
     - safe-exceptions
     - deepseq
+    - async
+    - unordered-containers
 
 executables:
   demo:
