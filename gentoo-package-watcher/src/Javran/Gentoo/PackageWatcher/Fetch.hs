@@ -23,6 +23,5 @@ nfFetch mgr r f =
     (do
        req <- parseRequest $ "https://gitweb.gentoo.org/repo/gentoo.git/plain/" <> r
        resp <- httpLbs (setRequestCheckStatus req) mgr
-       result <- E.evaluate $!! f (responseBody resp)
-       pure $ Right result)
+       Right <$> (E.evaluate $!! f (responseBody resp)))
     (pure . Left)

@@ -13,10 +13,11 @@ import qualified Algorithms.NaturalSort
 import Control.Concurrent.Async
 import Control.Exception.Safe
 import Control.Monad
+import Data.Aeson.Types
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString.Lazy.Char8 as BSLC
-import Data.List
 import qualified Data.HashMap.Strict as HM
+import Data.List
 import Data.Maybe
 import Data.Ord
 import qualified Data.Text as T
@@ -30,7 +31,6 @@ import System.IO
 import qualified Text.HTML.DOM as Html
 import Text.XML
 import Text.XML.Cursor
-import Data.Aeson.Types
 
 type Version = T.Text
 
@@ -75,24 +75,19 @@ gatherAllInfo mgr = mapConcurrently (\pkg -> (pkg,) <$> gatherInfoForPackage mgr
 
 versionsFromRaw :: Pkg.Package -> BSL.ByteString -> [Version]
 versionsFromRaw Pkg.Package {Pkg.name} raw = do
-  let magicPref = name <> "-"
-      magicSuff = ".ebuild"
-      doc = Html.parseLBS raw
-      isEbuild e = case elementNodes e of
-        [NodeContent c] | magicPref `T.isPrefixOf` c && magicSuff `T.isSuffixOf` c -> True
-        _ -> False
-      extractContent e = case e of
-        NodeElement Element {elementNodes = [NodeContent t]} ->
-          -- TODO: use stripPrefix and stripSuffix and we can probably get this directly from query.
-          T.dropEnd (T.length magicSuff) $
-            T.drop (T.length magicPref) t
-        _ -> error "mismatched"
-      parsed =
-        fromDocument doc
-          $// element "ul"
-          &/ element "li"
-          &/ element "a" >=> checkElement isEbuild
-  fmap (extractContent . node) parsed
+  let doc = Html.parseLBS raw
+      extractFromEbuild :: Cursor -> [T.Text]
+      extractFromEbuild cur = case node cur of
+        NodeElement e
+          | [NodeContent c0] <- elementNodes e ->
+            maybeToList $
+              T.stripPrefix (name <> "-") c0 >>= T.stripSuffix ".ebuild"
+        _ -> []
+  fromDocument doc
+    $// element "ul"
+      &/ element "li"
+      &/ element "a"
+      >=> extractFromEbuild
 
 parseNvKernelMax :: BSL.ByteString -> Maybe Version
 parseNvKernelMax raw = listToMaybe do
@@ -119,9 +114,10 @@ main = do
       Nothing -> putStrLn "  <Fetch error>"
       Just ebsPre ->
         let ebs = sortOn (Data.Ord.Down . Algorithms.NaturalSort.sortKey . Eb.version) ebsPre
-        in forM_ ebs \Eb.EbuildInfo {Eb.version, Eb.extra} -> do
-          putStrLn $ "- " <> T.unpack version <> case extra of
-            Nothing -> ""
-            Just ~(Object v) ->
-              let String kv = v HM.! "NV_KERNEL_MAX"
-              in ", kernel max: " <> T.unpack kv
+         in forM_ ebs \Eb.EbuildInfo {Eb.version, Eb.extra} -> do
+              putStrLn $
+                "- " <> T.unpack version <> case extra of
+                  Nothing -> ""
+                  Just ~(Object v) ->
+                    let String kv = v HM.! "NV_KERNEL_MAX"
+                     in ", kernel max: " <> T.unpack kv
