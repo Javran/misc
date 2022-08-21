@@ -9,9 +9,11 @@ module Main
 where
 
 import qualified Algorithms.NaturalSort
+import Control.Concurrent.Async
 import Control.Monad
 import Data.Aeson.Types
 import Data.Char
+import qualified Data.Map.Strict as M
 import Data.Either
 import qualified Data.HashMap.Strict as HM
 import Data.List
@@ -45,10 +47,15 @@ main =
       unless (null malforms) do
         hPutStrLn stderr "Failed to parse the following:"
         mapM_ (hPutStrLn stderr) malforms
+      wLoc <- async getLocalPackages
       mgr <- newManager tlsManagerSettings
       results <- gatherAllInfo mgr watchlist
+      localPkgs <- wait wLoc
       forM_ results \(pkg, m) -> do
         putStrLn $ "Package: " <> show pkg
+        case localPkgs M.!? pkg of
+          Nothing -> hPutStrLn stderr "Warning: local version not found."
+          Just lv -> putStrLn $ "- local: " <> T.unpack lv
         case m of
           Nothing -> putStrLn "  <Fetch error>"
           Just ebsPre ->

@@ -8,6 +8,7 @@ description: description
 
 dependencies:
 - aeson
+- async
 - base
 - bytestring
 - containers
@@ -21,7 +22,6 @@ library:
     - -Wall
     - -O2
   dependencies:
-    - async
     - deepseq
     - html-conduit
     - http-client

@@ -106,6 +106,8 @@ fetchNvDriverExtra mgr ver =
   Note: not sure what are variables availble to  qlist --format,
   just getting some hints from https://bugs.gentoo.org/724892
   to produce a command line arg good enough for parsing.
+
+  TODO: local might contain multiple versions.
  -}
 getLocalPackages :: IO (M.Map Pkg.Package Version)
 getLocalPackages = do
