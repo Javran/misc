@@ -10,6 +10,7 @@ dependencies:
 - aeson
 - base
 - bytestring
+- containers
 - http-client
 - text
 - unordered-containers
@@ -26,6 +27,7 @@ library:
     - http-client
     - safe-exceptions
     - split
+    - turtle
     - xml-conduit
 
 executables:

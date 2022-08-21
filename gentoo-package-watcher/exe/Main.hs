@@ -29,6 +29,8 @@ import System.IO
 main :: IO ()
 main =
   getArgs >>= \case
+    ["_dev"] -> do
+      getLocalPackages >>= print
     [fpWatchlist] -> do
       rawWl <- readFile fpWatchlist
       let (malforms, watchlist) =

@@ -8,6 +8,7 @@ module Javran.Gentoo.PackageWatcher.Gather
   ( nvidiaDrivers
   , gatherInfoForPackage
   , gatherAllInfo
+  , getLocalPackages
   )
 where
 
@@ -18,7 +19,9 @@ import Data.Aeson.Types
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString.Lazy.Char8 as BSLC
 import qualified Data.HashMap.Strict as HM
+import qualified Data.Map.Strict as M
 import Data.Maybe
+import Data.String
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
 import qualified Javran.Gentoo.PackageWatcher.Data.EbuildInfo as Eb
@@ -26,10 +29,12 @@ import qualified Javran.Gentoo.PackageWatcher.Data.Package as Pkg
 import Javran.Gentoo.PackageWatcher.Fetch (nfFetch)
 import Javran.Gentoo.PackageWatcher.Types
 import Network.HTTP.Client
+import System.Exit (ExitCode (..))
 import System.IO
 import qualified Text.HTML.DOM as Html
 import Text.XML
 import Text.XML.Cursor
+import Turtle.Prelude (procStrict)
 
 nvidiaDrivers :: Pkg.Package
 nvidiaDrivers = "x11-drivers/nvidia-drivers"
@@ -96,3 +101,18 @@ fetchNvDriverExtra mgr ver =
     mgr
     (show nvidiaDrivers <> "/nvidia-drivers-" <> T.unpack ver <> ".ebuild")
     (fromMaybe (error "parse failure") . parseNvKernelMax)
+
+{-
+  Note: not sure what are variables availble to  qlist --format,
+  just getting some hints from https://bugs.gentoo.org/724892
+  to produce a command line arg good enough for parsing.
+ -}
+getLocalPackages :: IO (M.Map Pkg.Package Version)
+getLocalPackages = do
+  (ExitSuccess, raw) <- procStrict "qlist" ["-IF", "%{CAT}/%{PN} %{PV}"] ""
+  let packageWithVers = conv <$> T.lines raw
+        where
+          conv x = (fromString $ T.unpack pn, ver)
+            where
+              [pn, ver] = T.words x
+  pure $ M.fromList packageWithVers
