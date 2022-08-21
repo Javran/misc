@@ -7,7 +7,12 @@ maintainer: javran.c@gmail.com
 description: description
 
 dependencies:
+- aeson
 - base
+- bytestring
+- http-client
+- text
+- unordered-containers
 
 library:
   source-dirs: src
@@ -15,18 +20,12 @@ library:
     - -Wall
     - -O2
   dependencies:
-    - aeson
     - async
-    - bytestring
     - deepseq
     - html-conduit
     - http-client
-    - http-client-tls
-    - natural-sort
     - safe-exceptions
     - split
-    - text
-    - unordered-containers
     - xml-conduit
 
 executables:
@@ -35,6 +34,8 @@ executables:
     source-dirs: exe
     dependencies:
       - gentoo-package-watcher
+      - http-client-tls
+      - natural-sort
     ghc-options:
       - -Wall
       - -O2

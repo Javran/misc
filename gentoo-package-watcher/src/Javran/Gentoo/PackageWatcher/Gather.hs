@@ -4,12 +4,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
-module Lib
-  ( main
+module Javran.Gentoo.PackageWatcher.Gather
+  ( nvidiaDrivers
+  , gatherInfoForPackage
+  , gatherAllInfo
   )
 where
 
-import qualified Algorithms.NaturalSort
 import Control.Concurrent.Async
 import Control.Exception.Safe
 import Control.Monad
@@ -17,32 +18,21 @@ import Data.Aeson.Types
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString.Lazy.Char8 as BSLC
 import qualified Data.HashMap.Strict as HM
-import Data.List
 import Data.Maybe
-import Data.Ord
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
 import qualified Javran.Gentoo.PackageWatcher.Data.EbuildInfo as Eb
 import qualified Javran.Gentoo.PackageWatcher.Data.Package as Pkg
 import Javran.Gentoo.PackageWatcher.Fetch (nfFetch)
+import Javran.Gentoo.PackageWatcher.Types
 import Network.HTTP.Client
-import Network.HTTP.Client.TLS
 import System.IO
 import qualified Text.HTML.DOM as Html
 import Text.XML
 import Text.XML.Cursor
 
-type Version = T.Text
-
 nvidiaDrivers :: Pkg.Package
 nvidiaDrivers = "x11-drivers/nvidia-drivers"
-
-watchlist :: [Pkg.Package]
-watchlist =
-  nvidiaDrivers :
-  [ "sys-kernel/gentoo-sources"
-  , "media-video/pipewire"
-  ]
 
 dischargeExceptionToStderr :: IO (Either SomeException a) -> IO (Maybe a)
 dischargeExceptionToStderr action =
@@ -63,7 +53,10 @@ gatherInfoForPackage mgr pkg = do
             mapConcurrently
               (\version -> do
                  mKVer <- dischargeExceptionToStderr $ fetchNvDriverExtra mgr version
-                 let extra = fmap (\kv -> toJSON $ HM.singleton ("NV_KERNEL_MAX" :: T.Text) kv) mKVer
+                 let extra =
+                       fmap
+                         (\kv -> toJSON $ HM.singleton ("NV_KERNEL_MAX" :: T.Text) kv)
+                         mKVer
                  pure $ Eb.EbuildInfo {Eb.version, Eb.extra})
               vers
           else
@@ -103,21 +96,3 @@ fetchNvDriverExtra mgr ver =
     mgr
     (show nvidiaDrivers <> "/nvidia-drivers-" <> T.unpack ver <> ".ebuild")
     (fromMaybe (error "parse failure") . parseNvKernelMax)
-
-main :: IO ()
-main = do
-  mgr <- newManager tlsManagerSettings
-  results <- gatherAllInfo mgr watchlist
-  forM_ results \(pkg, m) -> do
-    putStrLn $ "Package: " <> show pkg
-    case m of
-      Nothing -> putStrLn "  <Fetch error>"
-      Just ebsPre ->
-        let ebs = sortOn (Data.Ord.Down . Algorithms.NaturalSort.sortKey . Eb.version) ebsPre
-         in forM_ ebs \Eb.EbuildInfo {Eb.version, Eb.extra} -> do
-              putStrLn $
-                "- " <> T.unpack version <> case extra of
-                  Nothing -> ""
-                  Just ~(Object v) ->
-                    let String kv = v HM.! "NV_KERNEL_MAX"
-                     in ", kernel max: " <> T.unpack kv
