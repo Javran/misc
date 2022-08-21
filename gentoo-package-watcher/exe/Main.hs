@@ -13,10 +13,10 @@ import Control.Concurrent.Async
 import Control.Monad
 import Data.Aeson.Types
 import Data.Char
-import qualified Data.Map.Strict as M
 import Data.Either
 import qualified Data.HashMap.Strict as HM
 import Data.List
+import qualified Data.Map.Strict as M
 import Data.Ord
 import qualified Data.Text as T
 import qualified Javran.Gentoo.PackageWatcher.Data.EbuildInfo as Eb
@@ -52,14 +52,18 @@ main =
       results <- gatherAllInfo mgr watchlist
       localPkgs <- wait wLoc
       forM_ results \(pkg, m) -> do
+        let verDesc = Data.Ord.Down . Algorithms.NaturalSort.sortKey
         putStrLn $ "Package: " <> show pkg
         case localPkgs M.!? pkg of
-          Nothing ->  putStrLn "- local: <empty>"
-          Just lvs -> putStrLn $ "- local: " <> T.unpack (T.intercalate ", " $ sortOn (Data.Ord.Down . Algorithms.NaturalSort.sortKey) lvs)
+          Nothing -> putStrLn "- local: <empty>"
+          Just lvs ->
+            putStrLn $
+              "- local: "
+                <> T.unpack (T.intercalate ", " $ sortOn verDesc lvs)
         case m of
           Nothing -> putStrLn "  <Fetch error>"
           Just ebsPre ->
-            let ebs = sortOn (Data.Ord.Down . Algorithms.NaturalSort.sortKey . Eb.version) ebsPre
+            let ebs = sortOn (verDesc . Eb.version) ebsPre
              in forM_ ebs \Eb.EbuildInfo {Eb.version, Eb.extra} -> do
                   putStrLn $
                     "- " <> T.unpack version <> case extra of
