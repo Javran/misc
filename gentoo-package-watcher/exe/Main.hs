@@ -54,7 +54,7 @@ main =
       forM_ results \(pkg, m) -> do
         putStrLn $ "Package: " <> show pkg
         case localPkgs M.!? pkg of
-          Nothing -> hPutStrLn stderr "Warning: local version not found."
+          Nothing ->  putStrLn "- local: <empty>"
           Just lvs -> putStrLn $ "- local: " <> T.unpack (T.intercalate ", " $ sortOn (Data.Ord.Down . Algorithms.NaturalSort.sortKey) lvs)
         case m of
           Nothing -> putStrLn "  <Fetch error>"
