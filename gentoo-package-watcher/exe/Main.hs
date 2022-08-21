@@ -55,7 +55,7 @@ main =
         putStrLn $ "Package: " <> show pkg
         case localPkgs M.!? pkg of
           Nothing -> hPutStrLn stderr "Warning: local version not found."
-          Just lv -> putStrLn $ "- local: " <> T.unpack lv
+          Just lvs -> putStrLn $ "- local: " <> T.unpack (T.intercalate ", " $ sortOn (Data.Ord.Down . Algorithms.NaturalSort.sortKey) lvs)
         case m of
           Nothing -> putStrLn "  <Fetch error>"
           Just ebsPre ->

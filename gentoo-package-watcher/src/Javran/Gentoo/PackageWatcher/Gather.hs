@@ -109,12 +109,12 @@ fetchNvDriverExtra mgr ver =
 
   TODO: local might contain multiple versions.
  -}
-getLocalPackages :: IO (M.Map Pkg.Package Version)
+getLocalPackages :: IO (M.Map Pkg.Package [Version])
 getLocalPackages = do
   (ExitSuccess, raw) <- procStrict "qlist" ["-IF", "%{CAT}/%{PN} %{PV}"] ""
   let packageWithVers = conv <$> T.lines raw
         where
-          conv x = (fromString $ T.unpack pn, ver)
+          conv x = (fromString $ T.unpack pn, [ver])
             where
               [pn, ver] = T.words x
-  pure $ M.fromList packageWithVers
+  pure $ M.fromListWith (<>) packageWithVers
