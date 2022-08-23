@@ -1,0 +1,41 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 73b74b02030c4610da1701de78a49c59fe064fa5f826c70db5f6d095b865f9d9
+
+name:           kc-sprite-tool
+version:        0.1.0.0
+description:    description
+homepage:       https://github.com/Javran/kc-sprite-tool#readme
+bug-reports:    https://github.com/Javran/kc-sprite-tool/issues
+author:         Javran Cheng
+maintainer:     javran.c@gmail.com
+copyright:      Copyright: (c) 2019 Javran Cheng
+license:        BSD3
+build-type:     Simple
+
+source-repository head
+  type: git
+  location: https://github.com/Javran/kc-sprite-tool
+
+executable demo
+  main-is: Main.hs
+  other-modules:
+      Cache
+      Spritesmith
+      Paths_kc_sprite_tool
+  hs-source-dirs:
+      src
+  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base
+    , containers
+    , filepath
+    , hip
+    , text
+    , unordered-containers
+  default-language: Haskell2010

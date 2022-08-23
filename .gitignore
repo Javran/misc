@@ -15,5 +15,3 @@ cabal.config
 *.json
 stack.yaml.lock
 dist-newstyle
-
-*.cabal
