@@ -10,7 +10,7 @@ data EbuildInfo = EbuildInfo
   { version :: Version
   , extra :: Maybe Value
   }
-  deriving (Generic)
+  deriving (Generic, Show)
 
 instance FromJSON EbuildInfo
 
