@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -15,6 +16,7 @@ import Data.List.Split (splitOn)
 import Data.Maybe
 import Data.String
 import qualified Data.Text as T
+import GHC.Generics
 
 {-
   Represents a full portage package name.
@@ -23,7 +25,7 @@ data Package = Package
   { category :: T.Text
   , name :: T.Text
   }
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Generic)
 
 safeFromString :: String -> Maybe Package
 safeFromString raw = do
