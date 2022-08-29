@@ -14,7 +14,7 @@ import Control.Monad
 import Data.Aeson.Types
 import Data.Char
 import Data.Either
-import qualified Data.HashMap.Strict as HM
+import qualified Data.Aeson.KeyMap as KM
 import Data.List
 import qualified Data.Map.Strict as M
 import Data.Ord
@@ -27,6 +27,7 @@ import Network.HTTP.Client.TLS
 import System.Environment
 import System.Exit
 import System.IO
+import Data.Maybe
 
 main :: IO ()
 main =
@@ -69,6 +70,6 @@ main =
                     "- " <> T.unpack version <> case extra of
                       Nothing -> ""
                       Just ~(Object v) ->
-                        let String kv = v HM.! "NV_KERNEL_MAX"
+                        let String kv = fromJust $ KM.lookup "NV_KERNEL_MAX" v
                          in ", kernel max: " <> T.unpack kv
     _ -> die "<prog> <path to watchlist file>"
