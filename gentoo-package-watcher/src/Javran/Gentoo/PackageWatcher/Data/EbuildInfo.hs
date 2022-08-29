@@ -3,8 +3,8 @@
 module Javran.Gentoo.PackageWatcher.Data.EbuildInfo where
 
 import Data.Aeson
-import Javran.Gentoo.PackageWatcher.Types
 import GHC.Generics
+import Javran.Gentoo.PackageWatcher.Types
 
 data EbuildInfo = EbuildInfo
   { version :: Version

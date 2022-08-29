@@ -1,10 +1,9 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Javran.Gentoo.PackageWatcher.Fetch
-  ( nfFetch
-  )
-where
+module Javran.Gentoo.PackageWatcher.Fetch (
+  nfFetch,
+) where
 
 import Control.DeepSeq (NFData, ($!!))
 import Control.Exception as E
@@ -20,8 +19,9 @@ import Network.HTTP.Client
 nfFetch :: forall d. NFData d => Manager -> String -> (BSL.ByteString -> d) -> IO (Either SomeException d)
 nfFetch mgr r f =
   catchAny @IO
-    (do
-       req <- parseRequest $ "https://gitweb.gentoo.org/repo/gentoo.git/plain/" <> r
-       resp <- httpLbs (setRequestCheckStatus req) mgr
-       Right <$> (E.evaluate $!! f (responseBody resp)))
+    ( do
+        req <- parseRequest $ "https://gitweb.gentoo.org/repo/gentoo.git/plain/" <> r
+        resp <- httpLbs (setRequestCheckStatus req) mgr
+        Right <$> (E.evaluate $!! f (responseBody resp))
+    )
     (pure . Left)

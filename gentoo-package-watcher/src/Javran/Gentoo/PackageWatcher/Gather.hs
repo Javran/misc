@@ -4,13 +4,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
-module Javran.Gentoo.PackageWatcher.Gather
-  ( nvidiaDrivers
-  , gatherInfoForPackage
-  , gatherAllInfo
-  , getLocalPackages
-  )
-where
+module Javran.Gentoo.PackageWatcher.Gather (
+  nvidiaDrivers,
+  gatherInfoForPackage,
+  gatherAllInfo,
+  getLocalPackages,
+) where
 
 import Control.Concurrent.Async
 import Control.Exception.Safe
@@ -56,13 +55,14 @@ gatherInfoForPackage mgr pkg = do
         <$> if pkg == nvidiaDrivers
           then
             mapConcurrently
-              (\version -> do
-                 mKVer <- dischargeExceptionToStderr $ fetchNvDriverExtra mgr version
-                 let extra =
-                       fmap
-                         (\kv -> toJSON $ HM.singleton ("NV_KERNEL_MAX" :: T.Text) kv)
-                         mKVer
-                 pure $ Eb.EbuildInfo {Eb.version, Eb.extra})
+              ( \version -> do
+                  mKVer <- dischargeExceptionToStderr $ fetchNvDriverExtra mgr version
+                  let extra =
+                        fmap
+                          (\kv -> toJSON $ HM.singleton ("NV_KERNEL_MAX" :: T.Text) kv)
+                          mKVer
+                  pure $ Eb.EbuildInfo {Eb.version, Eb.extra}
+              )
               vers
           else
             pure $

@@ -3,20 +3,20 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Main
-  ( main
-  )
-where
+module Main (
+  main,
+) where
 
 import qualified Algorithms.NaturalSort
 import Control.Concurrent.Async
 import Control.Monad
+import qualified Data.Aeson.KeyMap as KM
 import Data.Aeson.Types
 import Data.Char
 import Data.Either
-import qualified Data.Aeson.KeyMap as KM
 import Data.List
 import qualified Data.Map.Strict as M
+import Data.Maybe
 import Data.Ord
 import qualified Data.Text as T
 import qualified Javran.Gentoo.PackageWatcher.Data.EbuildInfo as Eb
@@ -27,7 +27,6 @@ import Network.HTTP.Client.TLS
 import System.Environment
 import System.Exit
 import System.IO
-import Data.Maybe
 
 main :: IO ()
 main =

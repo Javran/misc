@@ -4,12 +4,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Javran.Gentoo.PackageWatcher.Data.Package
-  ( Package (..)
-  , safeFromString
-  , toText
-  )
-where
+module Javran.Gentoo.PackageWatcher.Data.Package (
+  Package (..),
+  safeFromString,
+  toText,
+) where
 
 import Data.Aeson
 import Data.List.Split (splitOn)
