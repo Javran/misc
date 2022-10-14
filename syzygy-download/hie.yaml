@@ -1,0 +1,8 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "syzygy-download:lib"
+    - path: "./exe"
+      component: "syzygy-download:exe:demo"
+    - path: "./test"
+      component: "syzygy-download:test:hspec"
