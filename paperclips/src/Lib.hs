@@ -7,36 +7,16 @@ import Control.Monad.RWS.CPS
 import Control.Monad.Reader
 import Data.List
 import Data.Ord
-import qualified Data.Text as T
 import Data.Tuple
 import qualified Data.Vector.Unboxed as VU
 import qualified Data.Vector.Unboxed.Mutable as VUM
-import Data.Word
 import System.Random.MWC
 import System.TimeIt
+import qualified Data.Map.Strict as M
 import Text.Printf
-
-data Move = A | B
-
-other :: Move -> Move
-other = \case
-  A -> B
-  B -> A
-
-{-
-  note: pickMove always assume itself to be the "horizontal" one.
- -}
-data Strategy = Strategy
-  { sName :: T.Text
-  , sPickMove :: Payoff -> (Move, Move) -> ReaderT GenIO IO Move
-  }
-
-{-
-  Should be sufficient for us since max payoff for a tourney is 1600.
- -}
-type Score = Word64
-
-type Payoff = (Score, Score, Score, Score) -- aa, ab, ba, bb
+import Types
+import SimResult
+import qualified Data.Aeson as A
 
 biggestPayoff :: Payoff -> (Move, Move)
 biggestPayoff (aa, ab, ba, bb)
@@ -123,9 +103,27 @@ speed with unboxed vector:
  -}
 main :: IO ()
 main = do
-  timeIt do
-    scores <- replicateConcurrently 128 do
-      g <- createSystemRandom
-      repeatTourney g (A, A) (10, 10, 10, 7) 1024
-    let sc = foldr1 (zipWith (+)) scores
-    pprResult (128*1024) sc
+  let m = 128
+      n = 1024
+      simulateFor :: Payoff -> IO [Score]
+      simulateFor p = do
+        scores <- replicateConcurrently m do
+          g <- createSystemRandom
+          repeatTourney g (A, A) p n
+        pure $ foldr1 (zipWith (+)) scores
+      space = do
+        aa <- [0 .. 10]
+        ab <- [0 .. 10]
+        ba <- [0 .. 10]
+        bb <- [0 .. 10]
+        pure (aa, ab, ba, bb)
+
+  rs <- mapConcurrently
+    ( \p -> do
+        sc <- simulateFor p
+        pure (p, (m * n, sc))
+    )
+    space
+  let results :: SimResults
+      results = M.fromList rs
+  A.encodeFile "sim-results.json" results

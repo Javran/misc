@@ -64,6 +64,7 @@ library:
     - vector
     - timeit
     - async
+    - aeson
 
 executables:
   demo:

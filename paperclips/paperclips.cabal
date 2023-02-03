@@ -21,6 +21,8 @@ source-repository head
 library
   exposed-modules:
       Lib
+      SimResult
+      Types
   other-modules:
       Paths_paperclips
   hs-source-dirs:
@@ -66,7 +68,8 @@ library
       TypeSynonymInstances
   ghc-options: -Wall
   build-depends:
-      async
+      aeson
+    , async
     , base
     , bytestring
     , containers
