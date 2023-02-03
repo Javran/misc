@@ -58,6 +58,10 @@ library:
     - bytestring
     - containers
     - text
+    - mtl
+    - writer-cps-mtl
+    - mwc-random
+    - vector
 
 executables:
   demo:
