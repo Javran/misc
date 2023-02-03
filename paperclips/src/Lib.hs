@@ -2,12 +2,14 @@ module Lib (
   main,
 ) where
 
+import Control.Concurrent.Async
 import Control.Monad.RWS.CPS
 import Control.Monad.Reader
+import Data.List
+import Data.Ord
 import qualified Data.Text as T
 import Data.Tuple
 import qualified Data.Vector.Unboxed as VU
-import qualified Data.IntMap as IM
 import qualified Data.Vector.Unboxed.Mutable as VUM
 import Data.Word
 import System.Random.MWC
@@ -94,16 +96,20 @@ runTourney g initPrev p@(aa, ab, ba, bb) applyPayoff = do
   _ <- runReaderT (foldM evalRound initPrev pairings') g
   pure ()
 
-repeatTourney :: GenIO -> (Move, Move) -> Payoff -> Int -> IO ()
+repeatTourney :: GenIO -> (Move, Move) -> Payoff -> Int -> IO [Score]
 repeatTourney g initPrev p n = do
   v <- VUM.replicate (length strats) (0 :: Score)
   replicateM_ n (runTourney g initPrev p (\i incr -> VUM.modify v (+ incr) i))
-  forM_ (zip [0 ..] strats) \(i, s) -> do
-    let fI = fromIntegral @Score @Double
-    sc <- VUM.read v i
-    let ave = fI sc / fromIntegral n
+  VU.toList <$> VU.unsafeFreeze v
+
+pprResult :: Int -> [Score] -> IO ()
+pprResult n rs = do
+  let sorted = sortOn (\(i, sc) -> (Down sc, i)) $ zip [0 :: Int ..] rs
+  forM_ sorted \(i, sc) -> do
+    let s = strats !! i
+    let ave :: Double
+        ave = fromIntegral sc / fromIntegral n
     printf "%20s\t%f\n" (sName s) ave
-    pure ()
 
 {-
 speed with unboxed vector:
@@ -117,6 +123,9 @@ speed with unboxed vector:
  -}
 main :: IO ()
 main = do
-  g <- createSystemRandom
   timeIt do
-    repeatTourney g (A, A) (10, 10, 10, 7) 100_000
+    scores <- replicateConcurrently 128 do
+      g <- createSystemRandom
+      repeatTourney g (A, A) (10, 10, 10, 7) 1024
+    let sc = foldr1 (zipWith (+)) scores
+    pprResult (128*1024) sc

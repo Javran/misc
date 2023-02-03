@@ -63,6 +63,7 @@ library:
     - mwc-random
     - vector
     - timeit
+    - async
 
 executables:
   demo:
