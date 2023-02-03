@@ -1,0 +1,88 @@
+name: paperclips
+version: 0.1.0.0
+github: Javran/paperclips
+license: BSD3
+author: Javran Cheng
+maintainer: javran.c@gmail.com
+description: description
+
+ghc-options:
+  - -Wall
+
+default-extensions:
+  - BangPatterns
+  - BinaryLiterals
+  - BlockArguments
+  - ConstraintKinds
+  - DataKinds
+  - DefaultSignatures
+  - DeriveDataTypeable
+  - DeriveFoldable
+  - DeriveFunctor
+  - DeriveGeneric
+  - DeriveTraversable
+  - DerivingVia
+  - EmptyCase
+  - EmptyDataDecls
+  - ExistentialQuantification
+  - FlexibleContexts
+  - FlexibleInstances
+  - FunctionalDependencies
+  - GADTs
+  - GeneralizedNewtypeDeriving
+  - InstanceSigs
+  - KindSignatures
+  - LambdaCase
+  - MultiParamTypeClasses
+  - MultiWayIf
+  - NamedFieldPuns
+  - NoUnicodeSyntax
+  - NumericUnderscores
+  - OverloadedStrings
+  - PartialTypeSignatures
+  - PolyKinds
+  - RankNTypes
+  - ScopedTypeVariables
+  - StandaloneDeriving
+  - TupleSections
+  - TypeApplications
+  - TypeFamilies
+  - TypeSynonymInstances
+
+dependencies:
+  - base
+
+library:
+  source-dirs: src
+  dependencies:
+    - bytestring
+    - containers
+    - text
+
+executables:
+  demo:
+    main: Main.hs
+    source-dirs: exe
+    dependencies:
+      - paperclips
+    ghc-options:
+      - -O2
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+
+tests:
+  hspec:
+    main: Spec.hs
+    source-dirs:
+      - test
+    dependencies:
+      - paperclips
+      - QuickCheck
+      - hspec
+    ghc-options:
+      - -O2
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+      - -main-is Spec

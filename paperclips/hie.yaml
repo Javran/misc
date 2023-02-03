@@ -1,0 +1,8 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "paperclips:lib"
+    - path: "./exe"
+      component: "paperclips:exe:demo"
+    - path: "./test"
+      component: "paperclips:test:hspec"
