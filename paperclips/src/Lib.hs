@@ -7,9 +7,11 @@ import Control.Monad.Reader
 import qualified Data.Text as T
 import Data.Tuple
 import qualified Data.Vector.Unboxed as VU
+import qualified Data.IntMap as IM
 import qualified Data.Vector.Unboxed.Mutable as VUM
 import Data.Word
 import System.Random.MWC
+import System.TimeIt
 import Text.Printf
 
 data Move = A | B
@@ -27,7 +29,10 @@ data Strategy = Strategy
   , sPickMove :: Payoff -> (Move, Move) -> ReaderT GenIO IO Move
   }
 
-type Score = Int
+{-
+  Should be sufficient for us since max payoff for a tourney is 1600.
+ -}
+type Score = Word64
 
 type Payoff = (Score, Score, Score, Score) -- aa, ab, ba, bb
 
@@ -93,14 +98,25 @@ repeatTourney :: GenIO -> (Move, Move) -> Payoff -> Int -> IO ()
 repeatTourney g initPrev p n = do
   v <- VUM.replicate (length strats) (0 :: Score)
   replicateM_ n (runTourney g initPrev p (\i incr -> VUM.modify v (+ incr) i))
-  forM_ (zip [0..] strats) \(i, s) -> do
-    let fI = fromIntegral @Int @Double
+  forM_ (zip [0 ..] strats) \(i, s) -> do
+    let fI = fromIntegral @Score @Double
     sc <- VUM.read v i
-    let ave = fI sc / fI n
+    let ave = fI sc / fromIntegral n
     printf "%20s\t%f\n" (sName s) ave
     pure ()
 
+{-
+speed with unboxed vector:
+
+- 216.13s
+- 162.72s
+- 121.76s
+- 132.98s
+- 204.27s
+
+ -}
 main :: IO ()
 main = do
-  g <- create
-  repeatTourney g (A, A) (10,10,10,7) 1000
+  g <- createSystemRandom
+  timeIt do
+    repeatTourney g (A, A) (10, 10, 10, 7) 100_000
