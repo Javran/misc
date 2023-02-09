@@ -8,6 +8,11 @@ import Data.Ratio
 
 -- most of the following originally from exact-pi
 
+{-
+  note: turns out Rational does perform better that just using (Integer, Integer) pair -
+  I'm guessing GCD / LCM is making the size of big numbers in check?
+ -}
+
 chudnovsky :: [Rational]
 chudnovsky = [426880 / s | s <- partials]
   where
