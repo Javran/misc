@@ -1,0 +1,8 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "pi-digits:lib"
+    - path: "./exe"
+      component: "pi-digits:exe:demo"
+    - path: "./test"
+      component: "pi-digits:test:hspec"
