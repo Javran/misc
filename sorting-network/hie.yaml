@@ -1,0 +1,8 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "sorting-network:lib"
+    - path: "./exe"
+      component: "sorting-network:exe:demo"
+    - path: "./test"
+      component: "sorting-network:test:hspec"
