@@ -19,5 +19,9 @@ gen n = do
      in [x0, x0 + step .. n - 1 - k]
   i <- [0 .. k - 1]
   let fI = fromIntegral @Int @Double
+  {-
+    TODO: the following should hold for non-negative Integers:
+    floor (fromIntegral n / fromIntegral (2^k)) === shiftR n k
+   -}
   guard $ floor @_ @Integer (fI (i + j) / fI (p * 2)) == floor (fI (i + j + k) / fI (p * 2))
   pure (i + j, i + j + k)
