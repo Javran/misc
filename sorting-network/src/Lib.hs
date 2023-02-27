@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
+
 module Lib (
   main,
 ) where
@@ -11,12 +12,22 @@ import qualified Data.Vector.Mutable as VM
 import TH (mkSorter)
 import Test.QuickCheck
 
+mySorts :: Ord a => V.Vector ([a] -> [a])
+mySorts =
+  V.fromList
+    [ $(mkSorter gen 3) compare
+    , $(mkSorter gen 4) compare
+    , $(mkSorter gen 5) compare
+    , $(mkSorter gen 6) compare
+    , $(mkSorter gen 7) compare
+    , $(mkSorter gen 8) compare
+    ]
+
 main :: IO ()
 main =
   quickCheck $ withMaxSuccess 10000 do
-    -- l <- chooseInt (3, 22)
-    let l = 20
-        mySort' = $(mkSorter 20 gen) compare
+    l <- chooseInt (3, 8)
+    let mySort' = mySorts V.! (l - 3)
     -- 0-1 principle
     xs <- replicateM l (chooseEnum (False, True))
     let ys = mySort' xs

@@ -6,8 +6,8 @@ import Control.Monad.State
 import qualified Data.IntMap.Strict as IM
 import Language.Haskell.TH
 
-mkSorter :: Int -> (Int -> [(Int, Int)]) -> ExpQ
-mkSorter n mkPairs = do
+mkSorter :: (Int -> [(Int, Int)]) -> Int -> ExpQ
+mkSorter mkPairs n = do
   let pairs = mkPairs n
   -- cmp :: a -> a -> Ordering
   cmp <- newName "cmp"
@@ -30,14 +30,12 @@ mkSorter n mkPairs = do
               jNew <- lift $ newName "v"
 
               modify (IM.insert i iNew . IM.insert j jNew)
-              pure \(hole :: Exp) -> do
-                tmp <- [|$(varE swapper) $(varE iOld) $(varE jOld) (\ $(varP iNew) $(varP jNew) -> $(pure hole))|]
-                mk tmp
+              pure \(hole :: Exp) ->
+                mk =<< [|$(varE swapper) $(varE iOld) $(varE jOld) (\ $(varP iNew) $(varP jNew) -> $(pure hole))|]
           )
           (pure . step0)
           pairs
       )
       s0
-  let result = fmap (VarE . snd) $ IM.toAscList s
-  r <- mkBody $ ListE result
+  r <- mkBody $ ListE $ VarE . snd <$> IM.toAscList s
   pure $ LamE [VarP cmp, ListP $ fmap VarP ns] r
