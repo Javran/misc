@@ -20,7 +20,9 @@ source-repository head
 
 library
   exposed-modules:
+      Common
       Lib
+      TH
   other-modules:
       Paths_sorting_network
   hs-source-dirs:
@@ -73,6 +75,7 @@ library
     , mtl
     , mwc-random
     , split
+    , template-haskell
     , text
     , vector
     , writer-cps-mtl
