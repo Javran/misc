@@ -9,22 +9,23 @@ import Control.Monad
 import Control.Monad.ST
 import qualified Data.Vector as V
 import qualified Data.Vector.Mutable as VM
-import TH (mkSorter)
+import TH
 import Test.QuickCheck
 
 mySorts :: Ord a => V.Vector ([a] -> [a])
 mySorts =
   V.fromList
-    [ $(mkSorter gen 3) compare
-    , $(mkSorter gen 4) compare
-    , $(mkSorter gen 5) compare
-    , $(mkSorter gen 6) compare
-    , $(mkSorter gen 7) compare
-    , $(mkSorter gen 8) compare
+    [ $(mkSorterList gen 3) compare
+    , $(mkSorterList gen 4) compare
+    , $(mkSorterList gen 5) compare
+    , $(mkSorterList gen 6) compare
+    , $(mkSorterList gen 7) compare
+    , $(mkSorterList gen 8) compare
     ]
 
 main :: IO ()
-main =
+main = do
+  print $ $(mkSorterTup gen 4) compare (2, 4, 1, 3 :: Int)
   quickCheck $ withMaxSuccess 10000 do
     l <- chooseInt (3, 8)
     let mySort' = mySorts V.! (l - 3)
@@ -44,17 +45,3 @@ mySort xs = runST do
       VM.swap v i j
 
   mapM (VM.unsafeRead v) [0 .. n - 1]
-
-{-
-main = print $ three (3, 2, 1)
-
-three :: forall v. Ord v => (v, v, v) -> (v, v, v)
-three (a, b, c) =
-  sw a b \a b -> sw b c \b c -> sw a b \a b -> (a,b,c)
-  where
-    sw :: forall r. v -> v -> (v -> v -> r) -> r
-    sw u v f = if u <= v then f u v else f v u
- -}
-
--- four :: Ord a => [a] -> [a]
--- four = $(mkSorter 4 gen) compare

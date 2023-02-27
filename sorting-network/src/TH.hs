@@ -6,8 +6,8 @@ import Control.Monad.State
 import qualified Data.IntMap.Strict as IM
 import Language.Haskell.TH
 
-mkSorter :: (Int -> [(Int, Int)]) -> Int -> ExpQ
-mkSorter mkPairs n = do
+gMkSorter :: (Int -> [(Int, Int)]) -> Int -> ([Pat] -> Pat) -> ([Exp] -> Exp) -> Q Exp
+gMkSorter mkPairs n mkP mkE = do
   let pairs = mkPairs n
   -- cmp :: a -> a -> Ordering
   cmp <- newName "cmp"
@@ -37,5 +37,9 @@ mkSorter mkPairs n = do
           pairs
       )
       s0
-  r <- mkBody $ ListE $ VarE . snd <$> IM.toAscList s
-  pure $ LamE [VarP cmp, ListP $ fmap VarP ns] r
+  r <- mkBody $ mkE $ VarE . snd <$> IM.toAscList s
+  pure $ LamE [VarP cmp, mkP $ fmap VarP ns] r
+
+mkSorterList, mkSorterTup :: (Int -> [(Int, Int)]) -> Int -> ExpQ
+mkSorterList mkPairs n = gMkSorter mkPairs n ListP ListE
+mkSorterTup mkPairs n = gMkSorter mkPairs n TupP (TupE . fmap Just)
