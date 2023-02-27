@@ -70,9 +70,12 @@ library
     , base
     , bytestring
     , containers
+    , mtl
     , mwc-random
+    , split
     , text
     , vector
+    , writer-cps-mtl
   default-language: Haskell2010
 
 executable demo

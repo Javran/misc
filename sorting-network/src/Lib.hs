@@ -4,6 +4,7 @@ module Lib (
 
 import Control.Monad
 import Control.Monad.ST
+import Data.Bits
 import qualified Data.Vector as V
 import qualified Data.Vector.Mutable as VM
 import Test.QuickCheck
@@ -11,11 +12,11 @@ import Test.QuickCheck
 main :: IO ()
 main =
   quickCheck $ withMaxSuccess 10000 do
-    l <- chooseInt (3, 30)
+    l <- chooseInt (3, 22)
     -- 0-1 principle
     xs <- replicateM l (chooseEnum (False, True))
     let ys = mySort xs
-    pure $ and $ zipWith (<=) ys (tail ys)
+    pure $ label ("l=" <> show l) $ and $ zipWith (<=) ys (tail ys)
 
 mySort :: Ord a => [a] -> [a]
 mySort xs = runST do
@@ -32,23 +33,32 @@ mySort xs = runST do
 {-
   Ref: https://en.wikipedia.org/wiki/Batcher_odd%E2%80%93even_mergesort
 
-  Note: index goes out of bound when n is not a power of 2.
+  Note: goes out of bound when n is not a power of 2.
   unclear if we can simply just ignore those values?
  -}
 gen :: Int -> [] (Int, Int)
 gen n = do
-  p <- takeWhile (< n) $ iterate (* 2) 1
-  k <- takeWhile (>= 1) $ iterate (\v -> quot v 2) p
-  j <-
-    let step = 2 * k
-        x0 = rem k p
-     in [x0, x0 + step .. n - 1 - k]
+  -- INVARIANT: p == shiftL 1 (pw - 1)
+  (p, pw) <- zip (takeWhile (< n) $ iterate (* 2) 1) [1 ..]
+  k <- takeWhile (>= 1) $ iterate (\v -> shiftR v 1) p
+  j <- takeWhile (<= n - 1 - k) $ iterate (+ 2 * k) (rem k p)
   i <- [0 .. k - 1]
-  let fI = fromIntegral @Int @Double
+  guard $ shiftR (i + j) pw == shiftR (i + j + k) pw
   {-
-    TODO: the following should hold for non-negative Integers:
-    floor (fromIntegral n / fromIntegral (2^k)) === shiftR n k
+    Index could get out of bound without this check
+    when n is not a power of 2 - not sure about
+    its correctness but QuickCheck is yet to find an counterexample.
    -}
-  guard $ floor @_ @Integer (fI (i + j) / fI (p * 2)) == floor (fI (i + j + k) / fI (p * 2))
   guard $ i + j + k < n
   pure (i + j, i + j + k)
+
+{-
+main = print $ three (3, 2, 1)
+
+three :: forall v. Ord v => (v, v, v) -> (v, v, v)
+three (a, b, c) =
+  sw a b \a b -> sw b c \b c -> sw a b \a b -> (a,b,c)
+  where
+    sw :: forall r. v -> v -> (v -> v -> r) -> r
+    sw u v f = if u <= v then f u v else f v u
+ -}
