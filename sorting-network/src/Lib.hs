@@ -7,10 +7,13 @@ module Lib (
 import Common
 import Control.Monad
 import Control.Monad.ST
+import Criterion.Main as Cr
 import qualified Data.Vector as V
 import qualified Data.Vector.Mutable as VM
+import System.Random.MWC (createSystemRandom, uniformRM)
 import TH
 import Test.QuickCheck
+import Data.List (sort)
 
 mySorts :: Ord a => V.Vector ([a] -> [a])
 mySorts =
@@ -23,8 +26,8 @@ mySorts =
     , $(mkSorterList gen 8) compare
     ]
 
-main :: IO ()
-main = do
+mainLib :: IO ()
+mainLib = do
   print $ $(mkSorterTup gen 4) compare (2, 4, 1, 3 :: Int)
   quickCheck $ withMaxSuccess 10000 do
     l <- chooseInt (3, 8)
@@ -45,3 +48,19 @@ mySort xs = runST do
       VM.swap v i j
 
   mapM (VM.unsafeRead v) [0 .. n - 1]
+
+main :: IO ()
+main = do
+  g <- createSystemRandom
+  let genRan8 = replicateM 16 do
+        uniformRM (-128, 127 :: Int) g
+  tests :: [[Int]] <- replicateM 2000 genRan8
+  let sort16 :: Ord a => [a] -> [a]
+      sort16 = $(mkSorterList gen 16) compare
+
+  print $ fmap sort tests == fmap sort16 tests
+
+  Cr.defaultMain
+    [ bench "base Data.List.sort" $ nf (fmap sort) tests
+    , bench "sorting network" $ nf (fmap sort16) tests
+    ]

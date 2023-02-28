@@ -65,6 +65,7 @@ library:
     - writer-cps-mtl
     - split
     - template-haskell
+    - criterion
 
 executables:
   demo:
