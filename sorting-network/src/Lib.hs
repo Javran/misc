@@ -15,6 +15,9 @@ import TH
 import Test.QuickCheck
 import Data.List (sort)
 
+main :: IO ()
+main = mainLib
+
 mySorts :: Ord a => V.Vector ([a] -> [a])
 mySorts =
   V.fromList
@@ -49,8 +52,8 @@ mySort xs = runST do
 
   mapM (VM.unsafeRead v) [0 .. n - 1]
 
-main :: IO ()
-main = do
+mainBench :: IO ()
+mainBench = do
   g <- createSystemRandom
   let genRan8 = replicateM 16 do
         uniformRM (-128, 127 :: Int) g
