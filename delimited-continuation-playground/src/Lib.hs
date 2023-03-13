@@ -67,17 +67,19 @@ t3 =
         pure (k (k 10))
     <*> pure 1
 
+type DL a = [a] -> [a]
+
 -- a stupid version of list reversal, just for demostration.
-myRev :: [a] -> Cont [a] [a]
+myRev :: [a] -> Cont (DL a) (DL a)
 myRev xs = reset
   case xs of
-    [] -> pure []
+    [] -> pure id
     y : ys -> do
       -- do it recursively
       ys' <- myRev ys
       shift \k -> do
         -- for whatever result we have, append [y] to it.
-        pure $ k ys' <> [y]
+        pure $ k ys' . (y :)
 
 main :: IO ()
 main = do
@@ -87,4 +89,4 @@ main = do
   print $ evalCont t13
   print $ evalCont t3
 
-  print $ evalCont $ myRev [1, 2, 3]
+  print $ evalCont (myRev [1 :: Int, 2, 3]) []
