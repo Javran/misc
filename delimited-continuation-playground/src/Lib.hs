@@ -58,9 +58,33 @@ t13 =
        -}
       pure (x, x)
 
+t3 :: forall w. w ~ Int => Cont Int Int
+t3 =
+  (+)
+    <$> reset do
+      (2 *) <$> shift \k ->
+        {- k = 2 * {} - remember this is scoped up to reset -}
+        pure (k (k 10))
+    <*> pure 1
+
+-- a stupid version of list reversal, just for demostration.
+myRev :: [a] -> Cont [a] [a]
+myRev xs = reset
+  case xs of
+    [] -> pure []
+    y : ys -> do
+      -- do it recursively
+      ys' <- myRev ys
+      shift \k -> do
+        -- for whatever result we have, append [y] to it.
+        pure $ k ys' <> [y]
+
 main :: IO ()
 main = do
   print $ evalCont t1
   print $ evalCont t1Extra
 
   print $ evalCont t13
+  print $ evalCont t3
+
+  print $ evalCont $ myRev [1, 2, 3]
