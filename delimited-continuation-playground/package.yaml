@@ -58,6 +58,8 @@ library:
     - bytestring
     - containers
     - text
+    - mtl
+    - transformers
 
 executables:
   demo:
