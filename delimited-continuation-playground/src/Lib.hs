@@ -39,7 +39,28 @@ t1Extra =
       )
     <*> pure 1
 
+t13 :: Cont w String
+t13 =
+  fst
+    <$> reset do
+      x <-
+        shift
+          ( \(_ :: String -> (String, String)) ->
+              {-
+                as if the whole `reset {}` is simply replaced
+                by the expresion below:
+               -}
+              pure ("hi", "bye")
+          )
+      {-
+        this part is unreachable as shift shortcuts this by
+        "dropping the continuation"
+       -}
+      pure (x, x)
+
 main :: IO ()
 main = do
   print $ evalCont t1
   print $ evalCont t1Extra
+
+  print $ evalCont t13
