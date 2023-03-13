@@ -1,0 +1,8 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "delimited-continuation-playground:lib"
+    - path: "./exe"
+      component: "delimited-continuation-playground:exe:demo"
+    - path: "./test"
+      component: "delimited-continuation-playground:test:hspec"
