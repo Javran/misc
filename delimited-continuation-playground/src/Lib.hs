@@ -7,16 +7,13 @@ import Control.Monad.Trans.Cont
 
 t1 :: Cont w Integer
 t1 =
-  liftM2
-    (-)
-    ( reset
-        ( liftM2
-            (+)
-            (pure 3)
-            (shift (\k -> liftM2 (*) (pure 5) (pure 2)))
-        )
-    )
-    (pure 1)
+  (-)
+    <$> reset
+      ( fmap
+          (3 +)
+          (shift (\_ -> pure ((*) 5 2)))
+      )
+    <*> pure 1
 
 main :: IO ()
 main = print $ evalCont t1
