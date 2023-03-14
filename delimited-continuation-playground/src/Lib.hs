@@ -115,7 +115,7 @@ times xs =
 
 {-
   TODO: still not sure if this can be done in Haskell?
-
+  probably facing the same problem as in https://stackoverflow.com/q/72833519/315302
 examplex = reset do
   a <- pure 3
   b <- shift (\k -> _)
