@@ -99,8 +99,19 @@ timesC =
            -}
           traceShow ("here" :: String, r) pure (x * r)
 
+{-
+  As an example of discarding continuation up to closest `reset` -
+  not even any multiplications are done whenever 0 is found.
+  This function could work with infinite lists if somewhere there is a 0.
+
+  The caveat being we will have to do multiplication associating to right,
+  so potentially we could build up a thunk and only reduce that down
+  only after last element is reached.
+ -}
 times :: [Int] -> Int
-times xs = evalCont (reset $ do timesC xs)
+times xs =
+  -- notice where `reset` is placed.
+  evalCont (reset $ do timesC xs)
 
 main :: IO ()
 main = do
@@ -114,3 +125,4 @@ main = do
 
   print $ times [1 .. 5]
   print $ times [1, 2, 0, 2, undefined]
+  print $ times ([1, 2, 3] <> (0 : repeat 10))
