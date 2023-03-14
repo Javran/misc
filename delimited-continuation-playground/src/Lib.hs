@@ -4,6 +4,7 @@ module Lib (
 
 import Control.Monad
 import Control.Monad.Trans.Cont
+import Debug.Trace
 
 t1 :: Cont w Integer
 t1 =
@@ -81,6 +82,19 @@ myRev xs = reset
         -- for whatever result we have, append [y] to it.
         pure $ k ys' . (y :)
 
+times :: [Int] -> Cont Int Int
+times =
+  \case
+    [] -> pure 1
+    x : xs ->
+      if x == 0
+        then shift $ \_k ->
+          -- one of them is 0, overall result is 0, no need to go further
+          pure 0
+        else do
+          r <- times xs
+          traceShow r pure (x * r)
+
 main :: IO ()
 main = do
   print $ evalCont t1
@@ -90,3 +104,5 @@ main = do
   print $ evalCont t3
 
   print $ evalCont (myRev [1 :: Int, 2, 3]) []
+
+  print $ evalCont (reset do times [1, 2, 0, 2, undefined])
