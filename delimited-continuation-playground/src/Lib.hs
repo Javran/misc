@@ -82,8 +82,8 @@ myRev xs = reset
         -- for whatever result we have, append [y] to it.
         pure $ k ys' . (y :)
 
-times :: [Int] -> Cont Int Int
-times =
+timesC :: [Int] -> Cont Int Int
+timesC =
   \case
     [] -> pure 1
     x : xs ->
@@ -92,8 +92,15 @@ times =
           -- one of them is 0, overall result is 0, no need to go further
           pure 0
         else do
-          r <- times xs
-          traceShow r pure (x * r)
+          r <- timesC xs
+          {-
+            We should never be able to reach here if we found a zero,
+            as the rest of the continuation is discarded.
+           -}
+          traceShow ("here" :: String, r) pure (x * r)
+
+times :: [Int] -> Int
+times xs = evalCont (reset $ do timesC xs)
 
 main :: IO ()
 main = do
@@ -105,4 +112,5 @@ main = do
 
   print $ evalCont (myRev [1 :: Int, 2, 3]) []
 
-  print $ evalCont (reset do times [1, 2, 0, 2, undefined])
+  print $ times [1 .. 5]
+  print $ times [1, 2, 0, 2, undefined]
