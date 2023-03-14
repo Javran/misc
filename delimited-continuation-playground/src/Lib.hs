@@ -113,6 +113,18 @@ times xs =
   -- notice where `reset` is placed.
   evalCont (reset $ do timesC xs)
 
+{-
+  TODO: still not sure if this can be done in Haskell?
+
+examplex = reset do
+  a <- pure 3
+  b <- shift (\k -> _)
+  let tmp = a + b
+  c <- pure 1
+  pure $ tmp - c
+
+ -}
+
 main :: IO ()
 main = do
   print $ evalCont t1
