@@ -21,6 +21,7 @@ source-repository head
 library
   exposed-modules:
       Lib
+      Mtl
   other-modules:
       Paths_delimited_continuation_playground
   hs-source-dirs:
