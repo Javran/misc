@@ -60,6 +60,7 @@ library:
     - text
     - mtl
     - transformers
+    - CC-delcont
 
 executables:
   demo:
