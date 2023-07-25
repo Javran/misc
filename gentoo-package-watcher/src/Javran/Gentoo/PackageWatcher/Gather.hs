@@ -9,6 +9,7 @@ module Javran.Gentoo.PackageWatcher.Gather (
   gatherInfoForPackage,
   gatherAllInfo,
   getLocalPackages,
+  kernelMaxVerMagic,
 ) where
 
 import Control.Concurrent.Async
@@ -59,7 +60,7 @@ gatherInfoForPackage mgr pkg = do
                   mKVer <- dischargeExceptionToStderr $ fetchNvDriverExtra mgr version
                   let extra =
                         fmap
-                          (\kv -> toJSON $ HM.singleton ("NV_KERNEL_MAX" :: T.Text) kv)
+                          (\kv -> toJSON $ HM.singleton (kernelMaxVerMagic :: T.Text) kv)
                           mKVer
                   pure $ Eb.EbuildInfo {Eb.version, Eb.extra}
               )
@@ -87,11 +88,14 @@ versionsFromRaw Pkg.Package {Pkg.name} raw = do
       &/ element "a"
       >=> extractFromEbuild
 
+kernelMaxVerMagic :: IsString s => s
+kernelMaxVerMagic = "NV_KERNEL_MAX"
+
 parseNvKernelMax :: BSL.ByteString -> Maybe Version
 parseNvKernelMax raw = listToMaybe do
   l0 <- BSLC.lines raw
   Just l1 <- pure do
-    BSLC.stripPrefix "NV_KERNEL_MAX=\"" l0
+    BSLC.stripPrefix (kernelMaxVerMagic <> "=\"") l0
       >>= BSLC.stripSuffix "\""
   pure (decodeUtf8 $ BSLC.toStrict l1)
 

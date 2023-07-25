@@ -69,6 +69,6 @@ main =
                     "- " <> T.unpack version <> case extra of
                       Nothing -> ""
                       Just ~(Object v) ->
-                        let String kv = fromJust $ KM.lookup "NV_KERNEL_MAX" v
+                        let String kv = fromJust $ KM.lookup kernelMaxVerMagic v
                          in ", kernel max: " <> T.unpack kv
     _ -> die "<prog> <path to watchlist file>"
