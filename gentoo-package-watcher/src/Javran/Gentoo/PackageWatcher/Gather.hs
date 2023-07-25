@@ -89,14 +89,13 @@ versionsFromRaw Pkg.Package {Pkg.name} raw = do
       >=> extractFromEbuild
 
 kernelMaxVerMagic :: IsString s => s
-kernelMaxVerMagic = "NV_KERNEL_MAX"
+kernelMaxVerMagic = "MODULES_KERNEL_MAX"
 
 parseNvKernelMax :: BSL.ByteString -> Maybe Version
 parseNvKernelMax raw = listToMaybe do
   l0 <- BSLC.lines raw
   Just l1 <- pure do
-    BSLC.stripPrefix (kernelMaxVerMagic <> "=\"") l0
-      >>= BSLC.stripSuffix "\""
+    BSLC.stripPrefix (kernelMaxVerMagic <> "=") l0
   pure (decodeUtf8 $ BSLC.toStrict l1)
 
 fetchNvDriverExtra :: Manager -> T.Text -> IO (Either SomeException Version)
