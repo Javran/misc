@@ -29,4 +29,3 @@ module Cache where
     - Note: urls under /kcs2/img seems to follow a pattern and use spritesmith most of the time,
       we can perhaps parse that.
  -}
-

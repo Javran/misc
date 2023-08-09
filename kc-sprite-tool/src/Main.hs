@@ -2,17 +2,15 @@
   Get static resources from kc servers. perferably with
   requests spreaded so we don't hammer a specific one.
  -}
-{-# LANGUAGE
-    OverloadedStrings
-  #-}
-module Main
-  ( main
-  ) where
 
-import System.Exit
-import System.Environment
-import Text.ParserCombinators.ReadP hiding (optional)
+module Main (
+  main,
+) where
+
 import Control.Applicative
+import System.Environment
+import System.Exit
+import Text.ParserCombinators.ReadP hiding (optional)
 
 import Spritesmith
 
@@ -33,12 +31,12 @@ import Spritesmith
 
 data ResourcePath
   = UrlPath
-    { rpSourcePath :: String
-    , rpVersion :: Maybe String
-    }
+      { rpSourcePath :: String
+      , rpVersion :: Maybe String
+      }
   | LocalPath
-    { rpSourcePath :: String }
-  deriving Show
+      {rpSourcePath :: String}
+  deriving (Show)
 
 resourcePath :: ReadP ResourcePath
 resourcePath = urlPath <++ localPath
@@ -47,7 +45,7 @@ resourcePath = urlPath <++ localPath
     urlPath, localPath :: ReadP ResourcePath
     urlPath = do
       http <- string "http://"
-      part0 <- munch1 (`notElem` ['.','?'])
+      part0 <- munch1 (`notElem` ['.', '?'])
       _ <- consumeExtension
       ver <- option Nothing $ do
         _ <- string "?version="

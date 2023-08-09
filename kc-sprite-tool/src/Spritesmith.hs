@@ -1,14 +1,6 @@
 {-
   This module deals with cropping individual images from spritesmith.
  -}
-{-# LANGUAGE
-    OverloadedStrings
-  , TypeApplications
-  , DeriveGeneric
-  , ScopedTypeVariables
-  , NamedFieldPuns
-  , FlexibleContexts
-  #-}
 module Spritesmith where
 
 import Control.Monad
@@ -49,11 +41,11 @@ import qualified Graphics.Image as Img
   - examined by gimp (top-left corner is (1,1)), the corresponding icon goes from (481,81) to (555,155).
  -}
 
-data FrameInfo
-  = FrameInfo
+data FrameInfo = FrameInfo
   { fiCoord :: (Int, Int) -- (x,y)
   , fiSize :: (Int, Int) -- (w,h)
-  } deriving (Generic, Show)
+  }
+  deriving (Generic, Show)
 
 instance FromJSON FrameInfo where
   parseJSON = withObject "FrameInfo" $ \v -> do
@@ -69,19 +61,19 @@ instance FromJSON FrameInfo where
           y <- vf .: "y"
           w <- vf .: "w"
           h <- vf .: "h"
-          pure $ FrameInfo (x,y) (w,h)
+          pure $ FrameInfo (x, y) (w, h)
     withObject "FrameInfo.frame" parseFrame (Object frame)
 
 newtype SpriteFrames
   = SpriteFrames (M.Map T.Text FrameInfo)
-    deriving (Generic, Show)
+  deriving (Generic, Show)
 
 instance FromJSON SpriteFrames
 
-data FileMeta
-  = FileMeta
+data FileMeta = FileMeta
   { fmSize :: (Int, Int) -- (w,h)
-  } deriving (Show)
+  }
+  deriving (Show)
 
 instance FromJSON FileMeta where
   parseJSON = withObject "FileMeta" $ \v -> do
@@ -91,7 +83,7 @@ instance FromJSON FileMeta where
     (sizeObj :: Object) <- v .: "size"
     w <- sizeObj .: "w"
     h <- sizeObj .: "h"
-    pure $ FileMeta (w,h)
+    pure $ FileMeta (w, h)
 
 newtype FileInfo
   = FileInfo (SpriteFrames, FileMeta)
@@ -104,7 +96,7 @@ instance FromJSON FileInfo where
     pure $ FileInfo (sf, fm)
 
 extractImage :: Image -> FrameInfo -> Image
-extractImage img FrameInfo{fiCoord, fiSize} =
+extractImage img FrameInfo {fiCoord, fiSize} =
   Img.crop (swap fiCoord) (swap fiSize) img
 
 type Image = Img.Image Img.VS Img.RGBA Img.Word8
@@ -130,6 +122,6 @@ outputImages outputDir = mapM_ outputImage . M.toList
   where
     outputImage :: (T.Text, Image) -> IO ()
     outputImage (name, img) =
-        Img.writeImageExact Img.PNG [] outputFileName img
+      Img.writeImageExact Img.PNG [] outputFileName img
       where
         outputFileName = outputDir </> T.unpack name <.> "png"
