@@ -1,0 +1,9 @@
+pixel_len: 5
+colors:
+  ' ': white
+  '#': black
+  '_': '#F5DEB3'
+  O: '#00FF00'
+  '!': '#F2F2F2'
+input: example.raw
+output: example.svg
